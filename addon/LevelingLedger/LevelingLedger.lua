@@ -746,6 +746,8 @@ end
 SlashCmdList.LEVELINGLEDGER = function(msg)
   local cmd = strtrim and strtrim((msg or ""):lower()) or (msg or ""):lower():match("^%s*(.-)%s*$")
   if cmd == "alts" then if ns.toggleAlts then ns.toggleAlts() end return end
+  local w = cmd:match("^water%s*(.*)$")
+  if w and ns.waterCommand then ns.waterCommand(w) return end
   if cmd ~= "" and panelCommand(cmd) then return end
   if not char then print("|cffd9aa5aLeveling Ledger|r: not ready yet."); return end
   local v, l, t = 0, 0, 0
@@ -755,5 +757,5 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP, %d kills.",
     #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0, session and session.kills or 0))
   print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
-  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts")
+  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water")
 end
