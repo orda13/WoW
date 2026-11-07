@@ -10,6 +10,8 @@ local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 local f = CreateFrame("Frame")
 local db, char, session
 local lootSeen = {}          -- corpses already counted this session (by GUID)
+-- /played isn't asked for at login: the game may only allow it from a key press, so it's asked when you type /ledger
+-- (and read whenever you type /played yourself).
 -- Ask for /played without the chat line: the chat windows stop listening for that one reply.
 -- (Replacing Blizzard's chat function instead would taint it, and the game would blame the add-on for blocked actions.)
 local muted = nil
@@ -215,7 +217,6 @@ end
 local function onLevelUp(newLevel)
   char.levels[newLevel] = { at = now(), zone = zone() }
   if session then session.levels = session.levels + 1 end
-  requestPlayed()
 end
 
 local function onPlayed(total, thisLevel)
@@ -639,10 +640,11 @@ end
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("PLAYER_LOGOUT")
-f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("PLAYER_XP_UPDATE")
 f:RegisterEvent("PLAYER_LEVEL_UP")
 f:RegisterEvent("TIME_PLAYED_MSG")
+f:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+f:RegisterEvent("ADDON_ACTION_BLOCKED")
 f:RegisterEvent("QUEST_TURNED_IN")
 f:RegisterEvent("TRAINER_SHOW")
 f:RegisterEvent("TRAINER_UPDATE")
@@ -683,14 +685,18 @@ f:SetScript("OnEvent", function(_, event, ...)
       startSession(); noteZone(); noteState(); scanSkills(); scanReps(); scanBags()
       createPanel()
     end)
+  elseif event == "ADDON_ACTION_FORBIDDEN" or event == "ADDON_ACTION_BLOCKED" then
+    -- the game stopped something this add-on did: say what, here and on the Settings page
+    local who, what = ...
+    if who == ADDON and db then
+      local msg = (event == "ADDON_ACTION_FORBIDDEN" and "The game blocked " or "The game blocked (taint) ") .. tostring(what or "an action")
+      db.errors = db.errors or {}; table.insert(db.errors, { at = now(), err = msg }); trim(db.errors, 20)
+      print("|cffd9aa5aLeveling Ledger|r: " .. msg .. ". Please tell the add-on's maintainer.")
+    end
   elseif not char then
     return
   elseif event == "PLAYER_LOGOUT" then
     safe(function() onXP(); closeSession(); noteState(); scanBags(); char.level = UnitLevel("player"); db.savedAt = now() end)
-  elseif event == "PLAYER_ENTERING_WORLD" then
-    -- Ask for /played once per real login, not on every /reload or loading screen
-    local isLogin = ...
-    if isLogin then requestPlayed() end
   elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
@@ -760,12 +766,15 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   if w and ns.waterCommand then ns.waterCommand(w) return end
   if cmd ~= "" and panelCommand(cmd) then return end
   if not char then print("|cffd9aa5aLeveling Ledger|r: not ready yet."); return end
+  pcall(requestPlayed) -- typed, so the game allows it; the chat line stays hidden
   local v, l, t = 0, 0, 0
   for _ in pairs(char.vendors) do v = v + 1 end
   for _ in pairs(char.loot) do l = l + 1 end
   for _ in pairs(char.trainer) do t = t + 1 end
   print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP, %d kills.",
     #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0, session and session.kills or 0))
-  print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
+  local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  local ver = meta and meta(ADDON, "Version")
+  print("|cffd9aa5aLeveling Ledger|r" .. (ver and " " .. ver or "") .. ": type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
   print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water")
 end
