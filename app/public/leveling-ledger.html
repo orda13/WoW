@@ -100,6 +100,15 @@ a { color: var(--brass); }
 .chip.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
 .chip.live { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, transparent); }
 .chip.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.health { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+.health:empty { display: none; }
+.health .chip { text-decoration: none; color: var(--muted); }
+.health a.chip:hover { border-color: var(--muted); }
+.health .chip.good::before, .health .chip.warn::before, .health .chip.bad::before { content: ""; width: 7px; height: 7px; border-radius: 50%; }
+.health .chip.good::before { background: var(--good); }
+.health .chip.warn::before { background: var(--warn); }
+.health .chip.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.health .chip.bad::before { background: var(--bad); }
 
 /* Board */
 .board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
@@ -483,6 +492,8 @@ details > summary { cursor: pointer; color: var(--muted); }
       <span class="muted num" id="lvlMax"></span>
     </div>
   </section>
+
+  <div class="health" id="health" role="status" aria-label="How the ledger is running"></div>
 
   <nav class="views" aria-label="Pages" id="views">
     <a href="#ledger">Ledger</a>
@@ -1713,6 +1724,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   async function renderWatch() {
     try {
       const st = await (await fetch("/api/status")).json();
+      S.status = st; renderHealth();
       const w = $("impWatch");
       w.textContent = st.files && st.files.length ? `Watching ${st.files.join(", ")}` : "";
       if (st.lastError) w.textContent += (w.textContent ? " · " : "") + st.lastError;
@@ -1724,6 +1736,53 @@ details > summary { cursor: pointer; color: var(--muted); }
     renderWatch();
   };
   renderWatch(); setInterval(renderWatch, 60000);
+
+  // ---------- health line: one chip per part, each linking to where to fix it ----------
+  function renderHealth() {
+    const box = $("health"); if (!box) return;
+    const ago = (t) => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 60 ? "just now" : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} day${Math.round(s / 86400) === 1 ? "" : "s"} ago`; };
+    const st = S.status, chips = [];
+    const add = (cls, text, title, view, target) => {
+      const c = el(view ? "a" : "span", "chip " + cls, text);
+      if (title) c.title = title;
+      if (view) { c.href = "#" + view; if (target) c.onclick = () => setTimeout(() => { const t = $(target); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50); }
+      chips.push(c);
+    };
+    const conn = window.LL_CONN && window.LL_CONN.ok;
+    add(conn ? "good" : "bad", conn ? "Service connected" : "Can't reach the service", conn ? "Live updates are on" : "Check that the Leveling Ledger service is running on your PC");
+    // add-on
+    const a = S.addon;
+    if (st && !(st.files && st.files.length)) add("warn", "Add-on file not found", st.lastError || "", "settings");
+    else if (!a) add("warn", "No add-on data yet", "Log out or /reload in game with the add-on enabled", "ledger", "impPanel");
+    else {
+      const errs = (a.errors || []).filter((e) => e.at && e.at * 1000 >= (a.savedAt || 0) - 6 * 3600 * 1000);
+      if (errs.length) add("warn", `Add-on reported ${errs.length} error${errs.length === 1 ? "" : "s"}`, errs[errs.length - 1].err, "ledger", "impPanel");
+      else add("good", `Add-on imported ${ago(a.importedAt)}`, a.message || "", "ledger", "impPanel");
+    }
+    // Blizzard
+    const sy = S.sync || {};
+    if (st && !st.blizzard) add("warn", "Blizzard keys not set", "Add your API keys on the Settings tab", "settings");
+    else if (sy.pending && Date.now() - (sy.startedAt || 0) < 5 * 60000) add("good", "Checking Blizzard…", "");
+    else if (sy.ok === false) add("bad", "Blizzard sync failed", sy.message || "", "settings");
+    else if (sy.at) {
+      const stale = Date.now() - sy.at > Math.max(24, 2 * ((st && st.syncEveryHours) || 6)) * 3600000;
+      add(stale ? "warn" : "good", `Blizzard synced ${ago(sy.at)}`, sy.message || "", stale ? "settings" : null);
+    } else add("warn", "Not synced with Blizzard yet", "", "settings");
+    // backups
+    if (st) {
+      if (!st.lastBackup) add("warn", "No backup yet", "", "ledger", "bkPanel");
+      else {
+        const old = Date.now() - st.lastBackup > 48 * 3600000;
+        const d = new Date(st.lastBackup), today = new Date().toDateString(), yest = new Date(Date.now() - 86400000).toDateString();
+        const when = d.toDateString() === today ? "today" : d.toDateString() === yest ? "yesterday" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        add(old ? "warn" : "good", `Backed up ${when}`, old ? "The daily backup hasn't run for over two days" : "", "ledger", "bkPanel");
+      }
+      add("", st.via === "cloudflare" ? `Signed in as ${st.user || "you"}` : "On this PC", st.via === "cloudflare" ? "Through Cloudflare with Google sign-in" : "");
+    }
+    box.replaceChildren(...chips);
+  }
+  window.addEventListener("ll-conn", () => renderHealth());
+  setInterval(() => renderHealth(), 30000);
 
   // ---------- settings ----------
   const ST = { loaded: false };
@@ -1828,7 +1887,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   $("bkNow").onclick = async () => {
     try { const x = await fetch("/api/backups/now", { method: "POST", headers: { "X-Ledger": "1" } }); toast(x.ok ? "Backed up" : "Couldn't back up right now"); }
     catch { toast("Couldn't reach the Leveling Ledger service."); }
-    renderBackups();
+    renderBackups(); renderWatch();
   };
   renderBackups(); setInterval(renderBackups, 10 * 60000);
   // Merchant's Favor or gold price you've seen at a vendor for an item
@@ -2997,7 +3056,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     let gotChar = false, gotSess = false;
     charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); }, fail);
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
-    db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); }, () => {});
+    db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
@@ -3010,7 +3069,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) { for (const d of DG.data.dungeons) d._hay = null; renderDungeons(); } }, () => {});
-    db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); }, () => {});
+    db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); renderHealth(); }, () => {});
     db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); }, () => {});
     db.collection("tasks").orderBy("createdAt", "asc").limit(300).onSnapshot((q) => { S.tasks = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderTasks(); }, () => {});
   })();

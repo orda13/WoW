@@ -161,8 +161,12 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return send(res, 400, { ok: false, message: e.message }); }
     }
     if (p === "/api/import-now" && req.method === "POST") { watcher.scan(); watcher.importNow(); return send(res, 200, { ok: true }); }
-    if (p === "/api/status") return send(res, 200, { version: VERSION, files: watcher.status.files, lastCheck: watcher.status.lastCheck, lastError: watcher.status.lastError,
-      blizzard: !!(bcfg.clientId && bcfg.clientSecret), remote: !!(config.access && config.access.aud), user: req.userEmail || null });
+    if (p === "/api/status") {
+      const lastBackup = backups.list().find((b) => b.kind === "daily");
+      return send(res, 200, { version: VERSION, files: watcher.status.files, lastCheck: watcher.status.lastCheck, lastError: watcher.status.lastError,
+        blizzard: !!(bcfg.clientId && bcfg.clientSecret), syncEveryHours: config.syncEveryHours || 6, remote: !!(config.access && config.access.aud),
+        via: viaCloudflare(req) ? "cloudflare" : "local", user: req.userEmail || null, lastBackup: lastBackup ? lastBackup.at : null });
+    }
 
     // static data files
     if (req.method === "GET" && /^\/[A-Za-z0-9_\-.]+$/.test(p) && TYPES[path.extname(p)]) {

@@ -60,7 +60,11 @@
     (colSubs.get(ev.path.split("/")[0]) || []).forEach((f) => f());
   };
   const refreshAll = () => { docSubs.forEach((s) => s.forEach((f) => f())); colSubs.forEach((s) => s.forEach((f) => f())); };
-  es.onopen = () => { if (opened) refreshAll(); opened = true; };
+  // connection state for the page's health line
+  window.LL_CONN = { ok: false };
+  const conn = (ok) => { if (window.LL_CONN.ok !== ok) { window.LL_CONN.ok = ok; window.dispatchEvent(new Event("ll-conn")); } };
+  es.onopen = () => { conn(true); if (opened) refreshAll(); opened = true; };
+  es.onerror = () => conn(false);
   // Backup in case a network in between holds back live updates
   setInterval(() => { if (document.visibilityState === "visible") refreshAll(); }, 60000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshAll(); });
