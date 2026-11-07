@@ -8,6 +8,7 @@ T = 1794000000
 unpack = table.unpack
 state = { level = 13, xp = 8088, xpMax = { [13] = 11400, [14] = 12900 }, money = 5000 }
 function time() return T end
+function GetTime() return T end
 function CreateFrame() local fr = { ev = {} } function fr:RegisterEvent(e) self.ev[e] = true end function fr:SetScript(_, fn) self.fn = fn end FRAME = fr return fr end
 function UnitName(u) if u == "player" then return "Talwyn" elseif u == "npc" then return NPCNAME else return "Mob" end end
 function GetRealmName() return "Normal" end
@@ -74,9 +75,17 @@ kill('Player-1-0000FFFF', 'Creature-0-1-1-1-2163-05', 'Thistle Bear dies, you ga
 kill('Player-1-0000ABCD', 'Player-1-0000EEEE')
 fire('CHAT_MSG_COMBAT_XP_GAIN', 'Discovered Auberdine: 90 experience gained')
 L.execute('T = T + 900; state.level = 14; state.xp = 2000'); fire('PLAYER_LEVEL_UP', 14); fire('PLAYER_XP_UPDATE')
-fire('QUEST_TURNED_IN', 486, 1150, 0)
+def money(d, *after):
+    L.execute(f'state.money = state.money + ({d})'); fire('PLAYER_MONEY')
+L.execute('T = T + 5'); money(125)                                   # loot
+L.execute('T = T + 60'); fire('QUEST_TURNED_IN', 486, 1150, 1000); money(1000)   # quest gold after the event
+L.execute('T = T + 60'); money(250); fire('QUEST_TURNED_IN', 487, 300, 250)      # quest gold before the event
+L.execute('T = T + 60'); money(40)                                    # loot
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')
+money(500); money(-20); fire('MERCHANT_CLOSED')                       # sell, then buy or repair
 L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW')
+money(-380); fire('TRAINER_CLOSED')                                   # training
+L.execute('T = T + 60'); fire('MAIL_SHOW'); money(10000); money(-30); fire('MAIL_CLOSED')   # gold from an alt, postage
 L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-36-1-1763-0000AAAA"'); fire('PLAYER_TARGET_CHANGED'); fire('LOOT_OPENED')
 fire('PLAYER_DEAD')
 L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')

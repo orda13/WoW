@@ -397,6 +397,8 @@ label.btnlike:hover { border-color: var(--muted); }
 #impPanel code { overflow-wrap: anywhere; font-size: .85em; }
 .imp-row { flex-wrap: wrap; align-items: center; gap: 8px; }
 #impErrors:empty, #impResult:empty { display: none; }
+.sess-lines { display: flex; flex-direction: column; gap: 4px; }
+.sess-lines p { margin: 0; }
 #impErrors { margin: 8px 0 0; padding-left: 1.2em; font-size: .9rem; }
 #impErrors li.muted { list-style: none; margin-left: -1.2em; }
 .imp-watch { overflow-wrap: anywhere; }
@@ -553,8 +555,11 @@ details > summary { cursor: pointer; color: var(--muted); }
           <div class="stat"><span class="label">XP gained</span><span class="v" id="sXp">–</span></div>
           <div class="stat"><span class="label">Next level in</span><span class="v" id="sEta">–</span></div>
         </div>
-        <p class="hint" id="sNote">Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.</p>
-        <p class="hint" id="sSplit" hidden></p>
+        <div class="sess-lines">
+          <p class="hint" id="sNote">Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.</p>
+          <p class="hint" id="sSplit" hidden></p>
+          <p class="hint" id="sGold" hidden></p>
+        </div>
         <div class="row">
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
         </div>
@@ -884,7 +889,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (!last) {
       $("sTime").textContent = "–"; $("sXp").textContent = "–"; $("sRate").textContent = "–"; $("sessChip").textContent = "";
       $("sNote").textContent = "Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.";
-      $("sSplit").hidden = true;
+      $("sSplit").hidden = true; $("sGold").hidden = true;
       return;
     }
     const gained = last.bz && last.bz.gained != null ? last.bz.gained : last.xp || 0;
@@ -910,6 +915,29 @@ details > summary { cursor: pointer; color: var(--muted); }
       sp.title = "Kill XP includes rested bonus and kills by your group. Other is exploration and anything else.";
       sp.hidden = false;
     } else sp.hidden = true;
+    renderGold(last, hrs);
+  }
+
+  // Gold for a session: earned (looting, quests, selling) per hour, spent, net. Mail is shown apart: it's often gold moved between characters.
+  function renderGold(last, hrs) {
+    const box = $("sGold"), g = last.gold;
+    if (!g) { box.hidden = true; return; }
+    const cu = (v) => money(Math.round(v)) || "0c";
+    const net = g.end - g.start;
+    const parts = [];
+    if (g.in || g.out) {
+      const i = g.in || {}, o = g.out || {};
+      const earned = (i.other || 0) + (i.quest || 0) + (i.vendor || 0);
+      const spent = Object.values(o).reduce((a, b) => a + b, 0);
+      const list = (pairs) => pairs.filter(([, v]) => v > 0).map(([n, v]) => `${n} ${cu(v)}`).join(", ");
+      parts.push(`Earned ${cu(earned)}` + (earned ? ` (${list([["looting", i.other], ["quests", i.quest], ["selling", i.vendor]])})` : ""));
+      if (hrs > 0.05 && earned > 0) parts.push(`${cu(earned / hrs)} an hour`);
+      if (spent) parts.push(`spent ${cu(spent)} (${list([["training", o.training], ["vendors and repairs", o.vendor], ["mail and auction", o.mail], ["other", o.other]])})`);
+      if (i.mail) parts.push(`${cu(i.mail)} received by mail`);
+    }
+    parts.push(net ? `net ${net < 0 ? "−" : "+"}${cu(Math.abs(net))}` : "no change overall");
+    box.textContent = "Gold: " + parts.join(" · ");
+    box.hidden = false;
   }
 
   function renderTasks() {

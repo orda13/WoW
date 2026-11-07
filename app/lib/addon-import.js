@@ -27,10 +27,15 @@ function readSaved(text) {
   return parseLuaSaved(text).LevelingLedgerDB;
 }
 
-// Kills and where the XP came from (add-on 1.0.4 and later; older saves have none of these)
+// Kills, where the XP came from, and gold (older saves have only some of these)
 function splitOf(s) {
   const o = {};
   if (s.killXP != null || s.questXP != null) { o.kills = s.kills || 0; o.killXP = s.killXP || 0; o.questXP = s.questXP || 0; }
+  // gold, in copper: start and end money (add-on 1.0.2+), and where it came from and went (1.0.5+)
+  if (s.startMoney != null && s.endMoney != null) {
+    o.gold = { start: s.startMoney, end: s.endMoney };
+    if (s.moneyIn || s.moneyOut) { o.gold.in = { ...(s.moneyIn || {}) }; o.gold.out = { ...(s.moneyOut || {}) }; }
+  }
   return o;
 }
 
@@ -56,6 +61,8 @@ function importAddon(text, store, publicDir, source, hint) {
       m.stop = s.stop; m.xpGained = (m.xpGained || 0) + (s.xpGained || 0); m.levels = (m.levels || 0) + (s.levels || 0);
       m.deaths = (m.deaths || 0) + (s.deaths || 0); m.quests = (m.quests || 0) + (s.quests || 0);
       for (const k of ["kills", "killXP", "questXP"]) if (s[k] != null) m[k] = (m[k] || 0) + s[k];
+      if (s.endMoney != null) m.endMoney = s.endMoney;
+      for (const k of ["moneyIn", "moneyOut"]) if (s[k]) { m[k] = { ...(m[k] || {}) }; for (const [kind, v] of Object.entries(s[k])) m[k][kind] = (m[k][kind] || 0) + v; }
       m.endLevel = s.endLevel; m.endXP = s.endXP; m.zones = [...arr(m.zones), ...arr(s.zones).filter((z) => !arr(m.zones).includes(z))];
     } else merged.push({ ...s, zones: arr(s.zones) });
   }

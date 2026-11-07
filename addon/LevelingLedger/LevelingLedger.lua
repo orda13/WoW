@@ -3,13 +3,15 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 4
+local VERSION = 5
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
 local db, char, session
 local lootSeen = {}          -- corpses already counted this session (by GUID)
 local suppressPlayed = false -- hide the /played chat line for our own requests
+local lastMoney              -- money at the last PLAYER_MONEY, to work out each change
+local where = {}             -- which money windows are open: merchant, trainer, mail, auction
 
 -- ---------- helpers ----------
 local function now() return time() end
@@ -78,8 +80,10 @@ local function startSession()
     session = last
     session.stop = nil
     char.lastXP, char.lastLevel = s.xp, s.level
+    lastMoney = s.money
     return
   end
+  lastMoney = s.money
   session = {
     start = s.at, startLevel = s.level, startXP = s.xp, startXPMax = s.xpMax, startMoney = s.money, startRested = s.rested,
     xpGained = 0, levels = 0, kills = 0, killXP = 0, questXP = 0, quests = 0, deaths = 0, zones = {},
@@ -152,6 +156,49 @@ local function onQuestTurnedIn(questID, xp, money)
   if session then
     session.quests = session.quests + 1
     session.questXP = (session.questXP or 0) + (tonumber(xp) or 0)
+  end
+end
+
+-- ---------- gold ----------
+-- Every change in money, filed by where it happened. In: quest, vendor (selling), mail, other (mostly looting).
+-- Out: training, vendor (buying and repairs), mail (postage and auction fees), other.
+local lastTurnIn, lastOther = 0, nil
+local function addMoney(dir, kind, amt)
+  if not session or amt <= 0 then return end
+  local key = dir == "in" and "moneyIn" or "moneyOut"
+  session[key] = session[key] or {}
+  session[key][kind] = (session[key][kind] or 0) + amt
+end
+local function onMoney()
+  local m = GetMoney()
+  if lastMoney == nil then lastMoney = m; return end
+  local d = m - lastMoney
+  lastMoney = m
+  if d == 0 then return end
+  local t = GetTime and GetTime() or now()
+  if d > 0 then
+    if where.mail or where.auction then addMoney("in", "mail", d)
+    elseif where.merchant then addMoney("in", "vendor", d)
+    elseif t - lastTurnIn < 2 then addMoney("in", "quest", d)
+    else addMoney("in", "other", d); lastOther = { t = t, amt = d } end
+  else
+    d = -d
+    if where.trainer then addMoney("out", "training", d)
+    elseif where.merchant then addMoney("out", "vendor", d)
+    elseif where.mail or where.auction then addMoney("out", "mail", d)
+    else addMoney("out", "other", d) end
+  end
+end
+-- Quest money can arrive just before or just after QUEST_TURNED_IN; either way it ends up under quest.
+local function onQuestMoney(money)
+  money = tonumber(money) or 0
+  local t = GetTime and GetTime() or now()
+  lastTurnIn = t
+  if money > 0 and lastOther and t - lastOther.t < 2 and session and session.moneyIn and session.moneyIn.other then
+    local mv = math.min(money, lastOther.amt, session.moneyIn.other)
+    session.moneyIn.other = session.moneyIn.other - mv
+    addMoney("in", "quest", mv)
+    lastOther = nil
   end
 end
 
@@ -285,6 +332,8 @@ f:RegisterEvent("UPDATE_EXHAUSTION")
 f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
 f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+f:RegisterEvent("PLAYER_MONEY")
+for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do f:RegisterEvent(e) end
 f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
 
 f:SetScript("OnEvent", function(_, event, ...)
@@ -330,9 +379,16 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
   elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel)
-  elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money)
-  elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then safe(onTrainer)
-  elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then safe(onMerchant)
+  elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
+  elseif event == "PLAYER_MONEY" then safe(onMoney)
+  elseif event == "MERCHANT_CLOSED" then where.merchant = nil
+  elseif event == "TRAINER_CLOSED" then where.trainer = nil
+  elseif event == "MAIL_SHOW" then where.mail = true
+  elseif event == "MAIL_CLOSED" then where.mail = nil
+  elseif event == "AUCTION_HOUSE_SHOW" then where.auction = true
+  elseif event == "AUCTION_HOUSE_CLOSED" then where.auction = nil
+  elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then where.trainer = true; safe(onTrainer)
+  elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then where.merchant = true; safe(onMerchant)
   elseif event == "LOOT_OPENED" then safe(onLoot)
   elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then safe(onCombatLog)
   elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then local msg = ...; safe(onXPMessage, msg)
