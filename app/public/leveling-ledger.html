@@ -559,6 +559,7 @@ details > summary { cursor: pointer; color: var(--muted); }
           <p class="hint" id="sNote">Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.</p>
           <p class="hint" id="sSplit" hidden></p>
           <p class="hint" id="sGold" hidden></p>
+          <p class="hint" id="sSkillups" hidden></p>
         </div>
         <div class="row">
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
@@ -889,7 +890,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (!last) {
       $("sTime").textContent = "–"; $("sXp").textContent = "–"; $("sRate").textContent = "–"; $("sessChip").textContent = "";
       $("sNote").textContent = "Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.";
-      $("sSplit").hidden = true; $("sGold").hidden = true;
+      $("sSplit").hidden = true; $("sGold").hidden = true; $("sSkillups").hidden = true;
       return;
     }
     const gained = last.bz && last.bz.gained != null ? last.bz.gained : last.xp || 0;
@@ -916,6 +917,12 @@ details > summary { cursor: pointer; color: var(--muted); }
       sp.hidden = false;
     } else sp.hidden = true;
     renderGold(last, hrs);
+    const su = $("sSkillups"), ups = Object.entries(last.skillups || {}).filter(([, v]) => v.to > v.from);
+    const learned = last.recipesLearned || [];
+    if (ups.length || learned.length) {
+      su.textContent = [ups.length ? "Skill-ups: " + ups.map(([n, v]) => `${n} ${v.from} → ${v.to}`).join(", ") : "", learned.length ? "learned " + learned.join(", ") : ""].filter(Boolean).join(" · ");
+      su.hidden = false;
+    } else su.hidden = true;
   }
 
   // Gold for a session: earned (looting, quests, selling) per hour, spent, net. Mail is shown apart: it's often gold moved between characters.
@@ -1008,13 +1015,36 @@ details > summary { cursor: pointer; color: var(--muted); }
     const d = el("details"); const s = el("summary", null, `${title} (${names.length})`); d.append(s);
     const box = el("div", "names"); for (const n of names) box.append(whA("search", n, n)); d.append(box); return d;
   }
+  // Professions: Blizzard's list, with the add-on's newer skill levels and known recipes folded in
+  function profs() {
+    const base = ((S.coll && S.coll.professions) || []).map((p) => ({ ...p, recipes: [...(p.recipes || [])] }));
+    const a = S.askills; if (!a) return base;
+    const byName = new Map(base.map((p) => [p.name, p]));
+    const newer = (a.skillsAt || 0) > ((S.coll && S.coll.syncedAt) || 0);
+    for (const [n, v] of Object.entries(a.skills || {})) {
+      const p = byName.get(n);
+      if (!p) { const q = { name: n, kind: v.kind || "primary", skill: v.rank || 0, max: v.max || 0, recipes: [] }; base.push(q); byName.set(n, q); }
+      else if (newer) { p.skill = v.rank || 0; p.max = v.max || p.max; }
+    }
+    for (const [n, list] of Object.entries(a.recipes || {})) { const p = byName.get(n); if (p) p.recipes = [...new Set([...p.recipes, ...list])]; }
+    // recipes learned from the chat message: find their profession in the recipe book
+    if (typeof RC !== "undefined" && RC.data) for (const l of a.learned || []) {
+      const r = RC.data.recipes.find((e) => !e.sod && e.n.toLowerCase() === String(l.n).toLowerCase());
+      const p = r && byName.get(r.p); if (p && !p.recipes.some((x) => x.toLowerCase() === r.n.toLowerCase())) p.recipes.push(r.n);
+    }
+    for (const p of base) p.recipes.sort();
+    return base.sort((x, y) => (x.kind === y.kind ? 0 : x.kind === "primary" ? -1 : 1));
+  }
+
   function renderCollections() {
     const c = S.coll;
     const synced = c && c.syncedAt ? `synced ${shortDate(c.syncedAt)}` : "";
-    $("skillsSync").textContent = synced; $("collSync").textContent = synced;
+    const aAt = S.askills ? Math.max(S.askills.skillsAt || 0, S.askills.recipesAt || 0) : 0;
+    $("skillsSync").textContent = aAt > ((c && c.syncedAt) || 0) ? `updated from the add-on ${shortDate(aAt)}` : synced; $("collSync").textContent = synced;
     const sk = $("skills"); sk.replaceChildren();
-    if (!c || !c.professions || !c.professions.length) sk.append(el("p", "empty", "Professions show up here after the next sync from Blizzard."));
-    else for (const p of c.professions) {
+    const plist = profs();
+    if (!plist.length) sk.append(el("p", "empty", "Professions show up here after your next log-out or /reload, or the next sync from Blizzard."));
+    else for (const p of plist) {
       const row = meter(p.name, p.kind === "primary" ? "Profession" : "Secondary skill", p.skill, p.max, `${p.skill} / ${p.max}`);
       if (typeof RC !== "undefined" && RC.data) {
         const known = new Set((p.recipes || []).map((x) => x.toLowerCase()));
@@ -1764,7 +1794,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   const RC = { data: null, loading: false, shown: 30 };
   function knownRecipes() {
     const k = new Map();
-    for (const p of (S.coll && S.coll.professions) || []) k.set(p.name, { skill: p.skill, max: p.max, set: new Set((p.recipes || []).map((r) => r.toLowerCase())) });
+    for (const p of profs()) k.set(p.name, { skill: p.skill, max: p.max, set: new Set((p.recipes || []).map((r) => r.toLowerCase())) });
     return k;
   }
   const learnKinds = (e) => {
@@ -2721,6 +2751,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
+    db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) renderDungeons(); }, () => {});
     db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); }, () => {});

@@ -31,6 +31,9 @@ function readSaved(text) {
 function splitOf(s) {
   const o = {};
   if (s.killXP != null || s.questXP != null) { o.kills = s.kills || 0; o.killXP = s.killXP || 0; o.questXP = s.questXP || 0; }
+  // profession skill-ups and recipes learned (1.0.6+)
+  if (s.skillups && Object.keys(s.skillups).length) o.skillups = Object.fromEntries(Object.entries(s.skillups).map(([n, v]) => [n, { from: v.from, to: v.to }]));
+  if (s.recipesLearned) { const r = arr(s.recipesLearned); if (r.length) o.recipesLearned = r; }
   // gold, in copper: start and end money (add-on 1.0.2+), and where it came from and went (1.0.5+)
   if (s.startMoney != null && s.endMoney != null) {
     o.gold = { start: s.startMoney, end: s.endMoney };
@@ -62,6 +65,8 @@ function importAddon(text, store, publicDir, source, hint) {
       m.deaths = (m.deaths || 0) + (s.deaths || 0); m.quests = (m.quests || 0) + (s.quests || 0);
       for (const k of ["kills", "killXP", "questXP"]) if (s[k] != null) m[k] = (m[k] || 0) + s[k];
       if (s.endMoney != null) m.endMoney = s.endMoney;
+      if (s.skillups) { m.skillups = { ...(m.skillups || {}) }; for (const [n, v] of Object.entries(s.skillups)) m.skillups[n] = { from: m.skillups[n] ? m.skillups[n].from : v.from, to: v.to }; }
+      if (s.recipesLearned) m.recipesLearned = [...arr(m.recipesLearned), ...arr(s.recipesLearned)];
       for (const k of ["moneyIn", "moneyOut"]) if (s[k]) { m[k] = { ...(m[k] || {}) }; for (const [kind, v] of Object.entries(s[k])) m[k][kind] = (m[k][kind] || 0) + v; }
       m.endLevel = s.endLevel; m.endXP = s.endXP; m.zones = [...arr(m.zones), ...arr(s.zones).filter((z) => !arr(m.zones).includes(z))];
     } else merged.push({ ...s, zones: arr(s.zones) });
@@ -98,6 +103,21 @@ function importAddon(text, store, publicDir, source, hint) {
     const st = { rested: Math.max(0, ch.rested || 0), zone: ch.zone || S.char.zone || "", subzone: ch.subzone || "", resting: !!ch.resting, stateAt: ch.stateAt * 1000 };
     if (["rested", "zone", "subzone", "resting"].some((k) => S.char[k] !== st[k])) store.update("state/character", st);
     done.push(`rested ${st.rested.toLocaleString("en-US")} XP${st.zone ? " in " + st.zone : ""}`);
+  }
+
+  // 2c. Professions: skill levels, known recipes per profession, recipes learned (1.0.6+)
+  if (ch.skillsAt || ch.recipesAt) {
+    const prev = store.get("state/addonskills") || {};
+    const recipes = { ...(prev.recipes || {}) };
+    for (const [prof, list] of Object.entries(ch.recipes || {})) recipes[prof] = [...new Set([...(recipes[prof] || []), ...arr(list)])].sort();
+    const doc = {
+      skills: ch.skills || prev.skills || {}, skillsAt: (ch.skillsAt || 0) * 1000,
+      recipes, recipesAt: (ch.recipesAt || 0) * 1000,
+      learned: arr(ch.learned).slice(-200).map((x) => ({ n: x.n, at: (x.at || 0) * 1000 })),
+    };
+    if (JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonskills", doc);
+    const nSk = Object.keys(doc.skills).length;
+    done.push(`${nSk} profession${nSk === 1 ? "" : "s"}`);
   }
 
   // 3. Training costs, matched to the class's abilities by name and rank

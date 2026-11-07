@@ -3,7 +3,7 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 5
+local VERSION = 6
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -202,6 +202,92 @@ local function onQuestMoney(money)
   end
 end
 
+-- ---------- professions ----------
+-- Skill levels from the skill list; recipe lists when a profession window is open.
+local PROFS = {
+  Alchemy = "primary", Blacksmithing = "primary", Enchanting = "primary", Engineering = "primary", Herbalism = "primary",
+  Leatherworking = "primary", Mining = "primary", Skinning = "primary", Tailoring = "primary", Jewelcrafting = "primary",
+  Cooking = "secondary", ["First Aid"] = "secondary", Fishing = "secondary",
+}
+local function scanSkills()
+  if not GetNumSkillLines or not GetSkillLineInfo then return end
+  char.skills = char.skills or {}
+  local header
+  local primaryHeader = TRADE_SKILLS or "Professions"
+  local secondaryHeader = SECONDARY_SKILLS or "Secondary Skills"
+  for i = 1, GetNumSkillLines() do
+    local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
+    if isHeader then header = name
+    elseif name then
+      local kind = PROFS[name] or (header == primaryHeader and "primary") or (header == secondaryHeader and "secondary")
+      if kind then
+        local old = char.skills[name]
+        if session and old and rank > (old.rank or 0) then
+          session.skillups = session.skillups or {}
+          local su = session.skillups[name] or { from = old.rank }
+          su.to = rank
+          session.skillups[name] = su
+        end
+        char.skills[name] = { rank = rank, max = maxRank, kind = kind }
+      end
+    end
+  end
+  char.skillsAt = now()
+end
+
+-- Every recipe in the open profession window (trade skills, and the craft window Enchanting uses)
+local function noteRecipes(prof, names)
+  if not prof or prof == "" or prof == "UNKNOWN" then return end
+  char.recipes = char.recipes or {}
+  local have = {}
+  for _, n in ipairs(char.recipes[prof] or {}) do have[n] = true end
+  local list = char.recipes[prof] or {}
+  for _, n in ipairs(names) do if not have[n] then have[n] = true; table.insert(list, n) end end
+  table.sort(list)
+  char.recipes[prof] = list
+  char.recipesAt = now()
+end
+local function scanTradeSkills()
+  if not GetTradeSkillLine or not GetNumTradeSkills then return end
+  local prof = GetTradeSkillLine()
+  local names = {}
+  for i = 1, GetNumTradeSkills() do
+    local n, kind = GetTradeSkillInfo(i)
+    if n and kind ~= "header" then table.insert(names, n) end
+  end
+  noteRecipes(prof, names)
+end
+local function scanCrafts()
+  if not GetCraftDisplaySkillLine or not GetNumCrafts then return end
+  local prof = GetCraftDisplaySkillLine()
+  local names = {}
+  for i = 1, GetNumCrafts() do
+    local n, _, kind = GetCraftInfo(i)
+    if n and kind ~= "header" then table.insert(names, n) end
+  end
+  noteRecipes(prof, names)
+end
+
+-- "You have learned how to create a new item: <name>." (pattern from the client's own text)
+local learnPattern
+local function onSystemMessage(msg)
+  if not msg then return end
+  if not learnPattern then
+    local fmt = ERR_LEARN_RECIPE_S or "You have learned how to create a new item: %s."
+    learnPattern = "^" .. fmt:gsub("([%(%)%.%[%]%*%+%-%?%^%$])", "%%%1"):gsub("%%s", "(.+)") .. "$"
+  end
+  local n = msg:match(learnPattern)
+  if not n then return end
+  char.learned = char.learned or {}
+  table.insert(char.learned, { n = n, at = now() })
+  trim(char.learned, 500)
+  if session then
+    session.recipesLearned = session.recipesLearned or {}
+    table.insert(session.recipesLearned, n)
+    trim(session.recipesLearned, 50)
+  end
+end
+
 -- ---------- kills ----------
 -- Kills: the combat log's PARTY_KILL events where you (or your pet) landed the killing blow.
 local function onCombatLog()
@@ -333,6 +419,7 @@ f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
 f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 f:RegisterEvent("PLAYER_MONEY")
+for _, e in ipairs({ "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do f:RegisterEvent(e) end
 for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do f:RegisterEvent(e) end
 f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
 
@@ -353,7 +440,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
-      startSession(); noteZone(); noteState()
+      startSession(); noteZone(); noteState(); scanSkills()
       -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
       if not f.hooked then
         f.hooked = true
@@ -381,6 +468,10 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel)
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
   elseif event == "PLAYER_MONEY" then safe(onMoney)
+  elseif event == "SKILL_LINES_CHANGED" or event == "CHAT_MSG_SKILL" then safe(scanSkills)
+  elseif event == "CHAT_MSG_SYSTEM" then local msg = ...; safe(onSystemMessage, msg)
+  elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_UPDATE" then safe(scanTradeSkills)
+  elseif event == "CRAFT_SHOW" or event == "CRAFT_UPDATE" then safe(scanCrafts)
   elseif event == "MERCHANT_CLOSED" then where.merchant = nil
   elseif event == "TRAINER_CLOSED" then where.trainer = nil
   elseif event == "MAIL_SHOW" then where.mail = true

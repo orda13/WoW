@@ -50,6 +50,16 @@ function GetLootSourceInfo(s) return "Creature-0-1-36-1-1763-0000AAAA", 1 end
 function GetItemInfo(link) return nil end
 C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then return 3 end return 1 end }
 SlashCmdList = {}
+-- skills and professions
+SKILLS = { { "Professions", true }, { "Alchemy", false, 67, 150 }, { "Herbalism", false, 121, 150 },
+           { "Secondary Skills", true }, { "Cooking", false, 108, 150 }, { "Weapon Skills", true }, { "Staves", false, 64, 70 } }
+function GetNumSkillLines() return #SKILLS end
+function GetSkillLineInfo(i) local x = SKILLS[i] return x[1], x[2], true, x[3] or 0, 0, 0, x[4] or 0 end
+TRADE = { { "Reagents", "header" }, { "Elixir of Minor Defense", "trivial" }, { "Minor Healing Potion", "easy" }, { "Elixir of Wisdom", "optimal" } }
+function GetTradeSkillLine() return "Alchemy", 70, 150 end
+function GetNumTradeSkills() return #TRADE end
+function GetTradeSkillInfo(i) return TRADE[i][1], TRADE[i][2] end
+ERR_LEARN_RECIPE_S = "You have learned how to create a new item: %s."
 -- combat log and XP chat
 CLEU = {}
 function CombatLogGetCurrentEventInfo() return unpack(CLEU) end
@@ -81,6 +91,12 @@ L.execute('T = T + 5'); money(125)                                   # loot
 L.execute('T = T + 60'); fire('QUEST_TURNED_IN', 486, 1150, 1000); money(1000)   # quest gold after the event
 L.execute('T = T + 60'); money(250); fire('QUEST_TURNED_IN', 487, 300, 250)      # quest gold before the event
 L.execute('T = T + 60'); money(40)                                    # loot
+L.execute('SKILLS[3][3] = 125'); fire('CHAT_MSG_SKILL', 'Your skill in Herbalism has increased to 125.')
+L.execute('SKILLS[3][3] = 128'); fire('CHAT_MSG_SKILL', 'Your skill in Herbalism has increased to 128.')
+L.execute('SKILLS[7][3] = 66'); fire('SKILL_LINES_CHANGED')          # weapon skill: ignored
+fire('CHAT_MSG_SYSTEM', 'You have learned how to create a new item: Elixir of Wisdom.')
+fire('CHAT_MSG_SYSTEM', 'You have learned a new spell: Moonfire (Rank 3).')   # not a recipe
+L.execute('SKILLS[2][3] = 70'); fire('SKILL_LINES_CHANGED'); fire('TRADE_SKILL_SHOW')
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')
 money(500); money(-20); fire('MERCHANT_CLOSED')                       # sell, then buy or repair
 L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW')
