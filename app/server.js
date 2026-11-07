@@ -7,6 +7,7 @@ const { startWatcher } = require("./lib/watcher");
 const { syncBlizzard } = require("./lib/blizzard");
 const { checkRequest } = require("./lib/access");
 const { importAddon } = require("./lib/addon-import");
+const { startBackups } = require("./lib/backups");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -22,6 +23,9 @@ const config = loadConfig();
 const PORT = config.port || 8787;
 const dataDir = config.dataDir ? path.resolve(APP, config.dataDir) : path.join(APP, "data");
 const store = new Store(path.join(dataDir, "store.json"), path.join(dataDir, "seed.json"));
+
+// ---------- daily backups (data/backups, last 14 days by default) ----------
+const backups = startBackups({ store, dir: path.join(dataDir, "backups"), keepDays: config.backupDays || 14, log });
 
 // ---------- page ----------
 let pageCache = null, pageMtime = 0;
@@ -103,6 +107,18 @@ const server = http.createServer(async (req, res) => {
       if (!/^[A-Za-z0-9_\-.~:@+]{1,200}$/.test(col)) return send(res, 400, { error: "bad collection" });
       if (req.method === "GET") return send(res, 200, { docs: store.list(col) });
       if (req.method === "POST") { const id = store.add(col, await json(req)); return send(res, 200, { id }); }
+    }
+    if (p === "/api/backups" && req.method === "GET") return send(res, 200, { backups: backups.list(), keepDays: config.backupDays || 14 });
+    if (p === "/api/backups/now" && req.method === "POST") return send(res, 200, { name: backups.now() });
+    if (p === "/api/backups/restore" && req.method === "POST") {
+      try { const b = await json(req); const safety = backups.restore(String(b.name || "")); return send(res, 200, { ok: true, safety }); }
+      catch (e) { return send(res, 400, { ok: false, message: e.message }); }
+    }
+    if (p.startsWith("/api/backups/") && req.method === "GET") {
+      const f = backups.resolve(p.slice(13));
+      if (!f) return send(res, 404, { error: "not found" });
+      res.writeHead(200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="leveling-ledger-${path.basename(f)}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      return fs.createReadStream(f).pipe(res);
     }
     if (p === "/api/sync" && req.method === "POST") { sync("Sync button"); return send(res, 200, { ok: true }); }
     if (p === "/api/import" && req.method === "POST") {

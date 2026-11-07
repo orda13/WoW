@@ -4,7 +4,7 @@ Your Leveling Ledger, running on your own PC as a Windows service.
 
 - **Add-on import is automatic.** The service watches `WTF\Account\<account>\SavedVariables\LevelingLedger.lua`. Each time you log out or `/reload`, it imports the new data within a few seconds, and any open ledger page updates by itself.
 - **Blizzard sync runs here.** It runs at start-up, every 6 hours, and about 1 and 6 minutes after each play session (Blizzard updates your character shortly after you log out). The **Sync from Blizzard** button runs it right away.
-- **Your data stays on your PC** in `C:\LevelingLedger\data\store.json`. A copy of the previous version is kept next to it as `store.json.bak`.
+- **Your data stays on your PC** in `C:\LevelingLedger\data\store.json`. A copy of the previous version is kept next to it as `store.json.bak`, and a daily backup goes into `data\backups` (the last 14 days). The **Backups** section on the Ledger page lists them, with Download and Restore; a restore saves your current data first, so it can be undone.
 - **From your phone or another computer**, use Cloudflare Tunnel with Google sign-in (Part 2). Nothing is opened on your router.
 
 Nothing needs installing besides Node.js 18 or newer (you have it already).
@@ -42,6 +42,7 @@ Nothing needs installing besides Node.js 18 or newer (you have it already).
 | `wowFolder` | The World of Warcraft folder. All `_xxx_` versions and accounts inside are checked |
 | `savedVariablesFile` | Optional: the exact path to one `LevelingLedger.lua` instead |
 | `syncEveryHours` | How often to check Blizzard (default 6) |
+| `backupDays` | How many daily backups to keep in `data\backups` (default 14) |
 | `blizzard.character` | Character as Blizzard spells it (`talwyn-orda`) |
 | `access.*` | Cloudflare sign-in settings, from Part 2 |
 

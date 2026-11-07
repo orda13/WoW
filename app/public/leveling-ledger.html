@@ -398,6 +398,9 @@ label.btnlike:hover { border-color: var(--muted); }
 .imp-row { flex-wrap: wrap; align-items: center; gap: 8px; }
 #impErrors:empty, #impResult:empty { display: none; }
 .sess-lines { display: flex; flex-direction: column; gap: 4px; }
+.bk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+.bk-list li .grow { flex: 1 1 12rem; min-width: 0; }
 .sess-lines p { margin: 0; }
 #impErrors { margin: 8px 0 0; padding-left: 1.2em; font-size: .9rem; }
 #impErrors li.muted { list-style: none; margin-left: -1.2em; }
@@ -617,6 +620,13 @@ details > summary { cursor: pointer; color: var(--muted); }
         <li>A small panel in game shows session time, XP per hour, time to level, kills, gold earned and rested XP. Drag it where you like; <code>/ledger lock</code>, <code>/ledger hide</code>, <code>/ledger show</code> and <code>/ledger reset</code> control it.</li>
       </ol>
     </details>
+  </section>
+
+  <section class="panel" id="bkPanel" data-view="ledger">
+    <div class="tal-head"><h2>Backups</h2><span class="hint" id="bkNote"></span></div>
+    <p class="muted">Your ledger data is copied once a day into the <code>data\backups</code> folder of the app, and the last two weeks are kept. Restoring saves your current data first, so a restore can be undone.</p>
+    <div class="row"><button id="bkNow">Back up now</button></div>
+    <ul class="bk-list" id="bkList"></ul>
   </section>
 
   <section class="panel" id="histPanel" data-view="ledger">
@@ -1663,6 +1673,42 @@ details > summary { cursor: pointer; color: var(--muted); }
     renderWatch();
   };
   renderWatch(); setInterval(renderWatch, 60000);
+
+  // ---------- backups ----------
+  async function renderBackups() {
+    const ul = $("bkList");
+    try {
+      const r = await (await fetch("/api/backups")).json();
+      const list = r.backups || [];
+      const nd = list.filter((b) => b.kind === "daily").length;
+      $("bkNote").textContent = list.length ? `${nd} daily backup${nd === 1 ? "" : "s"} · kept ${r.keepDays} days` : "No backups yet";
+      ul.replaceChildren(...list.map((b) => {
+        const li = el("li");
+        const m = /^store-(\d{4})-(\d{2})-(\d{2})\.json$/.exec(b.name);
+        const label = m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "Before a restore";
+        const info = el("span", "grow"); info.append(el("b", null, label), el("span", "muted", ` · saved ${new Date(b.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${Math.max(1, Math.round(b.size / 1024))} KB`));
+        const dl = el("a", "ghost", "Download"); dl.href = "/api/backups/" + encodeURIComponent(b.name); dl.setAttribute("download", "leveling-ledger-" + b.name);
+        const rs = el("button", null, "Restore"); rs.type = "button";
+        rs.onclick = async () => {
+          if (!confirm(`Restore your ledger to ${label}? Your current data is saved first, so you can undo this from the list.`)) return;
+          rs.disabled = true;
+          try {
+            const x = await fetch("/api/backups/restore", { method: "POST", headers: { "Content-Type": "application/json", "X-Ledger": "1" }, body: JSON.stringify({ name: b.name }) });
+            const j = await x.json(); toast(x.ok ? "Restored. Your previous data is listed as \"Before a restore\"." : "Couldn't restore: " + (j.message || x.status));
+          } catch { toast("Couldn't reach the Leveling Ledger service."); }
+          renderBackups();
+        };
+        li.append(info, dl, rs);
+        return li;
+      }));
+    } catch { $("bkNote").textContent = "Couldn't load backups"; }
+  }
+  $("bkNow").onclick = async () => {
+    try { const x = await fetch("/api/backups/now", { method: "POST", headers: { "X-Ledger": "1" } }); toast(x.ok ? "Backed up" : "Couldn't back up right now"); }
+    catch { toast("Couldn't reach the Leveling Ledger service."); }
+    renderBackups();
+  };
+  renderBackups(); setInterval(renderBackups, 10 * 60000);
   // Merchant's Favor or gold price you've seen at a vendor for an item
   function seenPrice(npcIds, itemId) {
     const V = S.vendors && S.vendors.v; if (!V) return null;

@@ -27,6 +27,14 @@ class Store extends EventEmitter {
   set(p, data) { this.docs[p] = data; this.changed(p); }
   update(p, data) { this.docs[p] = { ...(this.docs[p] || {}), ...data }; this.changed(p); }
   delete(p) { delete this.docs[p]; this.changed(p); }
+  // Swap in a whole new set of documents (used by restore); every changed or removed path is announced
+  replaceAll(docs) {
+    const old = this.docs;
+    this.docs = { ...docs };
+    for (const p of new Set([...Object.keys(old), ...Object.keys(this.docs)]))
+      if (JSON.stringify(old[p]) !== JSON.stringify(this.docs[p])) this.emit("change", { path: p, exists: p in this.docs, data: this.docs[p] ?? null });
+    this.flushNow();
+  }
   add(col, data) { const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); this.set(col + "/" + id, data); return id; }
   changed(p) {
     this.emit("change", { path: p, exists: p in this.docs, data: this.docs[p] ?? null });
