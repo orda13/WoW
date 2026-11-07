@@ -1,4 +1,4 @@
-// Gives the Leveling Ledger page the same storage interface it has on claude.ai, backed by this PC's server.
+// The page's storage interface (documents and collections with live snapshots), backed by this PC's server.
 (() => {
   const H = { "Content-Type": "application/json", "X-Ledger": "1" };
   const meta = { fromCache: false, hasPendingWrites: false };
@@ -58,7 +58,6 @@
     let ev; try { ev = JSON.parse(m.data); } catch { return; }
     (docSubs.get(ev.path) || []).forEach((f) => f());
     (colSubs.get(ev.path.split("/")[0]) || []).forEach((f) => f());
-    if (ev.path === "state/addon" && ev.data && ev.data.auto) window.dispatchEvent(new CustomEvent("ll-auto-import", { detail: ev.data }));
   };
   const refreshAll = () => { docSubs.forEach((s) => s.forEach((f) => f())); colSubs.forEach((s) => s.forEach((f) => f())); };
   es.onopen = () => { if (opened) refreshAll(); opened = true; };
@@ -66,24 +65,6 @@
   setInterval(() => { if (document.visibilityState === "visible") refreshAll(); }, 60000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshAll(); });
 
-  const db = { doc: docRef, collection: colRef };
-  const user = { isOwner: async () => true };
-  const mcp = { callTool: async (server, tool) => { if (tool === "fire_trigger") return call("POST", "/api/sync", {}); throw Object.assign(new Error("not available"), { code: "not_in_manifest" }); } };
   window.LL_LOCAL = true;
-  window.claude = { use: async (n) => (n === "db" ? db : n === "user" ? user : n === "mcp" ? mcp : null) };
-
-  // Local edition: the server imports the add-on file by itself, so explain that instead of the browser linking options.
-  document.addEventListener("DOMContentLoaded", async () => {
-    const $ = (id) => document.getElementById(id);
-    const intro = $("impPanel") && $("impPanel").querySelector("p.muted");
-    if (intro) intro.textContent = "This PC watches the add-on's file. Each time you log out or /reload in game, the new data is imported within a few seconds, and Blizzard is checked again a minute later.";
-    ["impLink", "impRelink"].forEach((id) => { const b = $(id); if (b) { b.hidden = true; b.style.display = "none"; } });
-    const sn = $("syncNote"); if (sn) sn.textContent = "Checks Blizzard every few hours and after each play session.";
-    const note = $("impLinkNote");
-    try {
-      const st = await (await fetch("/api/status")).json();
-      if (note) note.textContent = st.files.length ? "Watching " + st.files.join(", ") + (st.lastError ? " · " + st.lastError : "") : (st.lastError || "Looking for the add-on's file…");
-    } catch {}
-    window.addEventListener("ll-auto-import", (e) => { const r = $("impResult"); if (r) { r.textContent = e.detail.message || "Imported from the add-on."; } });
-  });
+  window.claude = { use: async (n) => (n === "db" ? { doc: docRef, collection: colRef } : null) };
 })();

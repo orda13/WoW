@@ -1,5 +1,4 @@
 <title>Leveling Ledger</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -397,7 +396,10 @@ label.btnlike:hover { border-color: var(--muted); }
 .imp-steps { padding-left: 1.3em; display: grid; gap: 6px; margin: 8px 0; }
 #impPanel code { overflow-wrap: anywhere; font-size: .85em; }
 .imp-row { flex-wrap: wrap; align-items: center; gap: 8px; }
-#impLinkNote:empty { display: none; }
+#impErrors:empty, #impResult:empty { display: none; }
+#impErrors { margin: 8px 0 0; padding-left: 1.2em; font-size: .9rem; }
+#impErrors li.muted { list-style: none; margin-left: -1.2em; }
+.imp-watch { overflow-wrap: anywhere; }
 .dg-chance { margin-left: 6px; font-size: .7rem; vertical-align: middle; }
 .dg-h3 { font-size: 1.05rem; margin-top: 8px; }
 
@@ -590,46 +592,24 @@ details > summary { cursor: pointer; color: var(--muted); }
         <details id="pastWrap"><summary>Past sessions</summary><div class="loglist" id="pastSessions" style="margin-top:10px"></div></details>
       </section>
 
-      <section class="panel" id="askPanel">
-        <header><h2>Ask Claude</h2></header>
-        <div class="quick" id="quick">
-          <button type="button" data-q="Where should I quest next for my level, and which zones should I skip?">Where next?</button>
-          <button type="button" data-q="What spells or skills should I train around my level, and which matter most?">What to train</button>
-          <button type="button" data-q="Give me a talent or build plan for leveling at my level.">Leveling build</button>
-          <button type="button" data-q="How can I level faster from here? Give me concrete tips for my class.">Level faster</button>
-        </div>
-        <form id="askForm" class="field">
-          <textarea id="askIn" placeholder="Ask anything about leveling. Your class, level and zone are sent along."></textarea>
-          <div class="row"><button class="primary" type="submit" id="askBtn">Ask</button><button type="button" class="ghost" id="askStop" hidden>Stop</button></div>
-        </form>
-        <div class="answer" id="answer" hidden></div>
-        <p class="hint">Answers come from Claude's own knowledge, not live Wowhead pages, so check patch-specific details.</p>
-      </section>
-
       <div class="row"><button class="ghost" id="editChar">Edit character</button></div>
     </div>
   </div>
 
   <section class="panel" id="impPanel" data-view="ledger">
-    <div class="tal-head"><h2>Import from the add-on</h2><span class="hint" id="impStatus">Not imported yet.</span></div>
-    <p class="muted">The Leveling Ledger add-on records what the Blizzard API can't see: exact XP for each play session, training costs, vendor and Merchant's Favor prices, and what drops for you. WoW add-ons can't reach the internet, so the add-on saves to a file when you log out or type <code>/reload</code>, and you bring that file here.</p>
-    <details><summary>How to install and use it</summary>
+    <div class="tal-head"><h2>Add-on</h2><span class="hint" id="impStatus">Not imported yet.</span></div>
+    <p class="muted">The Leveling Ledger add-on records exact XP for each play session, training costs, vendor and Merchant's Favor prices, and what drops for you. When you log out or type <code>/reload</code>, the game saves its file and this PC imports it within a few seconds.</p>
+    <p class="hint imp-watch" id="impWatch">Checking which file is being watched…</p>
+    <p id="impResult"></p>
+    <ul id="impErrors"></ul>
+    <div class="row imp-row"><button id="impNow">Check for new data now</button></div>
+    <details><summary>Installing the add-on</summary>
       <ol class="imp-steps">
-        <li>Unzip <b>LevelingLedger.zip</b> into your Forever game folder's <code>Interface\AddOns</code> folder, so you have <code>Interface\AddOns\LevelingLedger\LevelingLedger.toc</code>.</li>
+        <li>Copy the <code>addon\LevelingLedger</code> folder from the project into your Forever game folder's <code>Interface\AddOns</code>, so you have <code>Interface\AddOns\LevelingLedger\LevelingLedger.toc</code>.</li>
         <li>At character select, open <b>AddOns</b> and make sure Leveling Ledger is ticked. If it shows as out of date, tick <b>Load out of date AddOns</b>.</li>
         <li>Play as usual. Talk to your class trainer and open vendors once so it can read their prices. Type <code>/ledger</code> in game to see what it has recorded.</li>
-        <li>Log out, or type <code>/reload</code>. The game writes <code>WTF\Account\&lt;your account&gt;\SavedVariables\LevelingLedger.lua</code>.</li>
-        <li>Press <b>Link the file for automatic import</b> and pick that file once. From then on, each time you come back to this page after logging out or a <code>/reload</code>, it imports the new data by itself. If your browser asks, choose <b>Allow on every visit</b>. Importing again is always safe: sessions aren't duplicated and prices are updated.</li>
       </ol>
     </details>
-    <div class="row imp-row">
-      <button class="primary" id="impLink" hidden>Link the file for automatic import</button>
-      <button id="impRelink" hidden>Import the linked file now</button>
-      <label class="ghost btnlike" for="impFile">Choose LevelingLedger.lua…</label><input type="file" id="impFile" accept=".lua,text/plain" hidden>
-      <span class="muted">or drop it anywhere on this page</span>
-    </div>
-    <p class="hint" id="impLinkNote"></p>
-    <div id="impResult"></div>
   </section>
 
   <section class="panel" id="histPanel" data-view="ledger">
@@ -891,7 +871,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     }
     renderSession(); renderTasks(); renderLog(); renderCollections(); renderTalents(); renderQuests(); renderGear();
     for (const el of document.querySelectorAll("#board button, #board input, #board textarea, #board select"))
-      if (!el.closest("#askPanel") && !el.closest("#whForm")) el.disabled = !S.canWrite;
+      if (!el.closest("#whForm")) el.disabled = !S.canWrite;
   }
   const chip = (cls, text) => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; };
 
@@ -1561,219 +1541,30 @@ details > summary { cursor: pointer; color: var(--muted); }
       el("span", "muted", known.length < next.length ? ` (${next.length - known.length} without a cost yet)` : " (all entered)"));
   }
 
-  // ---------- import from the Leveling Ledger add-on (SavedVariables file) ----------
-  // Reads Lua table literals only; nothing in the file is run.
-  function parseLuaSaved(src) {
-    let i = 0; const n = src.length;
-    const ws = () => {
-      while (i < n) {
-        const c = src[i];
-        if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === ",") i++;
-        else if (src.startsWith("--", i)) { const j = src.indexOf("\n", i); i = j < 0 ? n : j + 1; }
-        else break;
-      }
-    };
-    const str = () => {
-      const q = src[i++]; let out = "";
-      while (i < n && src[i] !== q) {
-        if (src[i] === "\\") {
-          const c = src[i + 1];
-          if (/\d/.test(c)) { const m = /^\d{1,3}/.exec(src.slice(i + 1)); out += String.fromCharCode(+m[0]); i += 1 + m[0].length; continue; }
-          out += { n: "\n", t: "\t", r: "\r", "\n": "\n" }[c] ?? c; i += 2;
-        } else out += src[i++];
-      }
-      i++; return out;
-    };
-    const val = () => {
-      ws(); const c = src[i];
-      if (c === "{") return table();
-      if (c === '"' || c === "'") return str();
-      const m = /^-?(?:\d+\.?\d*(?:[eE][-+]?\d+)?|\.\d+)/.exec(src.slice(i, i + 40));
-      if (m) { i += m[0].length; return +m[0]; }
-      for (const [w, v] of [["true", true], ["false", false], ["nil", null]]) if (src.startsWith(w, i)) { i += w.length; return v; }
-      throw new Error("Unexpected text near character " + i);
-    };
-    const table = () => {
-      i++; const obj = {}; let pos = 1;
-      while (true) {
-        ws();
-        if (src[i] === "}") { i++; return obj; }
-        if (src[i] === "[") { i++; const k = val(); ws(); i++; ws(); if (src[i] === "=") i++; obj[k] = val(); continue; }
-        const m = /^([A-Za-z_]\w*)\s*=/.exec(src.slice(i, i + 80));
-        if (m) { i += m[0].length; obj[m[1]] = val(); continue; }
-        obj[pos++] = val();
-      }
-    };
-    const out = {};
-    while (true) {
-      ws(); if (i >= n) break;
-      const m = /^([A-Za-z_]\w*)\s*=/.exec(src.slice(i, i + 80));
-      if (!m) throw new Error("This doesn't look like a SavedVariables file.");
-      i += m[0].length; out[m[1]] = val();
-    }
-    return out;
-  }
-  const arr = (o) => (Array.isArray(o) ? o : o && typeof o === "object" ? Object.keys(o).sort((a, b) => a - b).map((k) => o[k]) : []);
-  async function importAddon(text) {
-    const box = $("impResult"); box.replaceChildren(el("p", "muted", "Reading the file…"));
-    let data;
-    if (/CreateFrame\(|RegisterEvent\(/.test(text)) { box.replaceChildren(el("p", "notice", "That's the add-on's own code (from Interface\\AddOns). Pick the LevelingLedger.lua in WTF\\Account\\<your account>\\SavedVariables instead. It's written when you log out or type /reload, and it starts with LevelingLedgerDB = {.")); return; }
-    try { data = parseLuaSaved(text).LevelingLedgerDB; } catch (e) { box.replaceChildren(el("p", "notice", "Couldn't read that file: " + e.message)); return; }
-    if (!data || !data.chars) { box.replaceChildren(el("p", "notice", "That file has no Leveling Ledger data. Pick LevelingLedger.lua from your SavedVariables folder.")); return; }
-    if (!db || !S.canWrite) { box.replaceChildren(el("p", "notice", "Only the ledger's owner can import.")); return; }
-    const chars = Object.values(data.chars);
-    const want = ((S.char && S.char.name) || "").split(" ")[0].toLowerCase();
-    const ch = chars.find((c) => (c.name || "").toLowerCase() === want) || chars[0];
-    if (!ch) { box.replaceChildren(el("p", "notice", "No characters in that file yet. Play with the add-on enabled, then log out or /reload.")); return; }
-    const done = []; let n;
-    try {
-      // 1. Sessions with exact XP and time
-      n = 0;
-      const pageRows = S.sessions || [];
-      const merged = [];
-      for (const s of arr(ch.sessions).filter((x) => x.start && x.stop).sort((a, b) => a.start - b.start)) {
-        const m = merged[merged.length - 1];
-        if (m && s.start - m.stop <= 600) {
-          m.stop = s.stop; m.xpGained = (m.xpGained || 0) + (s.xpGained || 0); m.levels = (m.levels || 0) + (s.levels || 0);
-          m.deaths = (m.deaths || 0) + (s.deaths || 0); m.quests = (m.quests || 0) + (s.quests || 0);
-          m.endLevel = s.endLevel; m.endXP = s.endXP; m.zones = [...arr(m.zones), ...arr(s.zones).filter((z) => !arr(m.zones).includes(z))];
-        } else merged.push({ ...s, zones: arr(s.zones) });
-      }
-      for (const s of merged) {
-        if (s.stop - s.start < 60) continue;
-        const bz = { gained: s.xpGained || 0, level: s.endLevel, xp: s.endXP, fromLevel: s.startLevel, fromXp: s.startXP, at: s.stop * 1000, src: "addon" };
-        const overlap = pageRows.find((p) => p.src !== "addon" && p.startedAt < s.stop * 1000 && (p.endedAt || 0) > s.start * 1000);
-        if (overlap) {
-          // A page session covering the same play: give it the exact XP, unless Blizzard already counted it across several sessions
-          const ob = overlap.bz;
-          if (ob && (ob.merged || ob.combined) ) continue;
-          await db.doc("sessions/" + overlap._id).update({ bz });
-        }
-        else await db.doc("sessions/addon-" + s.start).set({ startedAt: s.start * 1000, endedAt: s.stop * 1000, durationMs: (s.stop - s.start) * 1000, xp: s.xpGained || 0,
-          levels: s.levels || 0, startLevel: s.startLevel, endLevel: s.endLevel, deaths: s.deaths || 0, quests: s.quests || 0, zones: arr(s.zones).slice(-10), src: "addon", bz });
-        n++;
-      }
-      done.push(`${n} play session${n === 1 ? "" : "s"} with exact XP`);
-      // 2. XP needed per level
-      const xm = ch.xpMax || {}; const levels = { ...((S.xpt && S.xpt.levels) || {}) }; n = 0;
-      for (const [lv, v] of Object.entries(xm)) if (v > 0 && levels[lv] !== v) { levels[lv] = v; n++; }
-      if (n) await db.doc("state/xptable").set({ levels, updatedAt: Date.now() });
-      if (Object.keys(xm).length) done.push(`XP needed for ${Object.keys(xm).length} level${Object.keys(xm).length === 1 ? "" : "s"}`);
-      if (S.char && xm[S.char.level] && S.char.needsXpMax) await db.doc("state/character").update({ xpMax: xm[S.char.level], needsXpMax: false });
-      // 3. Training costs, matched to your class's abilities by name and rank
-      if (ch.trainer && Object.keys(ch.trainer).length) {
-        if (!AB.data) AB.data = await (await fetch("abilities-forever.json")).json();
-        const cls = ((S.char && S.char.cls) || (ch.class || "").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())).split(/[ (]/)[0];
-        const list = AB.data.classes[cls] || [];
-        n = 0;
-        for (const t of Object.values(ch.trainer)) {
-          if (t.cost == null) continue;
-          const a = list.find((e) => e.n === t.n && (e.r || "") === (t.r || "")) || list.find((e) => e.n === t.n && !t.r);
-          if (a && AB.costs[a.id] !== t.cost) { AB.costs[a.id] = t.cost; n++; }
-        }
-        if (n) await db.doc("state/trainercosts").set({ costs: { ...AB.costs }, updatedAt: Date.now() });
-        done.push(`${n} training cost${n === 1 ? "" : "s"}`);
-      }
-      // 4. Vendor prices (gold and Merchant's Favor)
-      if (ch.vendors && Object.keys(ch.vendors).length) {
-        const cur = { ...((S.vendors && S.vendors.v) || {}) };
-        for (const [id, v] of Object.entries(ch.vendors)) {
-          const items = {};
-          for (const [iid, it] of Object.entries(v.items || {})) {
-            const e = { n: it.n, p: it.price || 0 };
-            const c = arr(it.cur).map((x) => [x.n || "?", x.amount || 0]);
-            if (c.length) e.c = c;
-            if (it.limited != null) e.l = it.limited;
-            items[iid] = e;
-          }
-          cur[id] = { n: v.name, z: v.zone, xy: v.x != null ? [v.x, v.y] : null, at: (v.at || 0) * 1000, items };
-        }
-        await db.doc("state/vendors").set({ v: cur, updatedAt: Date.now() });
-        done.push(`prices from ${Object.keys(ch.vendors).length} vendor${Object.keys(ch.vendors).length === 1 ? "" : "s"}`);
-      }
-      // 5. Your loot by creature (the add-on keeps running totals, so this replaces earlier imports)
-      if (ch.loot && Object.keys(ch.loot).length) {
-        const npcs = {};
-        for (const [id, e] of Object.entries(ch.loot)) {
-          const items = {};
-          for (const [iid, it] of Object.entries(e.items || {})) items[iid] = [it.n || "", it.q ?? 1, it.c || 0];
-          npcs[id] = { n: e.name || "", z: e.zone || "", i: e.instance ? 1 : 0, o: e.opens || 0, items };
-        }
-        await db.doc("state/loot").set({ npcs, updatedAt: Date.now() });
-        done.push(`loot from ${Object.keys(npcs).length} creature${Object.keys(npcs).length === 1 ? "" : "s"}`);
-      }
-      // 6. Quests turned in
-      n = 0;
-      for (const q of arr(ch.quests)) if (q.id && !QD.done.has(q.id) && !QD.marks.done[q.id]) { QD.marks.done[q.id] = 1; n++; }
-      if (n) await db.doc("state/questmarks").set({ done: { ...QD.marks.done }, hidden: { ...QD.marks.hidden }, updatedAt: Date.now() });
-      done.push(`${n} newly turned-in quest${n === 1 ? "" : "s"}`);
-      await db.doc("state/addon").set({ importedAt: Date.now(), savedAt: (data.savedAt || 0) * 1000, char: ch.name || "", played: ch.played || 0, deaths: ch.deaths || 0 });
-    } catch (e) {
-      box.replaceChildren(el("p", "notice", "The import stopped partway: " + (e.message || e.code || e) + ". What was imported before that is saved; try again."));
-      return;
-    }
-    box.replaceChildren(el("p", null, `Imported for ${ch.name || "your character"}: ` + done.join(", ") + "."));
-    toast("Add-on data imported");
-  }
-  $("impFile").onchange = () => {
-    const f = $("impFile").files[0]; if (!f) return;
-    const r = new FileReader(); r.onload = () => importAddon(String(r.result)); r.readAsText(f);
-    $("impFile").value = "";
-  };
-  // ---------- automatic import: remember the file (Chrome and Edge) ----------
-  const LINK = { ok: typeof window.showOpenFilePicker === "function", busy: false, checkedFor: -1 };
-  const idb = (mode, fn) => new Promise((res, rej) => {
-    let r; try { r = indexedDB.open("leveling-ledger", 1); } catch (e) { rej(e); return; }
-    r.onupgradeneeded = () => r.result.createObjectStore("h");
-    r.onerror = () => rej(r.error);
-    r.onsuccess = () => { try { const t = r.result.transaction("h", mode); const q = fn(t.objectStore("h")); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); } catch (e) { rej(e); } };
-  });
-  const getLinked = async () => LINK.handle || (LINK.handle = await idb("readonly", (s) => s.get("addonFile")).catch(() => null));
-  function linkNote(t) { const n = $("impLinkNote"); if (n) n.textContent = t || ""; }
-  async function checkLinked(fromClick) {
-    if (!LINK.ok || LINK.busy || !db || !S.canWrite) return;
-    const hnd = await getLinked(); if (!hnd) { $("impRelink").hidden = true; return; }
-    LINK.busy = true;
-    try {
-      let perm = await hnd.queryPermission({ mode: "read" });
-      if (perm !== "granted" && fromClick) perm = await hnd.requestPermission({ mode: "read" });
-      if (perm !== "granted") { $("impRelink").hidden = false; linkNote("Linked to " + hnd.name + ". Your browser wants a click before reading it again: press Import the linked file now (choose Allow on every visit to skip this)."); return; }
-      $("impRelink").hidden = false;
-      const file = await hnd.getFile(); const text = await file.text();
-      const m = /\["savedAt"\]\s*=\s*(\d+)/.exec(text); const savedAt = m ? +m[1] * 1000 : file.lastModified;
-      const have = (S.addon && S.addon.savedAt) || 0;
-      if (fromClick || savedAt > have) { await importAddon(text); linkNote(`Linked to ${hnd.name}. Imported automatically ${new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}; it's checked again whenever you come back to this page.`); }
-      else linkNote(`Linked to ${hnd.name}. Up to date: nothing newer since the last import. Log out or /reload in game and come back to this page.`);
-    } catch (e) {
-      linkNote("Couldn't read the linked file (" + (e.message || e.name) + "). If you moved or renamed it, link it again.");
-    } finally { LINK.busy = false; }
-  }
-  if (LINK.ok) {
-    $("impLink").hidden = false;
-    $("impLink").onclick = async () => {
-      let hnd;
-      try { [hnd] = await window.showOpenFilePicker({ types: [{ description: "WoW SavedVariables", accept: { "text/plain": [".lua"] } }], excludeAcceptAllOption: false }); }
-      catch (e) { if (e.name !== "AbortError") linkNote("Your browser didn't allow linking a file here (" + (e.message || e.name) + "). Use Choose LevelingLedger.lua or drop the file on the page instead; opening the ledger in its own tab may also allow it."); return; }
-      LINK.handle = hnd; let kept = true;
-      try { await idb("readwrite", (s) => s.put(hnd, "addonFile")); } catch (e) { kept = false; }
-      await checkLinked(true);
-      if (!kept) linkNote($("impLinkNote").textContent + " Your browser won't remember the file after you close this page, so link it again next time.");
-    };
-    $("impRelink").onclick = () => checkLinked(true);
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkLinked(false); });
-    window.addEventListener("focus", () => checkLinked(false));
-  } else linkNote("Automatic import needs Chrome or Edge on a computer. In this browser, choose the file or drop it on the page each time.");
-  // drag and drop anywhere
-  document.addEventListener("dragover", (e) => { if (e.dataTransfer && [...e.dataTransfer.items].some((i) => i.kind === "file")) e.preventDefault(); });
-  document.addEventListener("drop", (e) => {
-    const f = e.dataTransfer && [...e.dataTransfer.files].find((x) => /\.lua$/i.test(x.name)); if (!f) return;
-    e.preventDefault(); location.hash = "#ledger"; $("impPanel").scrollIntoView({ behavior: "smooth", block: "start" });
-    f.text().then(importAddon);
-  });
+  // ---------- add-on status (the service imports the file itself) ----------
+  const fmtWhen = (t) => new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   function renderAddonStatus() {
     const a = S.addon; const box = $("impStatus"); if (!box) return;
-    box.textContent = a ? `Last import ${ago(a.importedAt)}` + (a.savedAt ? `, from a file saved ${new Date(a.savedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "") + (a.played ? ` · /played ${dur(a.played * 1000)}` : "") + (a.deaths ? ` · ${a.deaths} death${a.deaths === 1 ? "" : "s"}` : "") : "Not imported yet.";
+    box.textContent = a ? `Last import ${ago(a.importedAt)}` + (a.savedAt ? `, from a file saved ${fmtWhen(a.savedAt)}` : "") + (a.played ? ` · /played ${dur(a.played * 1000)}` : "") + (a.deaths ? ` · ${a.deaths} death${a.deaths === 1 ? "" : "s"}` : "") : "Not imported yet.";
+    $("impResult").textContent = a && a.message ? a.message : "";
+    const errs = (a && a.errors) || [];
+    $("impErrors").replaceChildren(...errs.slice(-5).reverse().map((e) => el("li", "notice", `${e.at ? fmtWhen(e.at * 1000) + ": " : ""}${e.err}`)));
+    if (errs.length) $("impErrors").prepend(el("li", "muted", "Errors the add-on logged in game (most recent first):"));
   }
+  async function renderWatch() {
+    try {
+      const st = await (await fetch("/api/status")).json();
+      const w = $("impWatch");
+      w.textContent = st.files && st.files.length ? `Watching ${st.files.join(", ")}` : "";
+      if (st.lastError) w.textContent += (w.textContent ? " · " : "") + st.lastError;
+    } catch { $("impWatch").textContent = "Couldn't reach the Leveling Ledger service."; }
+  }
+  $("impNow").onclick = async () => {
+    try { const r = await fetch("/api/import-now", { method: "POST", headers: { "X-Ledger": "1" } }); toast(r.ok ? "Checked for new add-on data" : "Couldn't check right now"); }
+    catch { toast("Couldn't reach the Leveling Ledger service."); }
+    renderWatch();
+  };
+  renderWatch(); setInterval(renderWatch, 60000);
   // Merchant's Favor or gold price you've seen at a vendor for an item
   function seenPrice(npcIds, itemId) {
     const V = S.vendors && S.vendors.v; if (!V) return null;
@@ -2386,7 +2177,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     // Open matching dungeons automatically when searching for a boss or item
     for (const d of res) {
       try { const b = dgBlock(d); if (words.length && !DG.open.has(d.key) && !d.n.toLowerCase().includes(words.join(" "))) b.open = true; list.append(b); }
-      catch (err) { const x = el("p", "empty", `Couldn't show ${d.n}. Reload the page; if it keeps happening, tell Claude.`); list.append(x); console.error(err); }
+      catch (err) { const x = el("p", "empty", `Couldn't show ${d.n}. Reload the page; if it keeps happening, check the browser console.`); list.append(x); console.error(err); }
     }
     const fw = $("dgForever"); fw.replaceChildren();
     for (const a of DG.data.forever) {
@@ -2793,26 +2584,20 @@ details > summary { cursor: pointer; color: var(--muted); }
   // ---------- actions ----------
   const charRef = () => db.doc("state/character"), sessRef = () => db.doc("state/session");
 
-  // ---------- Blizzard sync (runs a Claude scheduled task) ----------
-  const SYNC_TRIGGER = "trig_0175W7JC268VxUrcbnQiRTaY";
-  let mcp = null, syncing = false;
-  async function syncNow(auto) {
-    if (!mcp || syncing || !S.canWrite) return;
+  // ---------- Blizzard sync (runs in the service) ----------
+  let syncing = false;
+  async function syncNow() {
+    if (syncing) return;
     syncing = true; $("syncBtn").disabled = true;
     try {
-      await mcp.callTool("Claude Code Remote", "fire_trigger", { trigger_id: SYNC_TRIGGER });
-      toast("Checking Blizzard. This takes about a minute.");
+      const r = await fetch("/api/sync", { method: "POST", headers: { "X-Ledger": "1" } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      toast("Checking Blizzard…");
       S.syncLocal = Date.now(); renderSyncStatus();
-      if (db) db.doc("state/syncstatus").set({ pending: true, startedAt: Date.now(), message: "", at: (S.sync && S.sync.at) || null }).catch(() => {});
-    } catch (e) {
-      const code = e && e.code;
-      if (code === "server_not_connected" || code === "needs_reauth") toast("Connect Claude Code Remote in claude.ai Settings, Connectors, to sync from here.");
-      else if (code === "approval_required" || code === "not_in_manifest") toast(auto ? "Sync needs your OK. Use Sync from Blizzard to allow it." : "Syncing needs your approval for this page.");
-      else if (code === "tool_error") toast("Claude couldn't start the sync: " + (e.message || "unknown reason").slice(0, 120));
-      else toast("Couldn't reach Claude to sync. It also syncs once a day on its own.");
-    } finally { setTimeout(() => { syncing = false; $("syncBtn").disabled = false; }, 8000); }
+    } catch { toast("Couldn't reach the Leveling Ledger service."); }
+    finally { setTimeout(() => { syncing = false; $("syncBtn").disabled = false; }, 5000); }
   }
-  $("syncBtn").onclick = () => syncNow(false);
+  $("syncBtn").onclick = () => syncNow();
 
   $("taskForm").onsubmit = (e) => { e.preventDefault(); const t = $("taskIn").value.trim(); if (!t) return; $("taskIn").value = ""; write(() => db.collection("tasks").add({ text: t, done: false, createdAt: Date.now(), atLevel: S.char ? S.char.level : null })); };
   $("clearDone").onclick = () => write(async () => { for (const t of S.tasks.filter((t) => t.data.done)) await db.doc("tasks/" + t.id).delete(); }, "Cleared");
@@ -2851,31 +2636,6 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (ok) { $("setup").dataset.editing = ""; $("setup").hidden = true; }
   };
 
-  // ---------- Ask Claude ----------
-  let sample = null, askCtl = null;
-  for (const b of $("quick").querySelectorAll("button")) b.onclick = () => { $("askIn").value = b.dataset.q; ask(); };
-  $("askForm").onsubmit = (e) => { e.preventDefault(); ask(); };
-  $("askStop").onclick = () => askCtl && askCtl.abort();
-  async function ask() {
-    const q = $("askIn").value.trim(); if (!q || !sample) return;
-    const c = S.char || {};
-    const ctx = `Player context: game version ${c.version || "unknown"}; character ${c.race || ""} ${c.cls || ""}, level ${c.level || "?"} of ${c.maxLevel || "?"}; current zone ${c.zone || "unknown"}; ${c.xpMax ? Math.round(c.xp / c.xpMax * 100) + "% through the level" : ""}.`;
-    const open = S.tasks.filter((t) => !t.data.done).map((t) => t.data.text).slice(0, 10);
-    const tal = TAL.data ? TAL.data.trees.flatMap((t) => t.nodes.filter((n) => TAL.ranks[n.id]).map((n) => `${n.name} ${TAL.ranks[n.id]}/${n.max} (${t.spec})`)) : [];
-    if (tal.length) open.push("[Current talents: " + tal.join(", ") + "]");
-    const prompt = `You are a concise World of Warcraft leveling coach. Answer for the player's exact game version; mechanics differ a lot between Retail and the Classic versions. Keep it practical, under 220 words, using short lines or a few bullets in plain text (no markdown headings). If you are unsure about a patch-specific detail, say so briefly.\n\n${ctx}${open.length ? "\nTheir to-do list: " + open.join("; ") : ""}\n\nQuestion: ${q}`;
-    const box = $("answer"); box.hidden = false; box.textContent = "Thinking…";
-    askCtl = new AbortController(); $("askBtn").disabled = true; $("askStop").hidden = false;
-    try {
-      const r = await sample(prompt, { signal: askCtl.signal, onText: ({ text }) => { box.textContent = text; } });
-      box.textContent = r.text || box.textContent;
-    } catch (e) {
-      if (e && e.code === "not_granted") { $("askPanel").hidden = true; }
-      else if (e && e.text) box.textContent = e.text;
-      else box.textContent = e && e.code === "rate_limited" ? "Too many questions in a row. Wait a minute and try again." : (askCtl.signal.aborted ? "Stopped." : "Couldn't get an answer. Try again.");
-    } finally { $("askBtn").disabled = false; $("askStop").hidden = true; askCtl = null; }
-  }
-
   // ---------- boot ----------
   render();
   // Sync status line: "Checking Blizzard…" while a sync runs, then its result
@@ -2892,24 +2652,19 @@ details > summary { cursor: pointer; color: var(--muted); }
       box.append(el("span", "pill " + (st.ok === false ? "no" : st.changed ? "go" : "ok"), st.ok === false ? "Sync failed" : st.changed ? "Updated" : "Nothing new"),
         document.createTextNode(` ${st.message || ""} `), el("span", "muted", `(${ago(finished)})`));
     } else if (started) {
-      box.append(el("span", "pill ok", "No answer yet"), document.createTextNode(" The sync hasn't reported back in 5 minutes. It may still finish; the daily run will catch up otherwise."));
+      box.append(el("span", "pill ok", "No answer yet"), document.createTextNode(" The sync hasn't reported back in 5 minutes. The next scheduled check will catch up."));
     } else { box.hidden = true; return; }
     box.hidden = false;
   }
   setInterval(renderSyncStatus, 5000);
 
   (async () => {
-    const [dbNs, userNs, sampleNs] = await Promise.all([
-      window.claude?.use?.("db") ?? null, window.claude?.use?.("user") ?? null, window.claude?.use?.("sample") ?? null,
-    ]).catch(() => [null, null, null]);
-    sample = sampleNs; if (!sample) $("askPanel").hidden = true;
-    try { mcp = await window.claude.use("mcp"); } catch { mcp = null; }
-    if (mcp && S.canWrite) { $("syncBtn").hidden = false; $("syncNote").hidden = false; }
-    db = dbNs;
-    if (userNs) { try { const own = await userNs.isOwner(); S.canWrite = own !== false; } catch {} }
+    db = await (window.claude?.use?.("db") ?? null);
+    S.canWrite = true; // the service only answers this PC and signed-in Cloudflare visitors
+    $("syncBtn").hidden = false; $("syncNote").hidden = false;
     if (!db) {
       S.loaded = true; S.canWrite = false; render();
-      $("charSub").textContent = "Saving isn't available in this view. Open the page on claude.ai while signed in.";
+      $("charSub").textContent = "Can't reach the Leveling Ledger service. Check that it's running.";
       return;
     }
     let pending = 2;
@@ -2930,7 +2685,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) renderDungeons(); }, () => {});
-    db.doc("state/addon").onSnapshot((s) => { const first = !S.addonLoaded; S.addon = s.exists ? s.data() : null; S.addonLoaded = true; renderAddonStatus(); if (first) checkLinked(false); }, () => {});
+    db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); }, () => {});
     db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); }, () => {});
     db.collection("tasks").orderBy("createdAt", "asc").limit(300).onSnapshot((q) => { S.tasks = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderTasks(); }, () => {});
   })();

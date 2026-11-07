@@ -132,7 +132,9 @@ function importAddon(text, store, publicDir, source, hint) {
   done.push(`${n} newly turned-in quest${n === 1 ? "" : "s"}`);
 
   const message = `Imported for ${ch.name || "your character"}: ` + done.join(", ") + ".";
-  store.set("state/addon", { importedAt: Date.now(), savedAt: (data.savedAt || 0) * 1000, char: ch.name || "", played: ch.played || 0, deaths: ch.deaths || 0, auto: !!source, file: source || "", message });
+  // the add-on logs its own Lua errors (db.errors: {at, err}); show the latest few on the page
+  const errors = arr(data.errors).filter((e) => e && e.err).slice(-10).map((e) => ({ at: e.at || 0, err: String(e.err).slice(0, 300) }));
+  store.set("state/addon", { importedAt: Date.now(), savedAt: (data.savedAt || 0) * 1000, char: ch.name || "", played: ch.played || 0, deaths: ch.deaths || 0, auto: !!source, file: source || "", message, errors });
   return { message, savedAt: (data.savedAt || 0) * 1000 };
 }
 
