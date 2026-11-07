@@ -1,17 +1,43 @@
 -- Leveling Ledger: your other characters in game.
 -- Item tooltips show who else holds the item; /ledger alts shows each character's details, bags and bank;
 -- the profession window says what you could make with your alts' materials.
--- Only characters on this WoW account are visible here (each account keeps its own saved data);
--- the Leveling Ledger page combines all your accounts.
+-- Characters on this WoW account come from the add-on's own saved data. Characters on your other devices and
+-- accounts come from Shared.lua, which the Leveling Ledger app (or its relay) keeps up to date on each device;
+-- for each character, the newer of the two is used.
 
 local ADDON, ns = ...
 local TAG = "|cffd9aa5aLeveling Ledger|r"
 
+local function shared()
+  local sh = LevelingLedgerShared
+  return (type(sh) == "table" and type(sh.chars) == "table") and sh or nil
+end
 local function others()
   local db, me = ns.db and ns.db(), ns.char and ns.char()
+  local myKey = me and ((me.name or "") .. "-" .. (me.realm or ""))
+  local byKey = {}
+  if db and db.chars then for key, c in pairs(db.chars) do if c ~= me then byKey[key] = { key = key, c = c } end end end
+  local sh = shared()
+  if sh then
+    for key, c in pairs(sh.chars) do
+      if type(c) == "table" and key ~= myKey then
+        local cur = byKey[key]
+        if not cur then byKey[key] = { key = key, c = c, remote = true }
+        else
+          -- the same character recorded here and elsewhere: newer details, bags and bank each win
+          local m = {}
+          for k, v in pairs(cur.c) do m[k] = v end
+          if (c.stateAt or 0) > (cur.c.stateAt or 0) then for _, k in ipairs({ "level", "money", "rested", "zone", "subzone", "stateAt" }) do m[k] = c[k] end end
+          if (c.bagsAt or 0) > (cur.c.bagsAt or 0) then m.bags, m.bagsAt = c.bags, c.bagsAt end
+          if (c.bankAt or 0) > (cur.c.bankAt or 0) then m.bank, m.bankAt = c.bank, c.bankAt end
+          m.account = m.account or c.account
+          byKey[key] = { key = key, c = m }
+        end
+      end
+    end
+  end
   local out = {}
-  if not db or not db.chars then return out end
-  for key, c in pairs(db.chars) do if c ~= me then out[#out + 1] = { key = key, c = c } end end
+  for _, o in pairs(byKey) do out[#out + 1] = o end
   table.sort(out, function(a, b) return (a.c.level or 0) > (b.c.level or 0) end)
   return out
 end
@@ -71,8 +97,10 @@ local PER_PAGE = 18
 local function itemName(id)
   local db = ns.db()
   local it = db.items and db.items[id]
-  local n = it and it.n or (GetItemInfo and GetItemInfo(id)) or ("Item " .. id)
-  local q = it and it.q
+  local sh = shared()
+  local si = sh and sh.items and sh.items[id]
+  local n = (it and it.n) or (si and si[1]) or (GetItemInfo and GetItemInfo(id)) or ("Item " .. id)
+  local q = (it and it.q) or (si and si[2])
   local col = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q] and ITEM_QUALITY_COLORS[q].hex
   return n, col
 end
@@ -92,7 +120,7 @@ local function refreshWindow()
   if not sel then win.info:SetText("No characters recorded yet."); return end
   local c = sel.c
   local lines = {
-    (c.name or sel.key) .. "   level " .. (c.level or "?") .. " " .. cap(c.class),
+    (c.name or sel.key) .. "   level " .. (c.level or "?") .. " " .. cap(c.class) .. (sel.remote and c.account and c.account ~= "" and ("   (" .. c.account .. ")") or ""),
     "Gold " .. ns.fmtMoney(c.money or 0) .. (c.rested and c.rested > 0 and ("   rested " .. ns.fmtNum(c.rested)) or ""),
     (c.zone and c.zone ~= "" and (c.zone .. (c.subzone and c.subzone ~= "" and (", " .. c.subzone) or "")) or "Zone unknown") .. "   last played " .. ago(c.stateAt),
     "Bags updated " .. ago(c.bagsAt) .. "   bank updated " .. (c.bankAt and ago(c.bankAt) or "never (open the bank once)"),
@@ -122,6 +150,8 @@ local function refreshWindow()
       fs:SetText((it.col and ("|c" .. it.col) or "") .. it.n .. (it.col and "|r" or "") .. "   x" .. (it.bg + it.bk) .. "  (" .. table.concat(where, ", ") .. ")")
     else fs:SetText("") end
   end
+  local sh = shared()
+  win.note:SetText(sh and ("Includes your other devices and accounts, as of " .. ago(sh.generated) .. ".") or "Characters on this WoW account. Set up the Leveling Ledger app to see your other devices and accounts here.")
   win.pageText:SetText(#items == 0 and (q == "" and "No items recorded" or "Nothing matches") or ("Page " .. page .. " of " .. pages .. "  (" .. #items .. " items)"))
 end
 local function makeWindow()
@@ -136,8 +166,7 @@ local function makeWindow()
   if bg.SetColorTexture then bg:SetColorTexture(0, 0, 0, 0.85) else bg:SetTexture(0, 0, 0, 0.85) end
   local title = w:CreateFontString(nil, "OVERLAY", "GameFontNormal"); title:SetPoint("TOPLEFT", 12, -10); title:SetText("Leveling Ledger: your characters")
   local close = CreateFrame("Button", nil, w, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", 2, 2)
-  local note = w:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); note:SetPoint("BOTTOMLEFT", 12, 10)
-  note:SetText("Characters on this WoW account. The Leveling Ledger page shows all your accounts.")
+  w.note = w:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); w.note:SetPoint("BOTTOMLEFT", 12, 10)
   w.charButtons = {}
   for i = 1, 14 do
     local b = CreateFrame("Button", nil, w)

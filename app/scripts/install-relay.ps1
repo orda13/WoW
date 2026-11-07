@@ -61,6 +61,9 @@ if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
   Get-ChildItem $cfg.wowFolder -Directory -Filter "_*" -ErrorAction SilentlyContinue | ForEach-Object {
     $wtf = Join-Path $_.FullName "WTF"
     if (Test-Path $wtf) { icacls $wtf /grant "${svcAcct}:(OI)(CI)RX" /Q | Out-Null }
+    # the relay writes the in-game summary (Shared.lua) into the add-on's folder
+    $ad = Join-Path $_.FullName "Interface\AddOns\LevelingLedger"
+    if (Test-Path $ad) { icacls $ad /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null }
   }
 }
 

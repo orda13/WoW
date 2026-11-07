@@ -7,6 +7,7 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { findFiles } = require("./lib/watcher");
+const { writeShared } = require("./lib/summary");
 
 const CONFIG_FILE = process.env.LL_RELAY_CONFIG || path.join(__dirname, "relay.json");
 const STATE_FILE = process.env.LL_RELAY_STATE || path.join(path.dirname(CONFIG_FILE), "relay-state.json");
@@ -57,6 +58,18 @@ async function send(cfg, file) {
   return crypto.createHash("sha1").update(text).digest("hex");
 }
 
+// The in-game summary: fetch every character's bags, bank and gold from the hub and write Shared.lua
+// next to the add-on (<game>\_forever_\Interface\AddOns\LevelingLedger), for each game folder found.
+const addonDirOf = (f) => path.join(path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(f))))), "Interface", "AddOns", "LevelingLedger");
+async function pullSummary(cfg, fl) {
+  const r = await fetch(`${cfg.hubUrl}/api/relay/summary`, { headers: headers(cfg), redirect: "manual" });
+  if (!r.ok) throw new Error(r.status >= 300 && r.status < 400 ? "Cloudflare asked for a sign-in" : `hub answered ${r.status}`);
+  const sum = await r.json();
+  let wrote = 0, found = 0;
+  for (const d of [...new Set(fl.map(addonDirOf))]) { if (fs.existsSync(path.join(d, "LevelingLedger.toc"))) { found++; if (writeShared(d, sum)) wrote++; } }
+  return { chars: Object.keys(sum.chars || {}).length, wrote, found };
+}
+
 async function test() {
   const cfg = loadConfig();
   console.log(`Device name: ${cfg.device}`);
@@ -69,6 +82,8 @@ async function test() {
     if (!r.ok) throw new Error(`hub answered ${r.status}`);
     console.log("Hub reached: OK");
     for (const f of fl) { await send(cfg, f); console.log(`Sent ${accountOf(f)}: OK`); }
+    const s = await pullSummary(cfg, fl);
+    console.log(s.found ? `In-game summary: ${s.chars} characters, written to ${s.found} add-on folder${s.found === 1 ? "" : "s"}` : "In-game summary: the add-on wasn't found next to the game's files, so there's nowhere to write it yet.");
   } catch (e) { console.log("Couldn't reach the hub: " + e.message); process.exitCode = 1; }
 }
 
@@ -90,6 +105,7 @@ function run() {
         await send(cfg, f);
         state[f] = { hash, sentAt: Date.now() }; saveState(); pending.delete(f);
         log(`Sent ${accountOf(f)} to the hub`);
+        setTimeout(summary, 8000); // the hub needs a moment to import it
         delay = (cfg.retrySeconds || 60) * 1000;
       } catch (e) {
         log(`Couldn't send ${accountOf(f)} (${e.message}); trying again in ${delay < 60000 ? Math.round(delay / 1000) + " s" : Math.round(delay / 60000) + " min"}`);
@@ -111,6 +127,16 @@ function run() {
     }
     if (pending.size && !timer) flush();
   }
+  // the in-game summary: after each upload, and every 15 minutes
+  let pulling = false;
+  async function summary() {
+    if (pulling) return; pulling = true;
+    try { const s = await pullSummary(cfg, [...watched]); if (s.wrote) log(`Updated the in-game summary (${s.chars} characters)`); }
+    catch (e) { log("Couldn't get the in-game summary: " + e.message); }
+    finally { pulling = false; }
+  }
+  setInterval(summary, 15 * 60 * 1000);
+  setTimeout(summary, 10 * 1000);
   log(`Leveling Ledger relay for "${cfg.device}" sending to ${cfg.hubUrl}`);
   scan();
   if (!watched.size) log("No LevelingLedger.lua found yet; looking again every 5 minutes.");

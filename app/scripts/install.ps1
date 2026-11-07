@@ -100,7 +100,11 @@ if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
   Get-ChildItem $cfg.wowFolder -Directory -Filter "_*" -ErrorAction SilentlyContinue | ForEach-Object {
     $ad = Join-Path $_.FullName "Interface\AddOns\LevelingLedger"
     if (Test-Path (Join-Path $ad "LevelingLedger.toc")) {
-      if (Test-Path $addonSrc) { Copy-Item -Path "$addonSrc\*" -Destination $ad -Recurse -Force; Write-Host "Updated the add-on in $ad" }
+      if (Test-Path $addonSrc) {
+        # keep the in-game summary this PC already wrote (Shared.lua); it's regenerated from your data
+        Get-ChildItem $addonSrc -File | Where-Object { $_.Name -ne "Shared.lua" -or -not (Test-Path (Join-Path $ad "Shared.lua")) } | Copy-Item -Destination $ad -Force
+        Write-Host "Updated the add-on in $ad"
+      }
       icacls $ad /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
     }
   }

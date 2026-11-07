@@ -129,8 +129,9 @@ function UnitGUID(u) if u == "player" then return PLAYERGUID elseif u == "pet" t
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Alts.lua'):   # the order the .toc loads them; both get the same private table
-    L.execute(open(os.path.join(ROOT, 'addon', 'LevelingLedger', f)).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua'):   # the order the .toc loads them; all get the same private table
+    src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
+    L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')

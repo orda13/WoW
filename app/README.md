@@ -197,7 +197,11 @@ You need Part 2 (Cloudflare) done first.
 
 **Your other devices on the hub:** the hub's Settings tab lists each device and when it last sent data.
 
-**What the game itself can't show:** in game, each PC's tooltips and `/ledger alts` window only know what was recorded on that PC. The page always shows everything.
+**In game on every device:** the hub and each relay also keep `Shared.lua` in the add-on's folder up to date. It holds every character's level, gold, location, bags and bank, from all your devices and accounts.
+- Item tooltips, `/ledger alts` and the profession window's "with your alts' materials" use it, so your Deck knows what your desktop alts are holding.
+- For each character, whichever is newer is used: this device's own record or the summary.
+- The game reads the file at login and on `/reload`.
+- The first time after this update, exit and restart the game once (a `/reload` isn't enough for a new add-on file).
 
 ## Troubleshooting
 

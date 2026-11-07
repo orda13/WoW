@@ -13,6 +13,7 @@ const { startUpdater } = require("./lib/updater");
 const { characters, charStore } = require("./lib/characters");
 const { mergeInventories } = require("./lib/inventory");
 const { readSaved } = require("./lib/addon-import");
+const { buildSummary, writeShared } = require("./lib/summary");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -129,6 +130,14 @@ function addonDir() {
   return null;
 }
 const updater = startUpdater({ appDir: APP, dataDir, config, log, addonDir });
+// keep this PC's in-game summary (Shared.lua in the add-on folder) current, a few seconds after the data changes
+let sharedT;
+function writeLocalShared() {
+  try { const d = addonDir(); if (d && writeShared(d, buildSummary(store))) log("Updated the in-game character summary in " + d); }
+  catch (e) { log("Couldn't write the in-game character summary: " + e.message); }
+}
+store.on("change", (ev) => { if (ev.path.startsWith("shared/")) { clearTimeout(sharedT); sharedT = setTimeout(writeLocalShared, 5000); } });
+setTimeout(writeLocalShared, 20 * 1000);
 function restartSoon() { setTimeout(() => { try { store.flushNow(); } catch {} process.exit(0); }, 800); } // NSSM starts the service again
 
 // ---------- server ----------
@@ -139,7 +148,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     const p = decodeURIComponent(url.pathname);
     // a relay's service token may only upload and check in; nothing else on the hub
-    if (req.serviceToken && !((p === "/api/relay/upload" && req.method === "POST") || p === "/api/relay/ping")) return send(res, 403, { error: "device tokens can only upload" });
+    if (req.serviceToken && !((p === "/api/relay/upload" && req.method === "POST") || p === "/api/relay/ping" || p === "/api/relay/summary")) return send(res, 403, { error: "device tokens can only upload and fetch the character summary" });
     // Writes must carry this header; a page on another site can't add it without being refused by the browser.
     if (req.method !== "GET" && req.method !== "HEAD" && req.headers["x-ledger"] !== "1") return send(res, 403, { error: "missing header" });
 
@@ -188,6 +197,7 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return send(res, 400, { ok: false, message: e.message }); }
     }
     if (p === "/api/relay/ping") return send(res, 200, { ok: true, hub: VERSION });
+    if (p === "/api/relay/summary") return send(res, 200, buildSummary(store));
     if (p === "/api/relay/upload" && req.method === "POST") {
       const device = url.searchParams.get("device") || "", account = url.searchParams.get("account") || "";
       if (!NAME_OK.test(device) || !NAME_OK.test(account) || /^\.+$/.test(device) || /^\.+$/.test(account)) return send(res, 400, { error: "bad device or account name" });
