@@ -1,42 +1,55 @@
 <title>Leveling Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: one column field journal. A full-width XP bar opens the page, then a two-column board of working panels (session, log XP, checklist, level log, ask) that stacks on phones. Dark-first: it sits beside a game at night. */
 :root {
-  --bg: #11181c;
-  --surface: #182227;
-  --surface-2: #1f2c32;
-  --line: #2c3c43;
-  --fg: #e6ebe8;
-  --muted: #93a49f;
-  --brass: #d9aa5a;
-  --brass-ink: #1c1407;
-  --rested: #8c7cf2;
-  --good: #6cc48f;
-  --warn: #e3a34b;
-  --bad: #e2706a;
-  --q0: #9aa3a0; --q2: #3fd24b; --q3: #4a9dff; --q4: #b77cf5; --q5: #ff9a3c;
-  --display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  /* World of Warcraft: Forever: dark stone, bronze trim and gold lettering */
+  --bg: #0e0b08;
+  --surface: #1b1510;
+  --surface-2: #261e15;
+  --line: #4d3c23;
+  --fg: #f0e4c9;
+  --muted: #ab9873;
+  --brass: #f4c24f;
+  --brass-ink: #1a1206;
+  --rested: #3f7fe8;
+  --xp: #9b4ce0;
+  --good: #4fd25e;
+  --warn: #e8a63c;
+  --bad: #ef5a4c;
+  --q0: #9d9d9d; --q2: #1eff00; --q3: #3a8dff; --q4: #b04cf0; --q5: #ff8000;
+  --btn-a: #3b2d1b; --btn-b: #241a0f; --btn-line: #6e5431;
+  --red-a: #a3241a; --red-b: #5c0c07; --red-line: #d4a94f; --red-ink: #ffd75e;
+  --glow: 0 0 14px rgba(244, 194, 79, .22);
+  --display: "Cinzel", "Alegreya SC", "Palatino Linotype", Georgia, serif;
   --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #eef1ef; --surface: #ffffff; --surface-2: #f3f5f3; --line: #d5ddd9;
-    --fg: #1a2421; --muted: #5d6c67; --brass: #9a6a17; --brass-ink: #fffaf0;
-    --rested: #5b49d6; --good: #2b8a54; --warn: #a8670f; --bad: #b8433c;
-    --q0: #6b7370; --q2: #1d8a27; --q3: #1a5fc4; --q4: #7a35c2; --q5: #b85c00;
+    /* parchment */
+    --bg: #e6d4ab; --surface: #f5e9cb; --surface-2: #ecdcb6; --line: #b8965c;
+    --fg: #2a1b0b; --muted: #6e5634; --brass: #8a560c; --brass-ink: #fff6df;
+    --rested: #2457b8; --xp: #7a2fbf; --good: #1f7a2a; --warn: #995b05; --bad: #a3271c;
+    --q0: #6b6b6b; --q2: #157a10; --q3: #0b58b0; --q4: #7a2bb5; --q5: #b05400;
+    --btn-a: #f3e4c0; --btn-b: #e2cc9c; --btn-line: #a7854c;
+    --red-a: #a3241a; --red-b: #6d1009; --red-line: #c79a3d; --red-ink: #ffe08a;
+    --glow: none;
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
-  --bg: #eef1ef; --surface: #ffffff; --surface-2: #f3f5f3; --line: #d5ddd9;
-  --fg: #1a2421; --muted: #5d6c67; --brass: #9a6a17; --brass-ink: #fffaf0;
-  --rested: #5b49d6; --good: #2b8a54; --warn: #a8670f; --bad: #b8433c;
-  --q0: #6b7370; --q2: #1d8a27; --q3: #1a5fc4; --q4: #7a35c2; --q5: #b85c00;
+  /* parchment */
+  --bg: #e6d4ab; --surface: #f5e9cb; --surface-2: #ecdcb6; --line: #b8965c;
+  --fg: #2a1b0b; --muted: #6e5634; --brass: #8a560c; --brass-ink: #fff6df;
+  --rested: #2457b8; --xp: #7a2fbf; --good: #1f7a2a; --warn: #995b05; --bad: #a3271c;
+  --q0: #6b6b6b; --q2: #157a10; --q3: #0b58b0; --q4: #7a2bb5; --q5: #b05400;
+  --btn-a: #f3e4c0; --btn-b: #e2cc9c; --btn-line: #a7854c;
+  --red-a: #a3241a; --red-b: #6d1009; --red-line: #c79a3d; --red-ink: #ffe08a;
+  --glow: none;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -487,6 +500,44 @@ a.whi:hover { color: var(--brass); text-decoration: none; }
 @keyframes ding { 0% { box-shadow: 0 0 0 0 var(--brass); } 100% { box-shadow: 0 0 0 18px transparent; } }
 @media (prefers-reduced-motion: reduce) { .ding { animation: none; } .bar .fill, .bar .rest { transition: none; } }
 details > summary { cursor: pointer; color: var(--muted); }
+/* ---------- World of Warcraft: Forever theme ---------- */
+body { background: radial-gradient(ellipse 120% 70% at 50% -10%, color-mix(in srgb, var(--brass) 9%, var(--bg)) 0%, var(--bg) 62%) fixed, var(--bg); }
+h1 { color: var(--brass); text-shadow: 0 1px 0 rgba(0, 0, 0, .7), var(--glow); letter-spacing: .02em; }
+h2 { color: var(--brass); }
+.panel { background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--brass)) 0, var(--surface) 64px);
+  border: 1px solid var(--line); border-top: 2px solid color-mix(in srgb, var(--brass) 55%, var(--line)); border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 7%, transparent), 0 3px 10px rgba(0, 0, 0, .28); }
+button, label.btnlike { background: linear-gradient(180deg, var(--btn-a), var(--btn-b)); border: 1px solid var(--btn-line); border-radius: 4px; color: var(--fg); }
+button:hover, label.btnlike:hover { border-color: var(--brass); }
+button.primary { background: linear-gradient(180deg, var(--red-a), var(--red-b)); border: 1px solid var(--red-line); color: var(--red-ink);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15); }
+button.primary:hover { filter: brightness(1.12); border-color: var(--red-ink); }
+button:disabled { opacity: .55; }
+.views { border-bottom: 1px solid var(--line); }
+.views a { font-family: var(--display); font-weight: 600; letter-spacing: .03em; }
+.views a[aria-current="page"] { color: var(--brass); border-bottom-color: var(--brass); text-shadow: var(--glow); }
+.bar { border: 1px solid var(--line); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5); }
+.bar .fill { background: linear-gradient(180deg, color-mix(in srgb, var(--xp) 70%, #fff) 0, var(--xp) 45%, color-mix(in srgb, var(--xp) 70%, #000) 100%); }
+.bar .rest { background: color-mix(in srgb, var(--rested) 60%, transparent); }
+.levelbadge .big { text-shadow: 0 1px 0 rgba(0, 0, 0, .7), var(--glow); }
+a.wh { color: inherit; }
+/* icons (Blizzard's icon images, by name) */
+img.ico { width: 1.2em; height: 1.2em; vertical-align: -.25em; margin-right: .32em; border-radius: 3px; border: 1px solid #000;
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); background: #000; object-fit: cover; }
+.iname img.ico, .dg-bh img.ico { width: 1.7em; height: 1.7em; vertical-align: -.5em; }
+.meter .nm img.ico { width: 1.6em; height: 1.6em; vertical-align: -.45em; }
+.char-ico { width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 2px solid var(--brass); box-shadow: var(--glow); vertical-align: -.35em; margin-right: .45rem; background: #000; }
+.ident h1 { display: flex; align-items: center; }
+/* class colours */
+.cls-druid { color: #ff7c0a; } .cls-hunter { color: #aad372; } .cls-mage { color: #3fc7eb; } .cls-paladin { color: #f48cba; }
+.cls-priest { color: #ffffff; } .cls-rogue { color: #fff468; } .cls-shaman { color: #2e8de0; } .cls-warlock { color: #8788ee; } .cls-warrior { color: #c69b6d; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .cls-priest { color: #5a5a5a; } :root:not([data-theme="dark"]) .cls-rogue { color: #8f8200; } :root:not([data-theme="dark"]) .cls-hunter { color: #4f7d1f; } :root:not([data-theme="dark"]) .cls-mage { color: #137f9e; } }
+:root[data-theme="light"] .cls-priest { color: #5a5a5a; } :root[data-theme="light"] .cls-rogue { color: #8f8200; } :root[data-theme="light"] .cls-hunter { color: #4f7d1f; } :root[data-theme="light"] .cls-mage { color: #137f9e; }
+td[class^="cls-"] img.ico { border-radius: 50%; }
+/* coins */
+.coin { font-family: var(--mono); white-space: nowrap; }
+.coin .g { color: #f2c12e; } .coin .s { color: #c7c7cf; } .coin .c { color: #c9773b; }
+.coin .g::after, .coin .s::after, .coin .c::after { content: ""; display: inline-block; width: .62em; height: .62em; border-radius: 50%; margin: 0 .28em 0 .1em; vertical-align: .02em; background: currentColor; box-shadow: inset -1px -1px 0 rgba(0, 0, 0, .35); }
 </style>
 
 <div class="wrap" id="app">
@@ -912,10 +963,40 @@ details > summary { cursor: pointer; color: var(--muted); }
   const whPath = () => { const v = S.char && S.char.version; return v == null ? "forever/" : (v in WH_PATH ? WH_PATH[v] : "classic/"); };
   const whBase = () => "https://www.wowhead.com/" + whPath() + "search?q=";
   const whHref = (type, id) => type === "search" ? whBase() + encodeURIComponent(id) : `https://www.wowhead.com/${whPath()}${type}=${id}`;
+  // ---------- WoW icons: by name, from Blizzard's icon images (Wowhead's copy if one doesn't load) ----------
+  const ICONS = { names: null, i: {}, s: {} };
+  function iconImg(name, cls) {
+    const im = document.createElement("img");
+    im.className = "ico" + (cls ? " " + cls : ""); im.alt = ""; im.loading = "lazy"; im.decoding = "async";
+    im.src = `https://render.worldofwarcraft.com/us/icons/56/${name}.jpg`;
+    im.onerror = () => { if (!im.dataset.alt) { im.dataset.alt = "1"; im.src = `https://wow.zamimg.com/images/wow/icons/large/${name}.jpg`; } else im.remove(); };
+    return im;
+  }
+  function iconFor(type, id) {
+    if (!ICONS.names) return null;
+    const k = type === "item" ? ICONS.i[id] : type === "spell" ? ICONS.s[id] : undefined;
+    return k != null ? ICONS.names[k] : null;
+  }
+  const PROF_ICON = { Alchemy: "trade_alchemy", Blacksmithing: "trade_blacksmithing", Enchanting: "trade_engraving", Engineering: "trade_engineering",
+    Herbalism: "trade_herbalism", Leatherworking: "trade_leatherworking", Mining: "trade_mining", Skinning: "inv_misc_pelt_wolf_01", Tailoring: "trade_tailoring",
+    Cooking: "inv_misc_food_15", "First Aid": "spell_holy_sealofsacrifice", Fishing: "trade_fishing", Jewelcrafting: "inv_misc_gem_01" };
+  const classKey = (c) => String(c || "").split(/[ (]/)[0].toLowerCase().replace(/[^a-z]/g, "");
   function whA(type, id, text, cls) {
     const a = document.createElement("a"); a.className = "wh" + (cls ? " " + cls : ""); a.textContent = text;
     a.href = whHref(type, id); a.target = "_blank"; a.rel = "noopener"; a.title = "Open on Wowhead";
+    const ic = text !== "↗" && iconFor(type, id);
+    if (ic) a.prepend(iconImg(ic));
     return a;
+  }
+  // gold, silver and copper with coin colours
+  function moneyEl(copper) {
+    const c = Math.max(0, Math.round(copper || 0)), g = Math.floor(c / 10000), s = Math.floor(c / 100) % 100, cp = c % 100;
+    const span = el("span", "coin");
+    if (g) span.append(el("span", "g", fmt(g)));
+    if (s || (g && cp)) span.append(el("span", "s", String(s)));
+    if (cp || (!g && !s)) span.append(el("span", "c", String(cp)));
+    span.title = money(c) || "0c";
+    return span;
   }
   function whIcon(type, id, label) {
     const a = whA(type, id, "↗", "whi"); a.setAttribute("aria-label", "Open " + (label || "this") + " on Wowhead"); return a;
@@ -975,6 +1056,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     } else {
       $("verLabel").textContent = c.version || "Leveling Ledger";
       $("charName").textContent = c.name || "Your character";
+      if (classKey(c.cls)) { const ci = iconImg("classicon_" + classKey(c.cls), "char-ico"); ci.className = "char-ico"; ci.title = c.cls; $("charName").prepend(ci); }
       $("charSub").textContent = [c.race, c.cls, c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ") + (c.zone ? `  —  ${c.zone}${c.subzone && c.subzone !== c.zone ? ", " + c.subzone : ""}` : "") + (c.equippedItemLevel ? `  ·  ilvl ${c.equippedItemLevel}` : "") + (c.syncedAt ? `  ·  synced from Blizzard ${shortDate(c.syncedAt)}` : "");
       $("lvl").textContent = c.level; $("lvlMax").textContent = `/ ${c.maxLevel}`;
       const atMax = c.level >= c.maxLevel;
@@ -1134,7 +1216,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   function meter(name, sub, value, max, valText, cls) {
     const row = el("div", "meter");
-    const nm = el("span", "nm"); nm.append(whA("search", name, name)); if (sub) nm.append(el("small", null, sub));
+    const nm = el("span", "nm"); const la = whA("search", name, name); if (PROF_ICON[name]) la.prepend(iconImg(PROF_ICON[name])); nm.append(la); if (sub) nm.append(el("small", null, sub));
     const tr = el("div", "track"); const i = el("i", cls); i.style.width = (max ? Math.min(100, value / max * 100) : 0) + "%"; tr.append(i);
     row.append(nm, tr, el("span", "val", valText)); return row;
   }
@@ -1824,11 +1906,17 @@ details > summary { cursor: pointer; color: var(--muted); }
   function renderInv() {
     const rows = $("invRows"); if (!rows) return;
     const list = invChars();
-    $("invNote").textContent = list.length ? `${list.length} character${list.length === 1 ? "" : "s"} · ${money(list.reduce((a, c) => a + (c.money || 0), 0)) || "0c"} in all` : "";
+    $("invNote").replaceChildren(...(list.length ? [document.createTextNode(`${list.length} character${list.length === 1 ? "" : "s"} · `), moneyEl(list.reduce((a, c) => a + (c.money || 0), 0)), document.createTextNode(" in all")] : []));
     rows.replaceChildren(...(list.length ? list.map((c) => {
       const tr = el("tr", isMe(c) ? "me" : null);
       const count = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
-      for (const v of [c.name + (isMe(c) ? " (this ledger)" : ""), c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–", c.money != null ? money(c.money) || "0c" : "–",
+      // name with class icon and class colour; gold with coin colours
+      const nameTd = el("td", "cls-" + classKey(c.cls));
+      if (classKey(c.cls)) nameTd.append(iconImg("classicon_" + classKey(c.cls)));
+      nameTd.append(document.createTextNode(c.name), el("span", "muted", isMe(c) ? " (this ledger)" : ""));
+      const goldTd = el("td"); if (c.money != null) goldTd.append(moneyEl(c.money)); else goldTd.textContent = "–";
+      tr.append(nameTd, el("td", null, c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–"), goldTd);
+      for (const v of [
         c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at),
         c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–", c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${lastPlayed(c.bankAt)}` : "open the bank once"]) tr.append(el("td", null, v));
       tr.title = c.account ? "WoW account " + c.account : "";
@@ -3230,6 +3318,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   setInterval(renderSyncStatus, 5000);
 
   (async () => {
+    try { const j = await (await fetch("icons-forever.json")).json(); ICONS.names = j.names; ICONS.i = j.i; ICONS.s = j.s; } catch {}
     db = await (window.claude?.use?.("db") ?? null);
     S.canWrite = true; // the service only answers this PC and signed-in Cloudflare visitors
     $("syncBtn").hidden = false; $("syncNote").hidden = false;
