@@ -2177,7 +2177,7 @@ details > summary { cursor: pointer; color: var(--muted); }
       .catch(() => { $("dgList").replaceChildren(el("p", "empty", "Couldn't load the dungeon list. Reload the page to try again.")); });
   }
   function dgItemLine(id, chance) {
-    const it = DG.data.items[id]; const row = el("div", "dg-item");
+    const it = DG.data.items[id] || (QD.items && QD.items[id]); const row = el("div", "dg-item");
     if (!it) { row.append(whA("item", id, "Item " + id)); return row; }
     row.append(whA("item", id, it.n, "iname q" + it.q));
     const bits = [];
@@ -2195,6 +2195,50 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (it.sl && !canUse(it)) row.classList.add("nouse");
     return row;
   }
+  // ---------- your own drops ----------
+  const normZone = (z) => String(z || "").toLowerCase().replace(/^the /, "").trim();
+  // One item you looted: full details when the item is known, plus how often it dropped for you
+  function yourItemLine(iid, n, q, cnt, opens, from) {
+    const known = DG.data.items[iid] || (QD.items && QD.items[iid]);
+    const row = known ? dgItemLine(+iid) : el("div", "dg-item");
+    if (!known) row.append(whA("item", +iid, n || "Item " + iid, "iname q" + q));
+    const rate = opens ? Math.round(100 * Math.min(cnt, opens) / opens) : null;
+    const pill = el("span", "pill go dg-chance", opens ? `you: ${cnt} of ${opens} loot${opens === 1 ? "" : "s"}` + (opens > 1 ? ` (${rate}%)` : "") : `you: ×${cnt}`);
+    pill.title = "How often this dropped when you looted it";
+    row.append(pill);
+    if (from) row.append(el("div", "fxl muted", "From " + from));
+    return row;
+  }
+  // Everything you looted in a dungeon from creatures and chests that aren't its listed bosses
+  function yourDungeonDrops(d) {
+    const L = S.loot && S.loot.npcs; if (!L) return null;
+    const names = new Set([d.n, ...(d.qz || [])].map(normZone));
+    const bossIds = new Set(d.bosses.map((b) => String(b.id)));
+    const items = new Map(); let sources = 0;
+    for (const [nid, e] of Object.entries(L)) {
+      if (!e.i || !names.has(normZone(e.z)) || bossIds.has(String(nid))) continue;
+      sources++;
+      const who = +nid < 0 ? (e.n || "a chest") : (e.n || "creature " + nid);
+      for (const [iid, [n, q, cnt]] of Object.entries(e.items || {})) {
+        const x = items.get(iid) || { n, q, cnt: 0, opens: 0, from: new Map() };
+        x.cnt += cnt; x.opens += e.o || 0; x.from.set(who, (x.from.get(who) || 0) + cnt); items.set(iid, x);
+      }
+    }
+    return items.size ? { items, sources } : null;
+  }
+  function yourDropNames(d) {
+    const out = [];
+    for (const b of d.bosses) { const y = b.id ? yourDrops(b.id) : null; if (y && y.items) for (const v of Object.values(y.items)) out.push(v[0]); }
+    const o = yourDungeonDrops(d); if (o) for (const x of o.items.values()) out.push(x.n);
+    return out;
+  }
+  function yourDropCount(d) {
+    let n = 0;
+    for (const b of d.bosses) { const y = b.id ? yourDrops(b.id) : null; if (y && y.items) n += Object.keys(y.items).length; }
+    const o = yourDungeonDrops(d); if (o) n += o.items.size;
+    return n;
+  }
+
   const dgQuestZones = (names) => (QD.data ? QD.data.zones.filter((z) => names.includes(z.z)) : []);
   function dgQuests(names) {
     const zs = dgQuestZones(names);
@@ -2214,7 +2258,8 @@ details > summary { cursor: pointer; color: var(--muted); }
     sum.append(top);
     const qi = dgQuests(d.qz);
     const lootN = d.bosses.reduce((a, b) => a + (b.loot ? b.loot.length : 0), 0) + (d.other ? d.other.length : 0);
-    sum.append(el("span", "qchain-next muted", `${d.bosses.length} bosses · ${lootN} verified loot items · ${qi.qs.length} quest${qi.qs.length === 1 ? "" : "s"}` + (qi.qs.length ? ` (${qi.done} done)` : "")));
+    const mineN = yourDropCount(d);
+    sum.append(el("span", "qchain-next muted", `${d.bosses.length} bosses · ${lootN} verified loot items` + (mineN ? ` · ${mineN} from your runs` : "") + ` · ${qi.qs.length} quest${qi.qs.length === 1 ? "" : "s"}` + (qi.qs.length ? ` (${qi.done} done)` : "")));
     blk.append(sum);
     const body = el("div", "qchain-body dg-body");
     const bl = el("div", "dg-bosses");
@@ -2226,14 +2271,14 @@ details > summary { cursor: pointer; color: var(--muted); }
       if (meta) h.append(el("span", "muted", " " + meta));
       if (b.rare) h.append(el("span", "pill wait", "Rare spawn"));
       c.append(h);
-      if (b.loot && b.loot.length) for (const id of b.loot) c.append(dgItemLine(id, b.chance ? b.chance[id] : null));
-      else { const n = el("div", "muted dg-none"); n.append(document.createTextNode("No verified Forever loot yet. "), b.id ? whA("npc", b.id, "See its loot on Wowhead") : whA("search", b.n, "Search Wowhead")); c.append(n); }
       const yd = b.id ? yourDrops(b.id) : null;
-      if (yd && yd.items && Object.keys(yd.items).length) {
-        const w = el("div", "dg-yours"); w.append(el("div", "label", `Your drops · looted ${yd.o || 0} time${yd.o === 1 ? "" : "s"}`));
-        for (const [iid, [n, q, cnt]] of Object.entries(yd.items).sort((a, b) => b[1][2] - a[1][2])) {
-          const r = el("div", "rs"); r.append(whA("item", +iid, n || "Item " + iid, "who q" + q), el("span", "muted", ` ×${cnt}` + (yd.o ? ` · ${Math.round(100 * Math.min(cnt, yd.o) / yd.o)}% of your loots` : ""))); w.append(r);
-        }
+      const mine = yd && yd.items ? Object.entries(yd.items).sort((x, y) => (y[1][1] - x[1][1]) || (y[1][2] - x[1][2])) : [];
+      if (b.loot && b.loot.length) for (const id of b.loot) c.append(dgItemLine(id, b.chance ? b.chance[id] : null));
+      else if (!mine.length) { const n = el("div", "muted dg-none"); n.append(document.createTextNode("No verified Forever loot yet. "), b.id ? whA("npc", b.id, "See its loot on Wowhead") : whA("search", b.n, "Search Wowhead")); c.append(n); }
+      if (mine.length) {
+        const w = el("div", "dg-yours");
+        w.append(el("div", "label", (b.loot && b.loot.length ? "Your drops" : "From your runs") + ` · looted ${yd.o || 0} time${yd.o === 1 ? "" : "s"}`));
+        for (const [iid, [n, q, cnt]] of mine) w.append(yourItemLine(iid, n, q, cnt, yd.o));
         c.append(w);
       }
       bl.append(c);
@@ -2242,6 +2287,18 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (d.other && d.other.length) {
       const o = el("details"); o.append(el("summary", null, `Other drops in this ${d.kind.toLowerCase()} (${d.other.length})`));
       for (const [id, from] of d.other) { const r = dgItemLine(id); r.append(el("div", "fxl muted", "From " + from.join(", "))); o.append(r); }
+      body.append(o);
+    }
+    const yo = yourDungeonDrops(d);
+    if (yo) {
+      const o = el("details", "dg-yours"); o.open = true;
+      o.append(el("summary", null, `From your runs: other creatures and chests (${yo.items.size} item${yo.items.size === 1 ? "" : "s"} from ${yo.sources} source${yo.sources === 1 ? "" : "s"})`));
+      const sorted = [...yo.items.entries()].sort((x, y) => (y[1].q - x[1].q) || (y[1].cnt - x[1].cnt));
+      for (const [iid, x] of sorted.slice(0, 40)) {
+        const from = [...x.from.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([w, c]) => c > 1 ? `${w} ×${c}` : w).join(", ");
+        o.append(yourItemLine(iid, x.n, x.q, x.cnt, x.opens, from));
+      }
+      if (sorted.length > 40) o.append(el("p", "hint", `and ${sorted.length - 40} more`));
       body.append(o);
     }
     if (d.gone) body.append(el("p", "hint", `${d.gone} classic item${d.gone > 1 ? "s" : ""} from here no longer exist in Forever and are hidden. Forever's replacements aren't published yet.`));
@@ -2264,7 +2321,7 @@ details > summary { cursor: pointer; color: var(--muted); }
       if (lvMode === "up" && d.lv[0] > myLv + 10) return false;
       if (words.length) {
         if (!d._hay) d._hay = [d.n, d.loc, d.kind, ...d.bosses.map((b) => b.n), ...d.bosses.flatMap((b) => (b.loot || []).map((i) => (DG.data.items[i] || {}).n)),
-          ...(d.other || []).map(([i]) => (DG.data.items[i] || {}).n)].filter(Boolean).join(" ").toLowerCase();
+          ...(d.other || []).map(([i]) => (DG.data.items[i] || {}).n), ...yourDropNames(d)].filter(Boolean).join(" ").toLowerCase();
         if (!words.every((w) => d._hay.includes(w))) return false;
       }
       return true;
@@ -2783,7 +2840,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
-    db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) { for (const d of DG.data.dungeons) d._hay = null; renderDungeons(); } }, () => {});
     db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); }, () => {});
     db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); }, () => {});
     db.collection("tasks").orderBy("createdAt", "asc").limit(300).onSnapshot((q) => { S.tasks = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderTasks(); }, () => {});
