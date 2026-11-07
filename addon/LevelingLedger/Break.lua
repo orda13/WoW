@@ -65,8 +65,8 @@ local function check()
 end
 
 local f = CreateFrame("Frame")
-f:RegisterEvent("PLAYER_LOGIN")
-f:RegisterEvent("PLAYER_REGEN_ENABLED")
+if ns.listen then ns.listen(f, "PLAYER_LOGIN") else pcall(f.RegisterEvent, f, "PLAYER_LOGIN") end
+if ns.listen then ns.listen(f, "PLAYER_REGEN_ENABLED") else pcall(f.RegisterEvent, f, "PLAYER_REGEN_ENABLED") end
 f:SetScript("OnEvent", function(_, event)
   if event == "PLAYER_LOGIN" then
     LevelingLedgerDB = LevelingLedgerDB or {}

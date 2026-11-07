@@ -5,6 +5,8 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else 'SampleSavedVariables.lua'
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
 L.execute(r'''
 T = 1794000000
+-- events the current client doesn't have (registering one is an error, as in game)
+UNKNOWN_EVENTS = { TRADE_SKILL_UPDATE = true, CRAFT_UPDATE = true }
 unpack = table.unpack
 state = { level = 13, xp = 8088, xpMax = { [13] = 11400, [14] = 12900 }, money = 5000 }
 function time() return T end
@@ -17,7 +19,7 @@ end
 UIParent = obj({})
 function CreateFrame(kind, name, parent)
   local fr = { ev = {}, scripts = {}, shown = true, point = nil }
-  function fr:RegisterEvent(e) self.ev[e] = true end
+  function fr:RegisterEvent(e) if UNKNOWN_EVENTS[e] then error('Attempt to register unknown event "' .. e .. '"') end self.ev[e] = true end
   function fr:SetScript(n, fn) self.scripts[n] = fn; if n == "OnEvent" then self.fn = fn end end
   function fr:Show() local was = self.shown; self.shown = true; if not was and self.scripts.OnShow then self.scripts.OnShow(self) end end
   function fr:Hide() self.shown = false end

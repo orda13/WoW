@@ -277,9 +277,9 @@ end
 
 -- ---------- start ----------
 local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_LOGIN")
-ev:RegisterEvent("ADDON_LOADED") -- the profession windows load on demand
-ev:RegisterEvent("BAG_UPDATE_DELAYED")
+if ns.listen then ns.listen(ev, "PLAYER_LOGIN") else pcall(ev.RegisterEvent, ev, "PLAYER_LOGIN") end
+if ns.listen then ns.listen(ev, "ADDON_LOADED") else pcall(ev.RegisterEvent, ev, "ADDON_LOADED") end -- the profession windows load on demand
+if ns.listen then ns.listen(ev, "BAG_UPDATE_DELAYED") else pcall(ev.RegisterEvent, ev, "BAG_UPDATE_DELAYED") end
 ev:SetScript("OnEvent", function(_, event, name)
   if event == "PLAYER_LOGIN" then ns.safe(hookTooltips); ns.safe(hookProfessions)
   elseif event == "ADDON_LOADED" and (name == "Blizzard_TradeSkillUI" or name == "Blizzard_CraftUI") then ns.safe(hookProfessions)

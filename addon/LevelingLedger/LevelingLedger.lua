@@ -8,6 +8,13 @@ local VERSION = 11
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
+-- Register an event only if this client has it: game updates rename or remove events, and an unknown one
+-- is an error that would stop the rest of the add-on from loading.
+local function listen(fr, e)
+  if C_EventUtils and C_EventUtils.IsEventValid and not C_EventUtils.IsEventValid(e) then return false end
+  return (pcall(fr.RegisterEvent, fr, e))
+end
+ns.listen = listen
 local db, char, session
 local lootSeen = {}          -- corpses already counted this session (by GUID)
 -- /played isn't asked for at login: the game may only allow it from a key press, so it's asked when you type /ledger
@@ -637,33 +644,33 @@ local function createPanel()
 end
 
 -- ---------- events ----------
-f:RegisterEvent("ADDON_LOADED")
-f:RegisterEvent("PLAYER_LOGIN")
-f:RegisterEvent("PLAYER_LOGOUT")
-f:RegisterEvent("PLAYER_XP_UPDATE")
-f:RegisterEvent("PLAYER_LEVEL_UP")
-f:RegisterEvent("TIME_PLAYED_MSG")
-f:RegisterEvent("ADDON_ACTION_FORBIDDEN")
-f:RegisterEvent("ADDON_ACTION_BLOCKED")
-f:RegisterEvent("QUEST_TURNED_IN")
-f:RegisterEvent("TRAINER_SHOW")
-f:RegisterEvent("TRAINER_UPDATE")
-f:RegisterEvent("MERCHANT_SHOW")
-f:RegisterEvent("MERCHANT_UPDATE")
-f:RegisterEvent("LOOT_OPENED")
-f:RegisterEvent("PLAYER_DEAD")
-f:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-f:RegisterEvent("ZONE_CHANGED")
-f:RegisterEvent("ZONE_CHANGED_INDOORS")
-f:RegisterEvent("UPDATE_EXHAUSTION")
-f:RegisterEvent("PLAYER_UPDATE_RESTING")
-f:RegisterEvent("PLAYER_TARGET_CHANGED")
-f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-f:RegisterEvent("PLAYER_MONEY")
-for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do f:RegisterEvent(e) end
-for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED" }) do f:RegisterEvent(e) end
-for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do f:RegisterEvent(e) end
-f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
+listen(f, "ADDON_LOADED")
+listen(f, "PLAYER_LOGIN")
+listen(f, "PLAYER_LOGOUT")
+listen(f, "PLAYER_XP_UPDATE")
+listen(f, "PLAYER_LEVEL_UP")
+listen(f, "TIME_PLAYED_MSG")
+listen(f, "ADDON_ACTION_FORBIDDEN")
+listen(f, "ADDON_ACTION_BLOCKED")
+listen(f, "QUEST_TURNED_IN")
+listen(f, "TRAINER_SHOW")
+listen(f, "TRAINER_UPDATE")
+listen(f, "MERCHANT_SHOW")
+listen(f, "MERCHANT_UPDATE")
+listen(f, "LOOT_OPENED")
+listen(f, "PLAYER_DEAD")
+listen(f, "ZONE_CHANGED_NEW_AREA")
+listen(f, "ZONE_CHANGED")
+listen(f, "ZONE_CHANGED_INDOORS")
+listen(f, "UPDATE_EXHAUSTION")
+listen(f, "PLAYER_UPDATE_RESTING")
+listen(f, "PLAYER_TARGET_CHANGED")
+listen(f, "COMBAT_LOG_EVENT_UNFILTERED")
+listen(f, "PLAYER_MONEY")
+for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do listen(f, e) end
+for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED" }) do listen(f, e) end
+for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do listen(f, e) end
+listen(f, "CHAT_MSG_COMBAT_XP_GAIN")
 
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
@@ -710,7 +717,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "SKILL_LINES_CHANGED" or event == "CHAT_MSG_SKILL" then safe(scanSkills)
   elseif event == "UPDATE_FACTION" or event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then safe(scanReps)
   elseif event == "CHAT_MSG_SYSTEM" then local msg = ...; safe(onSystemMessage, msg)
-  elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_UPDATE" then safe(scanTradeSkills)
+  elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_UPDATE" or event == "TRADE_SKILL_LIST_UPDATE" then safe(scanTradeSkills)
   elseif event == "CRAFT_SHOW" or event == "CRAFT_UPDATE" then safe(scanCrafts)
   elseif event == "MERCHANT_CLOSED" then where.merchant = nil
   elseif event == "TRAINER_CLOSED" then where.trainer = nil
