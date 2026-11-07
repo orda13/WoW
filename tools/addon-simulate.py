@@ -133,9 +133,7 @@ COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
 PLAYERGUID = "Player-1-0000ABCD"; PETGUID = "Creature-0-1-0-1-0000-PET0001"
 local origGUID = UnitGUID
 function UnitGUID(u) if u == "player" then return PLAYERGUID elseif u == "pet" then return PETGUID end return origGUID(u) end
--- water break popup
-POPUPS = {}
-function StaticPopup_Show(which, a) table.insert(POPUPS, string.format(StaticPopupDialogs[which].text, a)) end
+-- water break window
 function InCombatLockdown() return COMBAT or false end
 function ReloadUI() RELOADED = true end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
@@ -220,13 +218,14 @@ slash('reset'); print('after reset:', dict(L.globals().LevelingLedgerDB.panel), 
 L.eval('SlashCmdList.LEVELINGLEDGER')('')
 # water breaks: due an hour after login, held back during a fight, "Later" asks again in 15 minutes
 tick = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.scripts.OnUpdate and fr ~= LevelingLedgerPanel then fr.scripts.OnUpdate(fr, 20) end end end')
+water = lambda: L.eval('function() local w = rawget(_G, "LevelingLedgerWater") if not w then return "none" end return (w.shown and "shown: " or "hidden: ") .. (w.text.text or "") end')()
 slash('water')
-L.execute('T = T + 3600; COMBAT = true'); tick(); print('water popups in a fight:', len(L.globals().POPUPS))
-L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the fight:', list(L.globals().POPUPS.values()))
-L.execute('StaticPopupDialogs.LEVELINGLEDGER_WATER.OnCancel()'); slash('water')
-L.execute('T = T + 900'); tick(); print('after Later + 15 min:', len(L.globals().POPUPS), '|', L.globals().POPUPS[2].split('\n')[2][:40])
-L.execute('StaticPopupDialogs.LEVELINGLEDGER_WATER.OnAccept()'); print('reloaded:', L.globals().RELOADED)
-slash('water 45'); slash('water off'); tick(); L.execute('T = T + 9000'); tick(); print('popups with reminders off:', len(L.globals().POPUPS)); slash('water on')
+L.execute('T = T + 3600; COMBAT = true'); tick(); print('water window in a fight:', water())
+L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the fight:', water())
+L.execute('LevelingLedgerWater.later.scripts.OnClick()'); print('after Later:', water()[:7]); slash('water')
+L.execute('T = T + 900'); tick(); print('15 min later:', water())
+L.execute('LevelingLedgerWater.ok.scripts.OnClick()'); print('reloaded:', L.globals().RELOADED)
+slash('water 45'); slash('water off'); L.execute('LevelingLedgerWater:Hide(); T = T + 9000'); tick(); print('with reminders off:', water()[:7]); slash('water on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
 function(v)

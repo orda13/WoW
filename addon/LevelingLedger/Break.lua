@@ -21,25 +21,39 @@ local function mins(s)
   if h == 0 then return mp elseif m == 0 then return hp else return hp .. " " .. mp end
 end
 
-local MSG = "Water break!\n\nYou've been playing for %s. Drink a glass of water, stretch a bit, and /reload to save your Leveling Ledger."
-StaticPopupDialogs = StaticPopupDialogs or {}
-StaticPopupDialogs["LEVELINGLEDGER_WATER"] = {
-  text = MSG, button1 = "Reload now", button2 = "Later",
-  OnAccept = function() if B then B.since = now() end if ReloadUI then ReloadUI() end end,
-  OnCancel = function() if B then B.next = now() + SNOOZE end end,
-  timeout = 0, whileDead = true, hideOnEscape = true, showAlert = true, preferredIndex = 3,
-}
+-- Its own small window, not Blizzard's StaticPopup: adding to StaticPopupDialogs taints Blizzard's popups
+-- (release spirit, delete item, ...) and gets the add-on blamed for blocked actions.
+local win
+local function later() if B then B.next = now() + SNOOZE end; if win then win:Hide() end end
+local function build()
+  if win then return win end
+  win = CreateFrame("Frame", "LevelingLedgerWater", UIParent, ns.BACKDROP_TEMPLATE)
+  if ns.styleFrame then ns.styleFrame(win, 0.95) end
+  win:SetSize(340, 132); win:SetPoint("TOP", UIParent, "TOP", 0, -140)
+  win:SetFrameStrata("DIALOG"); win:SetClampedToScreen(true)
+  win:EnableMouse(true); win:SetMovable(true); win:RegisterForDrag("LeftButton")
+  win:SetScript("OnDragStart", win.StartMoving); win:SetScript("OnDragStop", win.StopMovingOrSizing)
+  local title = win:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); title:SetPoint("TOP", 0, -14); title:SetText("Water break!")
+  win.text = win:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  win.text:SetPoint("TOPLEFT", 16, -40); win.text:SetPoint("TOPRIGHT", -16, -40); win.text:SetJustifyH("CENTER")
+  local ok = CreateFrame("Button", nil, win, "UIPanelButtonTemplate"); ok:SetSize(120, 22); ok:SetPoint("BOTTOMRIGHT", win, "BOTTOM", -6, 14); ok:SetText("Reload now")
+  ok:SetScript("OnClick", function() if B then B.since = now() end; win:Hide(); if ReloadUI then ReloadUI() end end)
+  local no = CreateFrame("Button", nil, win, "UIPanelButtonTemplate"); no:SetSize(120, 22); no:SetPoint("BOTTOMLEFT", win, "BOTTOM", 6, 14); no:SetText("Later")
+  no:SetScript("OnClick", later)
+  win.ok, win.later = ok, no
+  win:Hide()
+  return win
+end
 
 local function remind()
   pending = false
   local played = mins(now() - (B.since or now()))
   B.shownAt = now(); B.next = now() + every()  -- "Later" moves this up to 15 minutes from now
-  if RaidNotice_AddMessage and RaidWarningFrame then
-    RaidNotice_AddMessage(RaidWarningFrame, "Water break! Drink some water, then /reload to save.", ChatTypeInfo and ChatTypeInfo["RAID_WARNING"] or { r = 0.4, g = 0.8, b = 1 })
-  end
-  if PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then PlaySound(SOUNDKIT.RAID_WARNING) end
+  if PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then pcall(PlaySound, SOUNDKIT.RAID_WARNING) end
   print(TAG .. "|cff66ccffwater break!|r Drink some water, then type /reload to save your ledger.")
-  if StaticPopup_Show then StaticPopup_Show("LEVELINGLEDGER_WATER", played) end
+  local w = build()
+  w.text:SetText("You've been playing for " .. played .. ".\nDrink a glass of water, stretch a bit,\nand reload to save your Leveling Ledger.")
+  w:Show()
 end
 
 local function check()
