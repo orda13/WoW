@@ -168,6 +168,11 @@ function importAddon(text, store, publicDir, source, hint) {
     const entries = Object.values(ch.trainer).filter(Boolean).map((t) => STATUS.has(t.r) ? { ...t, r: "", state: t.r } : t).filter((t) => t.state !== "header");
     // class spells an earlier import filed as profession recipes
     for (const [k, v] of Object.entries(recipes)) if (list.some((e) => e.n === (v && v.n))) { delete recipes[k]; cleaned++; }
+    // Ranks you've already learned show level 0 and share one entry: it's the highest rank up to your level that
+    // the same trainer visit doesn't still offer (those come with their level).
+    const lvl = ch.level || (S.char && S.char.level) || 0;
+    const offered = new Set(entries.filter((t) => t.lv && t.state !== "used").map((t) => `${t.n}|${t.lv}|${t.at}`));
+    const learnedRank = (byName, t) => byName.filter((e) => !e.auto && e.lv <= lvl && !offered.has(`${t.n}|${e.lv}|${t.at}`)).sort((x, y) => y.lv - x.lv)[0] || null;
     for (const t of entries) {
       if (t.cost == null || !t.n) { noCost++; continue; }
       const at = (t.at || 0) * 1000;
@@ -175,6 +180,7 @@ function importAddon(text, store, publicDir, source, hint) {
       // Name + rank is the fallback for entries without a level; a bare name only matches a spell with a single rank.
       const byName = list.filter((e) => e.n === t.n);
       const a = (t.lv ? byName.find((e) => e.lv === t.lv) : null)
+        || (t.state === "used" && !t.lv ? learnedRank(byName, t) : null)
         || (t.r ? byName.find((e) => (e.r || "") === t.r) : null)
         || (!t.lv && !t.r && byName.length === 1 ? byName[0] : null);
       if (a) matched.add(String(a.id));
@@ -203,7 +209,7 @@ function importAddon(text, store, publicDir, source, hint) {
     if (nR || cleaned) store.set("state/trainerrecipes", { byName: recipes, updatedAt: Date.now() });
     const total = entries.length;
     const why = !nA && !nR ? ` (${total} trainer entries: ${[same && `${same} already imported`, noCost && `${noCost} without a price`, older && `${older} older than what's saved`, unmatched && `${unmatched} not matched to a rank`].filter(Boolean).join(", ") || "none usable"})` : "";
-    done.push(`${nA} training cost${nA === 1 ? "" : "s"}` + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : "") + why);
+    done.push((!nA && same && !unmatched ? "training costs up to date" : `${nA} training cost${nA === 1 ? "" : "s"}`) + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : "") + why);
   }
 
   // 4. Vendor prices (gold and Merchant's Favor)
