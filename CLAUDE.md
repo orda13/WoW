@@ -32,6 +32,7 @@
 - `app/scripts/`: Windows install and uninstall scripts, using NSSM and the Local Service account. They can't run in Linux sessions, so review PowerShell changes by hand and keep the files ASCII-only.
 - `addon/LevelingLedger/`: the WoW Forever add-on (Interface 16001, SavedVariables `LevelingLedgerDB`).
   - Register events through `listen()` (`ns.listen`): an event the client doesn't have is an error that stops the rest of the file from loading.
+  - The WoW Forever client runs on the newest engine: add-ons may not register `COMBAT_LOG_EVENT_UNFILTERED` (the game blocks them). Kills come from the kill-XP chat message.
   - Avoid taint: never assign Blizzard globals or add to `StaticPopupDialogs`; build the add-on's own frames instead. Taint makes the game blame the add-on for blocked actions.
 - `tools/`: the add-on simulator (`addon-simulate.py`, needs `lupa`) and the data-build scripts.
 

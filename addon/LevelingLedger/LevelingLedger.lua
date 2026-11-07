@@ -410,17 +410,9 @@ local function scanReps()
 end
 
 -- ---------- kills ----------
--- Kills: the combat log's PARTY_KILL events where you (or your pet) landed the killing blow.
-local function onCombatLog()
-  if not session or not CombatLogGetCurrentEventInfo then return end
-  local _, sub, _, src, _, _, _, dst = CombatLogGetCurrentEventInfo()
-  if sub ~= "PARTY_KILL" then return end
-  if src ~= UnitGUID("player") and src ~= UnitGUID("pet") then return end
-  local kind = dst and strsplit("-", dst)
-  if kind == "Creature" or kind == "Vehicle" then session.kills = (session.kills or 0) + 1 end
-end
-
--- Kill XP: "<mob> dies, you gain <n> experience." (also counts kills by your group).
+-- Kills are counted from the kill-XP message below. (Not the combat log: this game client doesn't let add-ons read
+-- it, and asking for it gets the add-on blocked at login.) Kills that give no XP aren't counted.
+-- Kill XP and kills: "<mob> dies, you gain <n> experience." (also kills by your group that give you XP).
 -- The pattern comes from the game's own text, so it works in any language.
 local killXPPattern
 local function buildKillPattern()
@@ -435,7 +427,7 @@ local function onXPMessage(msg)
   if not session or not msg then return end
   killXPPattern = killXPPattern or buildKillPattern()
   local n = tonumber(msg:match(killXPPattern) or "")
-  if n then session.killXP = (session.killXP or 0) + n end
+  if n then session.killXP = (session.killXP or 0) + n; session.kills = (session.kills or 0) + 1 end
 end
 
 -- ---------- trainer ----------
@@ -665,7 +657,6 @@ listen(f, "ZONE_CHANGED_INDOORS")
 listen(f, "UPDATE_EXHAUSTION")
 listen(f, "PLAYER_UPDATE_RESTING")
 listen(f, "PLAYER_TARGET_CHANGED")
-listen(f, "COMBAT_LOG_EVENT_UNFILTERED")
 listen(f, "PLAYER_MONEY")
 for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do listen(f, e) end
 for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED" }) do listen(f, e) end
@@ -728,7 +719,6 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then where.trainer = true; safe(onTrainer)
   elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then where.merchant = true; safe(onMerchant)
   elseif event == "LOOT_OPENED" then safe(onLoot)
-  elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then safe(onCombatLog)
   elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then local msg = ...; safe(onXPMessage, msg)
   elseif event == "PLAYER_DEAD" then char.deaths = char.deaths + 1; if session then session.deaths = session.deaths + 1 end
   elseif event == "ZONE_CHANGED_NEW_AREA" then safe(noteZone); safe(noteState)

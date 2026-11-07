@@ -7,6 +7,8 @@ L.execute(r'''
 T = 1794000000
 -- events the current client doesn't have (registering one is an error, as in game)
 UNKNOWN_EVENTS = { TRADE_SKILL_UPDATE = true, CRAFT_UPDATE = true }
+-- events add-ons may not register on this client (the game blocks the add-on)
+RESTRICTED_EVENTS = { COMBAT_LOG_EVENT_UNFILTERED = true }
 unpack = table.unpack
 state = { level = 13, xp = 8088, xpMax = { [13] = 11400, [14] = 12900 }, money = 5000 }
 function time() return T end
@@ -19,7 +21,7 @@ end
 UIParent = obj({})
 function CreateFrame(kind, name, parent)
   local fr = { ev = {}, scripts = {}, shown = true, point = nil }
-  function fr:RegisterEvent(e) if UNKNOWN_EVENTS[e] then error('Attempt to register unknown event "' .. e .. '"') end self.ev[e] = true end
+  function fr:RegisterEvent(e) if UNKNOWN_EVENTS[e] then error('Attempt to register unknown event "' .. e .. '"') end if RESTRICTED_EVENTS[e] then error("ADDON_ACTION_FORBIDDEN: RegisterEvent " .. e) end self.ev[e] = true end
   function fr:SetScript(n, fn) self.scripts[n] = fn; if n == "OnEvent" then self.fn = fn end end
   function fr:Show() local was = self.shown; self.shown = true; if not was and self.scripts.OnShow then self.scripts.OnShow(self) end end
   function fr:Hide() self.shown = false end
@@ -147,7 +149,7 @@ for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua'):   # the 
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')
-# 3 kills by you (one with rested bonus), 1 by your pet, 1 by a party member (XP but not your kill), and a non-creature kill
+# 5 kills that give you XP (yours, your pet's and a party member's) and a player kill with no XP: kills come from the XP messages
 def kill(src, dst, msg=None):
     L.execute(f'CLEU = {{ 0, "PARTY_KILL", false, "{src}", "x", 0, 0, "{dst}" }}'); fire('COMBAT_LOG_EVENT_UNFILTERED')
     if msg: fire('CHAT_MSG_COMBAT_XP_GAIN', msg)
