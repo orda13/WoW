@@ -5,7 +5,7 @@ A leveling companion for **World of Warcraft: Forever**. It tracks play sessions
 | Folder | What it is |
 |---|---|
 | [`app/`](app/) | The web app and Windows service: a Node.js server with no npm dependencies, plus the page and its game data. Installing it and setting up remote access are covered in [`app/README.md`](app/README.md). |
-| [`addon/LevelingLedger/`](addon/LevelingLedger/) | The in-game add-on. It records sessions, exact XP, trainer costs, vendor and Merchant's Favor prices, loot and quest turn-ins to SavedVariables, and the app imports them automatically. |
+| [`addon/LevelingLedger/`](addon/LevelingLedger/) | The in-game add-on. It records sessions with exact XP, kills, gold, reputation and profession skill-ups, plus rested XP and zone, trainer costs, vendor and Merchant's Favor prices, loot and quest turn-ins to SavedVariables, and the app imports them automatically. It also shows a small panel in game (`/ledger show`, `hide`, `lock`, `unlock`, `reset`). |
 | [`tools/`](tools/) | The scripts that built the game data in `app/public/*.json`, and a simulator that tests the add-on outside the game. |
 
 ## How the pieces fit

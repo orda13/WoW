@@ -9,7 +9,28 @@ unpack = table.unpack
 state = { level = 13, xp = 8088, xpMax = { [13] = 11400, [14] = 12900 }, money = 5000 }
 function time() return T end
 function GetTime() return T end
-function CreateFrame() local fr = { ev = {} } function fr:RegisterEvent(e) self.ev[e] = true end function fr:SetScript(_, fn) self.fn = fn end FRAME = fr return fr end
+-- frames: the first one is the add-on's event frame; later ones are UI (the panel)
+local function obj(extra)
+  local o = extra or {}
+  return setmetatable(o, { __index = function(_, k) return function() end end })
+end
+UIParent = obj({})
+function CreateFrame(kind, name, parent)
+  local fr = { ev = {}, scripts = {}, shown = true, point = nil }
+  function fr:RegisterEvent(e) self.ev[e] = true end
+  function fr:SetScript(n, fn) self.scripts[n] = fn; if n == "OnEvent" then self.fn = fn end end
+  function fr:Show() self.shown = true end
+  function fr:Hide() self.shown = false end
+  function fr:IsShown() return self.shown end
+  function fr:SetPoint(...) self.point = { ... } end
+  function fr:GetPoint() local p = self.point or {} return p[1], p[2], p[3], p[4], p[5] end
+  fr.fonts = {}
+  function fr:CreateFontString() local fs = obj({}) function fs:SetText(t) self.text = t end table.insert(fr.fonts, fs) return fs end
+  function fr:CreateTexture() return obj({}) end
+  if name then _G[name] = obj(fr) end
+  if not FRAME then FRAME = fr end
+  return obj(fr)
+end
 function UnitName(u) if u == "player" then return "Talwyn" elseif u == "npc" then return NPCNAME else return "Mob" end end
 function GetRealmName() return "Normal" end
 function UnitClass() return "Druid", "DRUID" end
@@ -115,7 +136,18 @@ fire('PLAYER_DEAD')
 L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')
 L.execute('RESTING = true; SUBZONE = "Lor\'danel Inn"'); fire('PLAYER_UPDATE_RESTING')
 L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
-L.eval('SlashCmdList.LEVELINGLEDGER')()
+# the in-game panel, before logging out
+show = L.eval('function() local p = LevelingLedgerPanel; p.scripts.OnUpdate(p, 1.5); local t = {} for _, f in ipairs(p.fonts) do t[#t + 1] = f.text or "" end return table.concat(t, "\\n") end')
+p = L.globals().LevelingLedgerPanel
+print('panel shown:', p.shown, '| starts at', [p.point[k] for k in (1, 3, 4, 5)])
+print(show())
+slash = L.eval('SlashCmdList.LEVELINGLEDGER')
+for cmd in ('lock', 'hide', 'show', 'unlock'):
+    slash(cmd); print('  after', cmd, '-> shown', p.shown, 'locked', L.globals().LevelingLedgerDB.panel.locked)
+L.execute('LevelingLedgerPanel.point = { "CENTER", UIParent, "CENTER", 120, -40 }; LevelingLedgerPanel.scripts.OnDragStop(LevelingLedgerPanel)')
+print('saved spot after drag:', dict(L.globals().LevelingLedgerDB.panel))
+slash('reset'); print('after reset:', dict(L.globals().LevelingLedgerDB.panel), [p.point[k] for k in (1, 3, 4, 5)])
+L.eval('SlashCmdList.LEVELINGLEDGER')('')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
 function(v)

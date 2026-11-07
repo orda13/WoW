@@ -3,7 +3,7 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 7
+local VERSION = 8
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -432,6 +432,106 @@ local function onLoot()
   end
 end
 
+-- ---------- in-game panel ----------
+-- A small movable window: session time, XP and XP per hour, time to level, kills, gold earned, rested XP.
+-- /ledger show | hide | lock | unlock | reset
+local panel, lines
+local function fmtNum(n)
+  local str = tostring(math.floor((n or 0) + 0.5))
+  local k
+  repeat str, k = str:gsub("^(-?%d+)(%d%d%d)", "%1,%2") until k == 0
+  return str
+end
+local function fmtClock(sec)
+  sec = math.max(0, math.floor(sec or 0))
+  local h, m, x = math.floor(sec / 3600), math.floor(sec % 3600 / 60), sec % 60
+  if h > 0 then return string.format("%d:%02d:%02d", h, m, x) end
+  return string.format("%d:%02d", m, x)
+end
+local function fmtDur(sec)
+  if not sec or sec ~= sec or sec <= 0 or sec == math.huge then return "-" end
+  local m = math.floor(sec / 60 + 0.5)
+  if m < 60 then return m .. "m" end
+  return string.format("%dh %02dm", math.floor(m / 60), m % 60)
+end
+local function fmtMoney(c)
+  c = math.floor(c or 0)
+  local g, sv, cp = math.floor(c / 10000), math.floor(c / 100) % 100, c % 100
+  local t = {}
+  if g > 0 then t[#t + 1] = g .. "g" end
+  if sv > 0 then t[#t + 1] = sv .. "s" end
+  if cp > 0 or #t == 0 then t[#t + 1] = cp .. "c" end
+  return table.concat(t, " ")
+end
+
+local function updatePanel()
+  if not panel or not panel:IsShown() then return end
+  if not session or not char then
+    lines[1]:SetText("Waiting for your character...")
+    for i = 2, 4 do lines[i]:SetText("") end
+    return
+  end
+  local el = now() - (session.start or now())
+  local xp = session.xpGained or 0
+  local rate = (el >= 60 and xp > 0) and xp / el * 3600 or nil
+  local lvl, cap = UnitLevel("player"), (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 60
+  local togo = (UnitXPMax("player") or 0) - (UnitXP("player") or 0)
+  lines[1]:SetText("Session  " .. fmtClock(el))
+  lines[2]:SetText("XP  " .. fmtNum(xp) .. (rate and ("   " .. fmtNum(rate) .. " an hour") or ""))
+  if lvl >= cap then lines[3]:SetText("Max level")
+  else lines[3]:SetText("Level " .. (lvl + 1) .. " in  " .. (rate and fmtDur(togo / rate * 3600) or "-") .. "   " .. fmtNum(togo) .. " XP to go") end
+  local earned = 0
+  for k, v in pairs(session.moneyIn or {}) do if k ~= "mail" then earned = earned + v end end
+  local rested = GetXPExhaustion() or 0
+  lines[4]:SetText("Kills " .. fmtNum(session.kills or 0) .. "   Gold +" .. fmtMoney(earned) .. (rested > 0 and ("   Rested " .. fmtNum(rested)) or ""))
+end
+
+local function placePanel()
+  panel:ClearAllPoints()
+  local p = db.panel
+  if p.point then panel:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
+  else panel:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -230, -200) end
+end
+
+local function createPanel()
+  if panel or not CreateFrame or not UIParent then return end
+  db.panel = db.panel or { shown = true }
+  local p = CreateFrame("Frame", "LevelingLedgerPanel", UIParent)
+  p:SetSize(250, 78)
+  p:SetFrameStrata("MEDIUM")
+  p:SetClampedToScreen(true)
+  p:SetMovable(true)
+  p:EnableMouse(true)
+  p:RegisterForDrag("LeftButton")
+  p:SetScript("OnDragStart", function(self) if not db.panel.locked then self:StartMoving() end end)
+  p:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local point, _, relPoint, x, y = self:GetPoint()
+    db.panel.point, db.panel.relPoint, db.panel.x, db.panel.y = point, relPoint, x, y
+  end)
+  local bg = p:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints()
+  if bg.SetColorTexture then bg:SetColorTexture(0, 0, 0, 0.55) else bg:SetTexture(0, 0, 0, 0.55) end
+  local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  title:SetPoint("TOPLEFT", 8, -6)
+  title:SetText("Leveling Ledger")
+  lines = {}
+  for i = 1, 4 do
+    local fs = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fs:SetPoint("TOPLEFT", 8, -6 - i * 14)
+    fs:SetJustifyH("LEFT")
+    lines[i] = fs
+  end
+  panel = p
+  placePanel()
+  local acc = 0
+  p:SetScript("OnUpdate", function(_, dt)
+    acc = acc + (dt or 0)
+    if acc >= 1 then acc = 0; safe(updatePanel) end
+  end)
+  if db.panel.shown == false then p:Hide() else p:Show(); safe(updatePanel) end
+end
+
 -- ---------- events ----------
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
@@ -477,6 +577,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
       startSession(); noteZone(); noteState(); scanSkills(); scanReps()
+      createPanel()
       -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
       if not f.hooked then
         f.hooked = true
@@ -533,7 +634,20 @@ end)
 
 -- ---------- /ledger ----------
 SLASH_LEVELINGLEDGER1 = "/ledger"
-SlashCmdList.LEVELINGLEDGER = function()
+local TAG = "|cffd9aa5aLeveling Ledger|r: "
+local function panelCommand(cmd)
+  if not panel then print(TAG .. "the panel isn't ready yet."); return true end
+  if cmd == "show" then db.panel.shown = true; panel:Show(); safe(updatePanel); print(TAG .. "panel shown.")
+  elseif cmd == "hide" then db.panel.shown = false; panel:Hide(); print(TAG .. "panel hidden. /ledger show brings it back.")
+  elseif cmd == "lock" then db.panel.locked = true; print(TAG .. "panel locked in place.")
+  elseif cmd == "unlock" then db.panel.locked = false; print(TAG .. "panel unlocked; drag it to move it.")
+  elseif cmd == "reset" then db.panel.point, db.panel.relPoint, db.panel.x, db.panel.y = nil, nil, nil, nil; db.panel.locked = false; placePanel(); print(TAG .. "panel moved back to its starting spot.")
+  else return false end
+  return true
+end
+SlashCmdList.LEVELINGLEDGER = function(msg)
+  local cmd = strtrim and strtrim((msg or ""):lower()) or (msg or ""):lower():match("^%s*(.-)%s*$")
+  if cmd ~= "" and panelCommand(cmd) then return end
   if not char then print("|cffd9aa5aLeveling Ledger|r: not ready yet."); return end
   local v, l, t = 0, 0, 0
   for _ in pairs(char.vendors) do v = v + 1 end
@@ -542,4 +656,5 @@ SlashCmdList.LEVELINGLEDGER = function()
   print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP, %d kills.",
     #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0, session and session.kills or 0))
   print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
+  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset.")
 end
