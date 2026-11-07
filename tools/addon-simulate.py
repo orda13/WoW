@@ -58,8 +58,12 @@ function IsInInstance() return INSTANCE or false end
 strsplit = function(sep, s) local out = {} for p in (s .. sep):gmatch("(.-)%" .. sep) do out[#out + 1] = p end return unpack(out) end
 C_Map = { GetBestMapForUnit = function() return 1439 end, GetPlayerMapPosition = function() return { GetXY = function() return 0.374, 0.401 end } end }
 -- trainer
-function GetNumTrainerServices() return 4 end
+function GetNumTrainerServices() return FILTER.used == 1 and 4 or 0 end
 local TS = { { "Regrowth", "Rank 1", "available", 180, 12 }, { "Thorns", "Rank 2", "available", 200, 14 }, { "Druid", nil, "header", 0, 0 }, { "Elixir of Minor Fortitude", nil, "available", 90, 5, "Alchemy", 50 } }
+-- the trainer window hides known and too-high abilities until its filters are switched on
+FILTER = { available = 1, unavailable = 0, used = 0 }
+function GetTrainerServiceTypeFilter(k) return FILTER[k] end
+function SetTrainerServiceTypeFilter(k, v) FILTER[k] = v; if FRAME then FRAME.fn(FRAME, "TRAINER_UPDATE") end end
 function GetTrainerServiceSkillLine(i) return TS[i][6] end
 function GetTrainerServiceSkillReq(i) if TS[i][6] then return TS[i][6], TS[i][7], true end return nil end
 function GetTrainerServiceInfo(i) return TS[i][1], TS[i][2], TS[i][3] end
@@ -178,7 +182,7 @@ fire('CHAT_MSG_SYSTEM', 'You have learned a new spell: Moonfire (Rank 3).')   # 
 L.execute('SKILLS[2][3] = 70'); fire('SKILL_LINES_CHANGED'); fire('TRADE_SKILL_SHOW')
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')
 money(500); money(-20); fire('MERCHANT_CLOSED')                       # sell, then buy or repair
-L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW')
+L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW'); print('trainer filters afterwards:', dict(L.globals().FILTER))
 money(-380); fire('TRAINER_CLOSED')                                   # training
 L.execute('T = T + 60'); fire('MAIL_SHOW'); money(10000); money(-30); fire('MAIL_CLOSED')   # gold from an alt, postage
 L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-36-1-1763-0000AAAA"'); fire('PLAYER_TARGET_CHANGED'); fire('LOOT_OPENED')

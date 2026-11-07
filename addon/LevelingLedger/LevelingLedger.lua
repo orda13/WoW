@@ -431,22 +431,47 @@ local function onXPMessage(msg)
 end
 
 -- ---------- trainer ----------
+-- Every ability the trainer has: the window's filters (available / too high a level / already known) are switched
+-- on while it's read, then put back, so costs for abilities you've learned or can't learn yet are recorded too.
+local scanningTrainer, lastTrainerNote = false, 0
+local function passOk(ok, ...) if ok then return ... end return nil end
+local function call(fn, ...) if not fn then return nil end return passOk(pcall(fn, ...)) end
 local function onTrainer()
-  if not GetNumTrainerServices then return end
-  local npc = npcIdFromGUID(UnitGUID("npc"))
-  local npcName = UnitName("npc")
-  for i = 1, GetNumTrainerServices() do
-    local name, rank, category = GetTrainerServiceInfo(i)
-    if name and category ~= "header" then
-      local cost = GetTrainerServiceCost and GetTrainerServiceCost(i) or nil
-      local req = GetTrainerServiceLevelReq and GetTrainerServiceLevelReq(i) or nil
-      -- profession trainers: which profession, and the skill it needs (e.g. Alchemy 50)
-      local line = GetTrainerServiceSkillLine and GetTrainerServiceSkillLine(i) or nil
-      local sk, skr = nil, nil
-      if GetTrainerServiceSkillReq then sk, skr = GetTrainerServiceSkillReq(i) end
-      char.trainer[name .. "|" .. (rank or "")] = { n = name, r = rank, cost = cost, lv = req, npc = npc, npcName = npcName, at = now(), state = category,
-        line = line, sk = sk, skr = skr }
+  if scanningTrainer or not GetNumTrainerServices then return end
+  scanningTrainer = true
+  local saved = {}
+  if GetTrainerServiceTypeFilter and SetTrainerServiceTypeFilter then
+    for _, k in ipairs({ "available", "unavailable", "used" }) do
+      local v = call(GetTrainerServiceTypeFilter, k)
+      saved[k] = (v == true or v == 1)
+      if not saved[k] then call(SetTrainerServiceTypeFilter, k, 1) end
     end
+  end
+  local npc, npcName, n, priced = nil, nil, 0, 0
+  local ok = pcall(function()
+  npc = npcIdFromGUID(call(UnitGUID, "npc"))
+  npcName = call(UnitName, "npc")
+  n = call(GetNumTrainerServices) or 0
+  for i = 1, n do
+    local name, rank, category = call(GetTrainerServiceInfo, i)
+    if name and category ~= "header" then
+      local cost = call(GetTrainerServiceCost, i)
+      local line = call(GetTrainerServiceSkillLine, i)            -- profession trainers: which profession
+      local sk, skr = call(GetTrainerServiceSkillReq, i)          -- and the skill it needs (e.g. Alchemy 50)
+      char.trainer[name .. "|" .. (rank or "")] = { n = name, r = rank, cost = cost, lv = call(GetTrainerServiceLevelReq, i), npc = npc, npcName = npcName,
+        at = now(), state = category, line = line, sk = sk, skr = skr }
+      if cost then priced = priced + 1 end
+    end
+  end
+  end)
+  for k, v in pairs(saved) do if not v then call(SetTrainerServiceTypeFilter, k, 0) end end
+  scanningTrainer = false
+  if not ok then return end
+  if priced > 0 and now() - lastTrainerNote > 30 then
+    lastTrainerNote = now()
+    print("|cffd9aa5aLeveling Ledger|r: recorded " .. priced .. " training cost" .. (priced == 1 and "" or "s") .. (npcName and (" from " .. npcName) or "") .. ". Type /reload to send them to the ledger.")
+  elseif n == 0 then
+    print("|cffd9aa5aLeveling Ledger|r: this trainer's list is empty, so no costs were recorded.")
   end
 end
 
