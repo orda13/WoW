@@ -14,7 +14,7 @@ function publicView(config, isLocal) {
     savedVariablesFile: config.savedVariablesFile || "",
     port: config.port || 8787,
     alts: config.alts || [],
-    access: { teamDomain: a.teamDomain || "", aud: a.aud || "", allowedEmails: a.allowedEmails || [] },
+    access: { teamDomain: a.teamDomain || "", aud: a.aud || "", allowedEmails: a.allowedEmails || [], serviceTokens: a.serviceTokens || [] },
     canEditAccess: isLocal,
   };
 }
@@ -89,6 +89,12 @@ function applyUpdate(config, body, isLocal) {
         const v = (str(na.aud, 100) || "").toLowerCase();
         if (v && !/^[a-f0-9]{64}$/.test(v)) errors.aud = "The Application Audience (AUD) tag is 64 letters and numbers.";
         else set(a, "aud", v, "Cloudflare application tag");
+      }
+      if (na.serviceTokens != null) {
+        // Cloudflare service token client IDs for relays on your other PCs (like "0123...cdef.access")
+        const list = (Array.isArray(na.serviceTokens) ? na.serviceTokens : String(na.serviceTokens).split(/[\s,;]+/)).map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+        if (list.length > 20 || list.some((x) => !/^[a-f0-9]{32}\.access$/.test(x))) errors.serviceTokens = 'A service token\'s Client ID looks like "0123456789abcdef0123456789abcdef.access", one per line.';
+        else if (JSON.stringify(a.serviceTokens || []) !== JSON.stringify(list)) { a.serviceTokens = list; changed.push("device tokens"); }
       }
       if (na.allowedEmails != null) {
         const list = (Array.isArray(na.allowedEmails) ? na.allowedEmails : String(na.allowedEmails).split(/[\s,;]+/))

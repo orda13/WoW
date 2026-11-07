@@ -26,7 +26,12 @@ async function verifyAccessJwt(token, cfg) {
   if (!ks[header.kid]) { keysAt = 0; ks = await loadKeys(cfg); } // keys rotate
   const key = ks[header.kid];
   if (!key) throw new Error("unknown signing key");
-  const ok = crypto.verify("RSA-SHA256", Buffer.from(parts[0] + "." + parts[1]), key, b64(parts[2]));
+  let ok = crypto.verify("RSA-SHA256", Buffer.from(parts[0] + "." + parts[1]), key, b64(parts[2]));
+  // Cloudflare may have replaced its keys: look again (at most once a minute) before refusing
+  if (!ok && Date.now() - keysAt > 60 * 1000) {
+    keysAt = 0; ks = await loadKeys(cfg);
+    ok = !!ks[header.kid] && crypto.verify("RSA-SHA256", Buffer.from(parts[0] + "." + parts[1]), ks[header.kid], b64(parts[2]));
+  }
   if (!ok) throw new Error("bad signature");
   const now = Math.floor(Date.now() / 1000);
   if (payload.exp && payload.exp < now - 30) throw new Error("sign-in expired");
@@ -35,10 +40,16 @@ async function verifyAccessJwt(token, cfg) {
   if (!auds.includes(cfg.aud)) throw new Error("token is for a different application");
   const iss = cfg.issuer || `https://${cfg.teamDomain}`;
   if (payload.iss !== iss) throw new Error("token from a different team");
+  // a relay on another PC signs in with a Cloudflare service token: the token carries its client ID, not an email
+  if (!payload.email && payload.common_name) {
+    const ids = (cfg.serviceTokens || []).map((x) => String(x).toLowerCase());
+    if (ids.includes(String(payload.common_name).toLowerCase())) return { service: String(payload.common_name) };
+    throw new Error("this device's token isn't allowed");
+  }
   const email = String(payload.email || "").toLowerCase();
   const allowed = (cfg.allowedEmails || []).map((e) => String(e).toLowerCase());
   if (!email || !allowed.includes(email)) throw new Error("this Google account isn't allowed");
-  return email;
+  return { email };
 }
 
 function cookie(req, name) {
@@ -61,7 +72,8 @@ async function checkRequest(req, cfg) {
   if (!cfg || !cfg.teamDomain || !cfg.aud || !(cfg.allowedEmails || []).length)
     return "Remote access isn't set up yet: fill in the Remote access section on the Settings tab, on the PC running the ledger.";
   try {
-    req.userEmail = await verifyAccessJwt(req.headers["cf-access-jwt-assertion"] || cookie(req, "CF_Authorization"), cfg);
+    const who = await verifyAccessJwt(req.headers["cf-access-jwt-assertion"] || cookie(req, "CF_Authorization"), cfg);
+    if (who.service) req.serviceToken = who.service; else req.userEmail = who.email;
     return null;
   } catch (e) { return "Sign-in check failed: " + e.message; }
 }

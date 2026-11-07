@@ -1,7 +1,7 @@
 // Finds the add-on's SavedVariables file(s) and imports them whenever the game saves (log out or /reload).
 const fs = require("fs");
 const path = require("path");
-const { importAddon, readSaved, pickChar } = require("./addon-import");
+const { importAddon, readSaved, pickChar, sourceKey } = require("./addon-import");
 
 // Every WTF\Account\<account>\SavedVariables\LevelingLedger.lua under the game folder(s)
 function findFiles(roots) {
@@ -33,7 +33,7 @@ const DEFAULT_ROOTS = [
 ];
 
 // targets(): [{ store, hint }] for every tracked character (hint = its Blizzard name, e.g. "talwyn-orda")
-function startWatcher({ targets, publicDir, config, log, onImported, onFile }) {
+function startWatcher({ targets, publicDir, config, log, onImported, onFile, extraFiles }) {
   const roots = () => [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
   const watched = new Map(); // file -> last mtime handled
   const status = { files: [], lastCheck: 0, lastError: "", seen: {} };
@@ -49,7 +49,9 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile }) {
     let any = false;
     for (const t of targets()) {
       if (!pickChar(data, t.store, t.hint)) continue; // this file has no data for that character
-      const have = (t.store.get("state/addon") || {}).savedAt || 0;
+      // each PC's file is judged on its own (an older file from one PC doesn't block another's)
+      const a = t.store.get("state/addon") || {}, key = sourceKey(file);
+      const have = a.sources ? ((a.sources[key] || {}).savedAt || 0) : (key.startsWith("This PC/") ? a.savedAt || 0 : 0);
       if ((data.savedAt || 0) * 1000 <= have && why !== "manual") continue;
       try {
         const r = importAddon(text, t.store, publicDir, file, t.hint);
@@ -62,7 +64,8 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile }) {
 
   function scan() {
     status.lastCheck = Date.now();
-    const files = config.savedVariablesFile ? [config.savedVariablesFile] : findFiles(roots());
+    // this PC's files, plus the ones relays on your other PCs have sent
+    const files = [...(config.savedVariablesFile ? [config.savedVariablesFile] : findFiles(roots())), ...(extraFiles ? extraFiles() : [])];
     status.files = files;
     for (const f of files) {
       if (watched.has(f)) continue;
@@ -77,7 +80,7 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile }) {
       });
       tryImport(f, "startup");
     }
-    if (!files.length) status.lastError = "Couldn't find LevelingLedger.lua yet. If the game is installed somewhere else, set its folder on the Settings tab.";
+    if (!files.length && !config.relayOnly) status.lastError = "Couldn't find LevelingLedger.lua yet. If the game is installed somewhere else, set its folder on the Settings tab.";
   }
   scan();
   setInterval(scan, 5 * 60 * 1000); // pick up a file created after the first log-out

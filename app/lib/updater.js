@@ -8,7 +8,7 @@ const vm = require("vm");
 
 // What an update may replace, relative to the repository root -> relative to the app folder.
 // The install scripts and tools are never touched: they run with administrator rights.
-const APP_FILES = /^app\/(server\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
+const APP_FILES = /^app\/(server\.js|relay\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
 const ADDON_FILES = /^addon\/LevelingLedger\/[A-Za-z0-9_.-]+\.(lua|toc|xml|txt)$/;
 
 function startUpdater({ appDir, dataDir, config, log, addonDir }) {

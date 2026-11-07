@@ -32,7 +32,7 @@ if ($existing -and $existing.Status -ne "Stopped") { Write-Host "Stopping the ru
 # --- copy the app (your data and settings are kept) ---
 New-Item -ItemType Directory -Force -Path $Dest, "$Dest\data", "$Dest\logs", "$Dest\tools" | Out-Null
 if ((Resolve-Path $Src).Path.TrimEnd("\") -ne (Resolve-Path $Dest).Path.TrimEnd("\")) {
-  foreach ($f in @("server.js", "package.json", "config.example.json", "README.md")) { Copy-Item (Join-Path $Src $f) $Dest -Force }
+  foreach ($f in @("server.js", "relay.js", "package.json", "config.example.json", "README.md")) { Copy-Item (Join-Path $Src $f) $Dest -Force }
   foreach ($d in @("lib", "public", "scripts")) {
     New-Item -ItemType Directory -Force -Path "$Dest\$d" | Out-Null
     Copy-Item -Path (Join-Path $Src "$d\*") -Destination "$Dest\$d" -Recurse -Force
@@ -84,7 +84,7 @@ if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
 
 # --- one-click updates: the service may replace its own program files (never the install scripts) ---
 foreach ($d in @("lib", "public")) { icacls "$Dest\$d" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null }
-foreach ($f in @("server.js", "package.json", "README.md", "config.example.json")) { if (Test-Path "$Dest\$f") { icacls "$Dest\$f" /grant "${svcAcct}:M" /Q | Out-Null } }
+foreach ($f in @("server.js", "relay.js", "package.json", "README.md", "config.example.json")) { if (Test-Path "$Dest\$f") { icacls "$Dest\$f" /grant "${svcAcct}:M" /Q | Out-Null } }
 # record which version this is, when installing from a git clone (a ZIP download is recorded on the first one-click update)
 $repoRoot = Split-Path -Parent $Src
 $sha = $null

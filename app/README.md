@@ -136,6 +136,69 @@ Cloudflare's dashboard changes now and then, so menu names may differ slightly f
 
 ---
 
+## Part 3: Other PCs and the Steam Deck (about 10 minutes each)
+
+WoW keeps the add-on's file on each computer separately. A small **relay** on each other PC or Steam Deck sends that device's file to your hub through your Cloudflare address, every time the game saves.
+- The hub combines everything:
+  - sessions and quests from every device
+  - loot counts added together
+  - for skills, reputation, rested XP and vendor prices, whichever device saved last
+- If the hub can't be reached, for example when the Deck is travelling, the relay keeps trying and sends the file once it can.
+
+You need Part 2 (Cloudflare) done first.
+
+### A. Make a service token for each device (once per device, in Cloudflare)
+1. In Zero Trust, go to **Access > Service Auth > Service Tokens > Create Service Token**.
+   - Name it after the device, for example `steam-deck`.
+   - Choose **Non-expiring**, or a long duration.
+2. Copy the **Client ID** and **Client Secret**. The secret is only shown once.
+3. Go to **Access > Applications > Leveling Ledger > Policies > Add a policy**:
+   - Action: **Service Auth**
+   - Include: **Service Token**, and pick your device tokens
+   - Save.
+4. On the hub, open the ledger's **Settings** tab and paste each token's **Client ID** into **Devices allowed to send add-on data** (one per line). Save.
+   - A device token can only send add-on data. It can't read your ledger or change anything.
+   - To cut a device off, remove its line, or revoke the token in Cloudflare.
+
+### B. A second Windows PC
+1. Install the add-on there as usual (`addon\LevelingLedger` into `Interface\AddOns`), and Node.js from https://nodejs.org.
+2. Download the project and open its `app` folder in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\install-relay.ps1
+   ```
+
+   It asks for:
+   - your hub address (`https://ledger.<your domain>`)
+   - the token's Client ID and Secret
+   - a name for the PC
+   - the WoW folder
+
+   It then checks the connection and starts the **Leveling Ledger relay** service. The log is in `C:\LevelingLedgerRelay\logs\relay.log`.
+
+### C. The Steam Deck
+1. Switch to **Desktop Mode**. In Firefox, download the project from GitHub as a ZIP and extract it, for example into `Downloads`.
+2. Install the add-on: copy `addon/LevelingLedger` into WoW's `Interface/AddOns` folder. On the Deck that's inside Steam's Proton folder for the game, something like
+   `~/.local/share/Steam/steamapps/compatdata/<number>/pfx/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns`.
+3. Open **Konsole** in the project's `app` folder and run:
+
+   ```bash
+   bash scripts/install-relay.sh
+   ```
+
+   - It asks the same questions as on Windows.
+   - It finds WoW inside Proton, Lutris or Bottles by itself.
+   - If needed, it downloads Node.js into your home folder and checks it against nodejs.org's published checksums.
+   - It installs the relay as a user service that starts with the Deck, in Game Mode too.
+   - Nothing outside your home folder changes, and no password is needed.
+4. Check it any time with `systemctl --user status leveling-ledger-relay`.
+
+**To update a relay**, download the new version and run its installer again. The settings are kept.
+
+**Your other devices on the hub:** the hub's Settings tab lists each device and when it last sent data.
+
+**What the game itself can't show:** in game, each PC's tooltips and `/ledger alts` window only know what was recorded on that PC. The page always shows everything.
+
 ## Troubleshooting
 
 - **"Couldn't find LevelingLedger.lua yet":** log out of the game or `/reload` once with the add-on enabled. If the game is somewhere unusual, set its folder on the **Settings** tab. The service rescans every 5 minutes.

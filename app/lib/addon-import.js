@@ -22,6 +22,15 @@ function pickChar(data, store, hint) {
   return chars.find((x) => (x.name || "").toLowerCase() === want) || null;
 }
 
+// Which PC a file came from: files sent by a relay are kept in data/relay/<device>/<account>/SavedVariables/
+function sourceKey(file) {
+  const parts = String(file || "").split(/[\\/]+/);
+  const acc = parts.length >= 3 ? parts[parts.length - 3] : "";
+  const r = parts.lastIndexOf("relay");
+  if (r >= 0 && parts.length > r + 2) return `${parts[r + 1]}/${parts[r + 2]}`;
+  return `This PC/${acc}`;
+}
+
 function readSaved(text) {
   if (/CreateFrame\(|RegisterEvent\(/.test(text)) throw new Error("That's the add-on's own code, not its saved data.");
   return parseLuaSaved(text).LevelingLedgerDB;
@@ -56,6 +65,7 @@ function importAddon(text, store, publicDir, source, hint) {
     sessions: store.list("sessions").map((d) => ({ ...d.data, _id: d.id })),
   };
   const done = []; let n;
+  const src = sourceKey(source);
 
   // 1. Sessions with exact XP and time (reload pieces less than 10 minutes apart are joined)
   n = 0;
@@ -110,13 +120,17 @@ function importAddon(text, store, publicDir, source, hint) {
 
   // 2c. Professions: skill levels, known recipes per profession, recipes learned (1.0.6+)
   if (ch.skillsAt || ch.recipesAt) {
+    // several PCs: skill levels from whichever saved most recently; recipe lists and learned recipes combined
     const prev = store.get("state/addonskills") || {};
     const recipes = { ...(prev.recipes || {}) };
     for (const [prof, list] of Object.entries(ch.recipes || {})) recipes[prof] = [...new Set([...(recipes[prof] || []), ...arr(list)])].sort();
+    const newer = (ch.skillsAt || 0) * 1000 >= (prev.skillsAt || 0);
+    const learned = new Map((prev.learned || []).map((x) => [x.n + "@" + x.at, x]));
+    for (const x of arr(ch.learned)) learned.set(x.n + "@" + (x.at || 0) * 1000, { n: x.n, at: (x.at || 0) * 1000 });
     const doc = {
-      skills: ch.skills || prev.skills || {}, skillsAt: (ch.skillsAt || 0) * 1000,
-      recipes, recipesAt: (ch.recipesAt || 0) * 1000,
-      learned: arr(ch.learned).slice(-200).map((x) => ({ n: x.n, at: (x.at || 0) * 1000 })),
+      skills: newer ? (ch.skills || prev.skills || {}) : (prev.skills || {}), skillsAt: Math.max((ch.skillsAt || 0) * 1000, prev.skillsAt || 0),
+      recipes, recipesAt: Math.max((ch.recipesAt || 0) * 1000, prev.recipesAt || 0),
+      learned: [...learned.values()].sort((a, b) => a.at - b.at).slice(-200),
     };
     if (JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonskills", doc);
     const nSk = Object.keys(doc.skills).length;
@@ -127,7 +141,7 @@ function importAddon(text, store, publicDir, source, hint) {
   if (ch.repsAt && ch.reps) {
     const doc = { reps: ch.reps, at: ch.repsAt * 1000 };
     const prev = store.get("state/addonreps");
-    if (JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
+    if ((!prev || doc.at >= (prev.at || 0)) && JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
   }
 
   // 3. Training costs, matched to the class's abilities by name and rank
@@ -158,22 +172,33 @@ function importAddon(text, store, publicDir, source, hint) {
         if (it.limited != null) e.l = it.limited;
         items[iid] = e;
       }
-      cur[id] = { n: v.name, z: v.zone, xy: v.x != null ? [v.x, v.y] : null, at: (v.at || 0) * 1000, items };
+      const at = (v.at || 0) * 1000;
+      if (cur[id] && (cur[id].at || 0) > at) continue; // another PC saw this vendor more recently
+      cur[id] = { n: v.name, z: v.zone, xy: v.x != null ? [v.x, v.y] : null, at, items };
     }
     store.set("state/vendors", { v: cur, updatedAt: Date.now() });
     done.push(`prices from ${Object.keys(ch.vendors).length} vendor${Object.keys(ch.vendors).length === 1 ? "" : "s"}`);
   }
 
-  // 5. Loot by creature (the add-on keeps running totals, so this replaces earlier imports)
+  // 5. Loot by creature. Each PC's add-on keeps its own running totals, so they're kept per PC and added together.
   if (ch.loot && Object.keys(ch.loot).length) {
-    const npcs = {};
+    const mine = {};
     for (const [id, e] of Object.entries(ch.loot)) {
       const items = {};
       for (const [iid, it] of Object.entries(e.items || {})) items[iid] = [it.n || "", it.q ?? 1, it.c || 0];
-      npcs[id] = { n: e.name || "", z: e.zone || "", i: e.instance ? 1 : 0, o: e.opens || 0, items };
+      mine[id] = { n: e.name || "", z: e.zone || "", i: e.instance ? 1 : 0, o: e.opens || 0, items };
     }
-    store.set("state/loot", { npcs, updatedAt: Date.now() });
-    done.push(`loot from ${Object.keys(npcs).length} creature${Object.keys(npcs).length === 1 ? "" : "s"}`);
+    const prev = store.get("state/loot") || {};
+    const sources = { ...(prev.sources || {}), [src]: mine };
+    const npcs = {};
+    for (const one of Object.values(sources)) for (const [id, e] of Object.entries(one)) {
+      const t = npcs[id] || (npcs[id] = { n: e.n, z: e.z, i: e.i, o: 0, items: {} });
+      if (!t.n && e.n) t.n = e.n;
+      t.o += e.o || 0;
+      for (const [iid, [n, q, c]] of Object.entries(e.items)) { const x = t.items[iid] || (t.items[iid] = [n, q, 0]); x[2] += c; }
+    }
+    store.set("state/loot", { npcs, sources, updatedAt: Date.now() });
+    done.push(`loot from ${Object.keys(mine).length} creature${Object.keys(mine).length === 1 ? "" : "s"}`);
   }
 
   // 6. Quests turned in
@@ -187,8 +212,13 @@ function importAddon(text, store, publicDir, source, hint) {
   const message = `Imported for ${ch.name || "your character"}: ` + done.join(", ") + ".";
   // the add-on logs its own Lua errors (db.errors: {at, err}); show the latest few on the page
   const errors = arr(data.errors).filter((e) => e && e.err).slice(-10).map((e) => ({ at: e.at || 0, err: String(e.err).slice(0, 300) }));
-  store.set("state/addon", { importedAt: Date.now(), savedAt: (data.savedAt || 0) * 1000, char: ch.name || "", played: ch.played || 0, deaths: ch.deaths || 0, auto: !!source, file: source || "", message, errors });
+  // per PC: when its file was last saved and imported (the watcher skips a PC's file that hasn't changed)
+  const prevAddon = store.get("state/addon") || {};
+  const savedAt = (data.savedAt || 0) * 1000;
+  const sources = { ...(prevAddon.sources || {}), [src]: { savedAt, importedAt: Date.now() } };
+  const newest = Math.max(savedAt, prevAddon.savedAt || 0);
+  store.set("state/addon", { importedAt: Date.now(), savedAt: newest, char: ch.name || "", played: Math.max(ch.played || 0, prevAddon.played || 0), deaths: Math.max(ch.deaths || 0, prevAddon.deaths || 0), auto: !!source, file: source || "", from: src, message, errors, sources });
   return { message, savedAt: (data.savedAt || 0) * 1000 };
 }
 
-module.exports = { importAddon, readSaved, pickChar };
+module.exports = { importAddon, readSaved, pickChar, sourceKey };

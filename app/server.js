@@ -12,6 +12,7 @@ const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
 const { characters, charStore } = require("./lib/characters");
 const { mergeInventories } = require("./lib/inventory");
+const { readSaved } = require("./lib/addon-import");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -97,9 +98,25 @@ function syncAfterPlay() {
   afterImport = [setTimeout(() => sync("after play"), 60 * 1000), setTimeout(() => sync("after play, second check"), 6 * 60 * 1000)];
 }
 
+// ---------- files from relays on your other PCs (data/relay/<device>/<account>/SavedVariables/LevelingLedger.lua) ----------
+const relayDir = path.join(dataDir, "relay");
+const NAME_OK = /^[A-Za-z0-9 _#.()-]{1,60}$/;
+function relayFiles() {
+  const out = [];
+  const dirs = (p) => { try { return fs.readdirSync(p, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name); } catch { return []; } };
+  for (const dev of dirs(relayDir)) for (const acc of dirs(path.join(relayDir, dev))) {
+    const f = path.join(relayDir, dev, acc, "SavedVariables", "LevelingLedger.lua");
+    if (fs.existsSync(f)) out.push(f);
+  }
+  return out;
+}
+const devicesFile = path.join(relayDir, "devices.json");
+const devices = (() => { try { return JSON.parse(fs.readFileSync(devicesFile, "utf8")); } catch { return {}; } })();
+
 // ---------- add-on file watcher ----------
 const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay,
-  onFile: (data, file) => mergeInventories(store, data, file) }); // every character on every account: gold, bags, bank
+  onFile: (data, file) => mergeInventories(store, data, file), // every character on every account: gold, bags, bank
+  extraFiles: relayFiles });
 
 // ---------- one-click updates ----------
 // The add-on's folder is found next to the watched SavedVariables file: <game>\_forever_\Interface\AddOns\LevelingLedger
@@ -121,6 +138,8 @@ const server = http.createServer(async (req, res) => {
     if (denied) return send(res, 403, "<!doctype html><meta charset=utf-8><title>Not allowed</title><p style=\"font:16px system-ui;margin:2em\">" + denied.replace(/</g, "&lt;") + "</p>", "text/html; charset=utf-8");
     const url = new URL(req.url, "http://localhost");
     const p = decodeURIComponent(url.pathname);
+    // a relay's service token may only upload and check in; nothing else on the hub
+    if (req.serviceToken && !((p === "/api/relay/upload" && req.method === "POST") || p === "/api/relay/ping")) return send(res, 403, { error: "device tokens can only upload" });
     // Writes must carry this header; a page on another site can't add it without being refused by the browser.
     if (req.method !== "GET" && req.method !== "HEAD" && req.headers["x-ledger"] !== "1") return send(res, 403, { error: "missing header" });
 
@@ -168,6 +187,24 @@ const server = http.createServer(async (req, res) => {
       try { const r = updater.undo(); send(res, 200, r); restartSoon(); return; }
       catch (e) { return send(res, 400, { ok: false, message: e.message }); }
     }
+    if (p === "/api/relay/ping") return send(res, 200, { ok: true, hub: VERSION });
+    if (p === "/api/relay/upload" && req.method === "POST") {
+      const device = url.searchParams.get("device") || "", account = url.searchParams.get("account") || "";
+      if (!NAME_OK.test(device) || !NAME_OK.test(account) || /^\.+$/.test(device) || /^\.+$/.test(account)) return send(res, 400, { error: "bad device or account name" });
+      const text = await readBody(req, 30 * 1024 * 1024);
+      try { const d = readSaved(text); if (!d || !d.chars) throw new Error("no Leveling Ledger data"); }
+      catch (e) { return send(res, 400, { error: "That isn't a Leveling Ledger file: " + e.message }); }
+      const dir = path.join(relayDir, device, account, "SavedVariables"), f = path.join(dir, "LevelingLedger.lua");
+      fs.mkdirSync(dir, { recursive: true });
+      const same = fs.existsSync(f) && fs.readFileSync(f, "utf8") === text;
+      if (!same) { fs.writeFileSync(f + ".tmp", text); fs.renameSync(f + ".tmp", f); }
+      const d = devices[device] || (devices[device] = { accounts: {} });
+      d.lastUpload = Date.now(); d.token = req.serviceToken || "this PC"; d.accounts[account] = Date.now();
+      fs.writeFileSync(devicesFile, JSON.stringify(devices));
+      log(`Relay ${device} sent ${account}${same ? " (unchanged)" : ""}`);
+      if (!same) watcher.scan(); // a new file is imported now; a changed one within a few seconds
+      return send(res, 200, { ok: true, unchanged: same });
+    }
     if (p === "/api/settings" && req.method === "GET") return send(res, 200, publicView(config, !viaCloudflare(req)));
     if (p === "/api/settings" && req.method === "PUT") {
       const isLocal = !viaCloudflare(req);
@@ -214,7 +251,8 @@ const server = http.createServer(async (req, res) => {
         via: viaCloudflare(req) ? "cloudflare" : "local", user: req.userEmail || null, lastBackup: lastBackup ? lastBackup.at : null,
         updateAvailable: updater.view().available,
         characters: chars().map((c) => { const d = storeFor(c.id).get("state/character") || {}; return { id: c.id, character: c.character, main: c.main, name: d.name || "", level: d.level || null, cls: d.cls || "" }; }),
-        seen: Object.values(watcher.status.seen).map(({ name, level, cls }) => ({ name, level, cls })) });
+        seen: Object.values(watcher.status.seen).map(({ name, level, cls }) => ({ name, level, cls })),
+        devices: Object.entries(devices).map(([name, d]) => ({ name, lastUpload: d.lastUpload, accounts: Object.keys(d.accounts || {}) })) });
     }
 
     // static data files
