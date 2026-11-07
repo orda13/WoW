@@ -161,15 +161,28 @@ function importAddon(text, store, publicDir, source, hint) {
     const prev = store.get("state/trainercosts") || {};
     const costs = { ...(prev.costs || {}) }, fromAddon = { ...(prev.fromAddon || {}) };
     const recipes = { ...((store.get("state/trainerrecipes") || {}).byName || {}) };
-    let nA = 0, nR = 0, noCost = 0, older = 0, same = 0;
-    for (const t of Object.values(ch.trainer)) {
+    let nA = 0, nR = 0, noCost = 0, older = 0, same = 0, unmatched = 0, cleaned = 0;
+    const matched = new Set();
+    // Add-on 1.0.19 and older stored this client's status word (available, unavailable, used) as the rank
+    const STATUS = new Set(["available", "unavailable", "used", "header"]);
+    const entries = Object.values(ch.trainer).filter(Boolean).map((t) => STATUS.has(t.r) ? { ...t, r: "", state: t.r } : t).filter((t) => t.state !== "header");
+    // class spells an earlier import filed as profession recipes
+    for (const [k, v] of Object.entries(recipes)) if (list.some((e) => e.n === (v && v.n))) { delete recipes[k]; cleaned++; }
+    for (const t of entries) {
       if (t.cost == null || !t.n) { noCost++; continue; }
       const at = (t.at || 0) * 1000;
-      const a = list.find((e) => e.n === t.n && (e.r || "") === (t.r || "")) || list.find((e) => e.n === t.n && !t.r);
+      // Each rank needs its own level, so name + level picks the exact rank (this client's trainer gives no rank text).
+      // Name + rank is the fallback for entries without a level; a bare name only matches a spell with a single rank.
+      const byName = list.filter((e) => e.n === t.n);
+      const a = (t.lv ? byName.find((e) => e.lv === t.lv) : null)
+        || (t.r ? byName.find((e) => (e.r || "") === t.r) : null)
+        || (!t.lv && !t.r && byName.length === 1 ? byName[0] : null);
+      if (a) matched.add(String(a.id));
+      else if (byName.length) { unmatched++; continue; } // a class spell we can't place: don't guess its rank
       if (a) {
         const f = fromAddon[a.id];
         if (f && (f.at || 0) > at) { older++; continue; } // another device saw this trainer more recently
-        if (costs[a.id] !== t.cost || !f) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "" }; nA++; } else same++;
+        if (costs[a.id] !== t.cost || !f || (!f.lv && t.lv)) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "", lv: t.lv || 0 }; nA++; } else same++;
       } else {
         const k = t.n.toLowerCase() + (t.r ? "|" + String(t.r).toLowerCase() : "");
         const cur = recipes[k];
@@ -178,10 +191,18 @@ function importAddon(text, store, publicDir, source, hint) {
         if (JSON.stringify(cur) !== JSON.stringify(v)) { recipes[k] = v; nR++; } else same++;
       }
     }
-    if (nA) store.set("state/trainercosts", { costs, fromAddon, updatedAt: Date.now() });
-    if (nR) store.set("state/trainerrecipes", { byName: recipes, updatedAt: Date.now() });
-    const total = Object.keys(ch.trainer).length;
-    const why = !nA && !nR ? ` (${total} trainer entries: ${[same && `${same} already imported`, noCost && `${noCost} without a price`, older && `${older} older than what's saved`].filter(Boolean).join(", ") || "none usable"})` : "";
+    // Earlier imports matched rankless entries to Rank 1 with another rank's price. Those matches have no level;
+    // drop them where this file places the spell by level, so the page doesn't show a wrong locked price.
+    const covered = new Set(entries.filter((t) => t.lv && t.n).map((t) => t.n));
+    let fixed = 0;
+    for (const id of Object.keys(fromAddon)) {
+      const e = list.find((x) => String(x.id) === id);
+      if (e && covered.has(e.n) && !matched.has(id) && !fromAddon[id].lv) { delete fromAddon[id]; delete costs[id]; fixed++; }
+    }
+    if (nA || fixed) store.set("state/trainercosts", { costs, fromAddon, updatedAt: Date.now() });
+    if (nR || cleaned) store.set("state/trainerrecipes", { byName: recipes, updatedAt: Date.now() });
+    const total = entries.length;
+    const why = !nA && !nR ? ` (${total} trainer entries: ${[same && `${same} already imported`, noCost && `${noCost} without a price`, older && `${older} older than what's saved`, unmatched && `${unmatched} not matched to a rank`].filter(Boolean).join(", ") || "none usable"})` : "";
     done.push(`${nA} training cost${nA === 1 ? "" : "s"}` + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : "") + why);
   }
 

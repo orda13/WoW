@@ -434,6 +434,7 @@ end
 -- Every ability the trainer has: the window's filters (available / too high a level / already known) are switched
 -- on while it's read, then put back, so costs for abilities you've learned or can't learn yet are recorded too.
 local scanningTrainer, lastTrainerNote = false, 0
+local TRAINER_STATUS = { available = true, unavailable = true, used = true, header = true }
 local function passOk(ok, ...) if ok then return ... end return nil end
 local function call(fn, ...) if not fn then return nil end return passOk(pcall(fn, ...)) end
 local function onTrainer()
@@ -448,17 +449,22 @@ local function onTrainer()
     end
   end
   local npc, npcName, n, priced = nil, nil, 0, 0
-  local ok = pcall(function()
+  local ok, err = pcall(function()
   npc = npcIdFromGUID(call(UnitGUID, "npc"))
   npcName = call(UnitName, "npc")
   n = call(GetNumTrainerServices) or 0
   for i = 1, n do
-    local name, rank, category = call(GetTrainerServiceInfo, i)
+    -- older clients give name, rank, status; this one gives name, status, icon (and no rank text)
+    local name, x, y = call(GetTrainerServiceInfo, i)
+    local rank, category = x, y
+    if TRAINER_STATUS[x] then rank, category = nil, x end
     if name and category ~= "header" then
       local cost = call(GetTrainerServiceCost, i)
       local line = call(GetTrainerServiceSkillLine, i)            -- profession trainers: which profession
       local sk, skr = call(GetTrainerServiceSkillReq, i)          -- and the skill it needs (e.g. Alchemy 50)
-      char.trainer[name .. "|" .. (rank or "")] = { n = name, r = rank, cost = cost, lv = call(GetTrainerServiceLevelReq, i), npc = npc, npcName = npcName,
+      local lv = call(GetTrainerServiceLevelReq, i)
+      -- name, rank and level: this client's trainer has no rank text, so the level keeps each rank apart
+      char.trainer[name .. "|" .. (rank or "") .. "|" .. (lv or "")] = { n = name, r = rank, cost = cost, lv = lv, npc = npc, npcName = npcName,
         at = now(), state = category, line = line, sk = sk, skr = skr }
       if cost then priced = priced + 1 end
     end
@@ -466,7 +472,7 @@ local function onTrainer()
   end)
   for k, v in pairs(saved) do if not v then call(SetTrainerServiceTypeFilter, k, 0) end end
   scanningTrainer = false
-  if not ok then return end
+  if not ok then safe(error, "trainer scan: " .. tostring(err), 0) return end
   if priced > 0 and now() - lastTrainerNote > 30 then
     lastTrainerNote = now()
     print("|cffd9aa5aLeveling Ledger|r: recorded " .. priced .. " training cost" .. (priced == 1 and "" or "s") .. (npcName and (" from " .. npcName) or "") .. ". Type /reload to send them to the ledger.")

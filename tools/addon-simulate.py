@@ -58,15 +58,16 @@ function IsInInstance() return INSTANCE or false end
 strsplit = function(sep, s) local out = {} for p in (s .. sep):gmatch("(.-)%" .. sep) do out[#out + 1] = p end return unpack(out) end
 C_Map = { GetBestMapForUnit = function() return 1439 end, GetPlayerMapPosition = function() return { GetXY = function() return 0.374, 0.401 end } end }
 -- trainer
-function GetNumTrainerServices() return FILTER.used == 1 and 4 or 0 end
-local TS = { { "Regrowth", "Rank 1", "available", 180, 12 }, { "Thorns", "Rank 2", "available", 200, 14 }, { "Druid", nil, "header", 0, 0 }, { "Elixir of Minor Fortitude", nil, "available", 90, 5, "Alchemy", 50 } }
+local TS = { { "Regrowth", "Rank 1", "available", 180, 12 }, { "Thorns", "Rank 2", "available", 200, 14 }, { "Druid", nil, "header", 0, 0 }, { "Thorns", "Rank 3", "unavailable", 1800, 24 }, { "Elixir of Minor Fortitude", nil, "available", 90, 5, "Alchemy", 50 } }
 -- the trainer window hides known and too-high abilities until its filters are switched on
 FILTER = { available = 1, unavailable = 0, used = 0 }
+function GetNumTrainerServices() return FILTER.used == 1 and #TS or 0 end
 function GetTrainerServiceTypeFilter(k) return FILTER[k] end
 function SetTrainerServiceTypeFilter(k, v) FILTER[k] = v; if FRAME then FRAME.fn(FRAME, "TRAINER_UPDATE") end end
 function GetTrainerServiceSkillLine(i) return TS[i][6] end
 function GetTrainerServiceSkillReq(i) if TS[i][6] then return TS[i][6], TS[i][7], true end return nil end
-function GetTrainerServiceInfo(i) return TS[i][1], TS[i][2], TS[i][3] end
+-- this client returns name, status, icon (no rank text), and each rank needs its own level
+function GetTrainerServiceInfo(i) return TS[i][1], TS[i][3], 136000 + i end
 function GetTrainerServiceCost(i) return TS[i][4] end
 function GetTrainerServiceLevelReq(i) return TS[i][5] end
 -- merchant (Merchant's Favor recipe + a gold item)
