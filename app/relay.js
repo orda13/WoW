@@ -92,6 +92,16 @@ function wowRunning() {
   return false;
 }
 const same = (f, buf) => { try { return Buffer.compare(fs.readFileSync(f), buf) === 0; } catch { return false; } };
+// Can this file be written? (opened for writing and left unchanged; for a new file, a test file in its folder)
+function canWrite(p) {
+  try {
+    if (fs.existsSync(p)) { fs.closeSync(fs.openSync(p, "r+")); return true; }
+    let dir = path.dirname(p);
+    while (!fs.existsSync(dir) && path.dirname(dir) !== dir) dir = path.dirname(dir);
+    const probe = path.join(dir, `.ll-write-test-${process.pid}`);
+    fs.writeFileSync(probe, ""); fs.rmSync(probe, { force: true }); return true;
+  } catch { return false; }
+}
 function writeAtomic(f, buf) { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + ".tmp", buf); fs.renameSync(f + ".tmp", f); }
 
 let waitingForWow = false;
@@ -123,12 +133,15 @@ async function selfUpdate(cfg, addonDirs) {
   let addonPending = false;
   if (todo.length) {
     if (wowRunning()) { addonPending = true; if (!waitingForWow) log("An add-on update is ready; it installs once WoW is closed."); waitingForWow = true; }
+    else if (todo.some((d) => addon.some(([n]) => !canWrite(path.join(d, n.slice(21)))))) log("Can't write into the add-on folder; run the relay installer again once.");
     else { for (const d of todo) for (const [n, buf] of addon) writeAtomic(path.join(d, n.slice(21)), buf); waitingForWow = false; log(`Updated the add-on in ${todo.length} game folder${todo.length === 1 ? "" : "s"}`); }
   }
   // the relay itself: keep the current files, write the new ones, restart (the service manager starts it again)
   const code = Object.entries(files).filter(([n]) => !n.startsWith("addon/"));
   const changed = code.filter(([n, buf]) => !same(path.join(__dirname, n), buf));
   if (changed.length) {
+    const blocked = changed.filter(([n]) => !canWrite(path.join(__dirname, n)));
+    if (blocked.length) throw new Error(`not allowed to change ${blocked.map(([n]) => n).join(", ")}; run the relay installer again once`);
     fs.rmSync(BACKUP_DIR, { recursive: true, force: true });
     const backedUp = [], added = [];
     for (const [n] of changed) {
@@ -136,7 +149,8 @@ async function selfUpdate(cfg, addonDirs) {
       if (fs.existsSync(cur)) { fs.mkdirSync(path.dirname(path.join(BACKUP_DIR, n)), { recursive: true }); fs.copyFileSync(cur, path.join(BACKUP_DIR, n)); backedUp.push(n); }
       else added.push(n);
     }
-    for (const [n, buf] of changed) writeAtomic(path.join(__dirname, n), buf);
+    // written in place: on Windows the relay may change its own files but not add files beside relay.js
+    for (const [n, buf] of changed) { const d = path.join(__dirname, n); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.writeFileSync(d, buf); }
     fs.writeFileSync(UPDATE_FILE, JSON.stringify({ version, pending: true, tries: 0, backedUp, added, addonPending, previous: st.version || null }));
     log(`Updated the relay to ${version} (${changed.length} file${changed.length === 1 ? "" : "s"}); restarting`);
     setTimeout(() => process.exit(0), 500);

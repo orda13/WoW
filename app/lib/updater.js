@@ -8,9 +8,22 @@ const vm = require("vm");
 
 // What an update may replace, relative to the repository root -> relative to the app folder.
 // The install scripts and tools are never touched: they run with administrator rights.
-const APP_FILES = /^app\/(server\.js|relay\.js|relay-boot\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
+const APP_FILES = /^app\/(server\.js|relay\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
 // Shared.lua is written on each device (the in-game summary), so an update never replaces it
 const ADDON_FILES = /^addon\/LevelingLedger\/(?!Shared\.lua$)[A-Za-z0-9_.-]+\.(lua|toc|xml|txt)$/;
+
+// Can the service write this file? An existing file is opened for writing (and left unchanged); for a new one,
+// a test file is created in its nearest existing folder. (On Windows, fs.access only checks the read-only flag.)
+function canWrite(p) {
+  try {
+    if (fs.existsSync(p)) { fs.closeSync(fs.openSync(p, "r+")); return true; }
+    let dir = path.dirname(p);
+    while (!fs.existsSync(dir) && path.dirname(dir) !== dir) dir = path.dirname(dir);
+    const probe = path.join(dir, `.ll-write-test-${process.pid}`);
+    fs.writeFileSync(probe, ""); fs.rmSync(probe, { force: true });
+    return true;
+  } catch { return false; }
+}
 
 function startUpdater({ appDir, dataDir, config, log, addonDir }) {
   const repo = () => config.updateRepo || "orda13/wow";
@@ -104,6 +117,11 @@ function startUpdater({ appDir, dataDir, config, log, addonDir }) {
       for (const f of appOut.filter((x) => x.rel.endsWith(".js"))) {
         try { new vm.Script(f.data.toString("utf8"), { filename: f.rel }); } catch (e) { throw new Error(`${f.rel} doesn't parse: ${e.message}`); }
       }
+      // make sure every file can be written before changing anything, so an update never stops halfway
+      const blocked = appOut.filter((f) => !f.rel.startsWith("addon/") && !canWrite(path.join(appDir, f.rel)));
+      if (blocked.length) throw new Error(`The service isn't allowed to change ${blocked.slice(0, 3).map((f) => f.rel).join(", ")}${blocked.length > 3 ? " and more" : ""}. Nothing was changed. Run app\\scripts\\install.ps1 once more (it gives the service the access it needs), then update again.`);
+      // the hub's own add-on copy (for relays) is best effort: if it can't be written, relays get the add-on from the game folder
+      for (let i = appOut.length - 1; i >= 0; i--) if (appOut[i].rel.startsWith("addon/") && !canWrite(path.join(appDir, appOut[i].rel))) appOut.splice(i, 1);
       // keep the current version for undo
       fs.rmSync(backupDir, { recursive: true, force: true });
       const saved = [];
@@ -112,7 +130,8 @@ function startUpdater({ appDir, dataDir, config, log, addonDir }) {
         if (fs.existsSync(cur)) { const b = path.join(backupDir, "app", f.rel); fs.mkdirSync(path.dirname(b), { recursive: true }); fs.copyFileSync(cur, b); saved.push({ rel: f.rel, existed: true }); }
         else saved.push({ rel: f.rel, existed: false });
       }
-      const addonTarget = addonDir();
+      let addonTarget = addonDir();
+      if (addonTarget && addonOut.some((f) => !canWrite(path.join(addonTarget, f.rel)))) addonTarget = null; // updated by the installer instead
       const savedAddon = [];
       if (addonTarget) for (const f of addonOut) {
         const cur = path.join(addonTarget, f.rel);
