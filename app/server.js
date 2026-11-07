@@ -6,7 +6,7 @@ const { Store } = require("./lib/store");
 const { startWatcher } = require("./lib/watcher");
 const { syncBlizzard, resetToken } = require("./lib/blizzard");
 const { checkRequest, viaCloudflare } = require("./lib/access");
-const { publicView, applyUpdate, saveConfig } = require("./lib/settings");
+const { publicView, applyUpdate, saveConfig, newAlts } = require("./lib/settings");
 const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
@@ -125,8 +125,19 @@ const devicesFile = path.join(relayDir, "devices.json");
 const devices = (() => { try { return JSON.parse(fs.readFileSync(devicesFile, "utf8")); } catch { return {}; } })();
 
 // ---------- add-on file watcher ----------
+// Every character the add-on records gets its own page: new ones are tracked as soon as their file is read
+// (before it's imported, so their data comes in with the same import).
+function autoAlts(data) {
+  const add = newAlts(config, Object.values(data.chars || {}).map((c) => c && c.name));
+  if (!add.length) return;
+  const draft = JSON.parse(JSON.stringify(config)); draft.alts = [...(config.alts || []), ...add];
+  try { saveConfig(CONFIG_FILE, draft); } catch (e) { log("Couldn't save the new characters to config.json: " + e.message); return; }
+  config.alts = draft.alts;
+  log("Now tracking " + add.join(", ") + " (seen by the add-on)");
+  setTimeout(() => sync("characters added"), 1000);
+}
 const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay,
-  onFile: (data, file) => mergeInventories(store, data, file), // every character on every account: gold, bags, bank
+  onFile: (data, file) => { mergeInventories(store, data, file); autoAlts(data); }, // every character on every account: gold, bags, bank
   extraFiles: relayFiles });
 
 // ---------- one-click updates ----------
@@ -247,7 +258,7 @@ const server = http.createServer(async (req, res) => {
       const altsChanged = JSON.stringify(draft.alts || []) !== JSON.stringify(config.alts || []);
       Object.assign(bcfg, draft.blizzard);
       Object.assign(config.access, draft.access);
-      for (const k of ["syncEveryHours", "backupDays", "wowFolder", "savedVariablesFile", "alts"]) config[k] = draft[k];
+      for (const k of ["syncEveryHours", "backupDays", "wowFolder", "savedVariablesFile", "alts", "altsRemoved"]) config[k] = draft[k];
       if (credsChanged) resetToken();
       if (intervalChanged) scheduleSync();
       if (folderChanged) watcher.reset();

@@ -53,7 +53,14 @@ function applyUpdate(config, body, isLocal) {
     const list = [...new Set(raw.map((x) => String(x).trim().toLowerCase().replace(/\s+/g, "-")).filter((x) => x && x !== main))];
     if (list.length > 10) errors.alts = "Up to 10 extra characters.";
     else if (list.some((x) => !/^[\p{L}\p{N}'-]+$/u.test(x) || x.length > 60)) errors.alts = 'Each character as Blizzard spells it, like "bob-smith".';
-    else if (JSON.stringify(config.alts || []) !== JSON.stringify(list)) { config.alts = list; changed.push("characters"); }
+    else if (JSON.stringify(config.alts || []) !== JSON.stringify(list)) {
+      // characters you remove stay removed: the add-on's characters are otherwise added automatically
+      const removed = new Set(config.altsRemoved || []);
+      for (const x of config.alts || []) if (!list.includes(x)) removed.add(x);
+      for (const x of list) removed.delete(x);
+      config.altsRemoved = [...removed];
+      config.alts = list; changed.push("characters");
+    }
   }
   if (body.syncEveryHours != null) {
     const v = Number(body.syncEveryHours);
@@ -108,8 +115,26 @@ function applyUpdate(config, body, isLocal) {
 }
 
 // config.json is written in place: the service may not create files next to it.
+// Characters the add-on has seen that the ledger doesn't track yet, as Blizzard names on the main character's realm
+// ("bob-orda"). Skips ones you removed in Settings, and stops at 10 extra characters. Returns the names to add.
+function newAlts(config, names) {
+  const main = (config.blizzard && config.blizzard.character) || "";
+  const realm = main.includes("-") ? main.slice(main.indexOf("-") + 1) : "";
+  if (!realm) return [];
+  const first = (slug) => String(slug).split("-")[0];
+  const known = new Set([main, ...(config.alts || []), ...(config.altsRemoved || [])].map(first));
+  const out = [];
+  for (const n of names) {
+    const slug = String(n || "").trim().toLowerCase().replace(/\s+/g, "-");
+    if (!slug || !/^[\p{L}\p{N}']+$/u.test(slug) || known.has(slug)) continue;
+    if ((config.alts || []).length + out.length >= 10) break;
+    known.add(slug); out.push(slug + "-" + realm);
+  }
+  return out;
+}
+
 function saveConfig(file, config) {
   fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
 }
 
-module.exports = { publicView, applyUpdate, saveConfig };
+module.exports = { publicView, applyUpdate, saveConfig, newAlts };
