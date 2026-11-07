@@ -414,6 +414,9 @@ label.btnlike:hover { border-color: var(--muted); }
 .st-err { color: var(--bad, #b3261e); font-size: .82rem; }
 .st-err:empty { display: none; }
 #stEmails { font: inherit; resize: vertical; }
+.up-list { margin: 6px 0; padding-left: 1.2em; font-size: .9rem; }
+.up-list:empty { display: none; }
+.up-list code { font-size: .8em; color: var(--muted); }
 .bk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .bk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
 .bk-list li .grow { flex: 1 1 12rem; min-width: 0; }
@@ -540,6 +543,17 @@ details > summary { cursor: pointer; color: var(--muted); }
           <label class="field"><span class="label">Application Audience (AUD) tag</span><input id="stAud" spellcheck="false"><span class="st-err" data-for="aud"></span></label>
           <label class="field wide"><span class="label">Google accounts allowed in (one per line)</span><textarea id="stEmails" rows="2" spellcheck="false"></textarea><span class="st-err" data-for="allowedEmails"></span></label>
         </div>
+      </fieldset>
+      <fieldset class="st-group" id="stUpdates">
+        <legend>Updates</legend>
+        <p class="hint" id="upInfo">Checking for updates…</p>
+        <ul class="up-list" id="upChanges"></ul>
+        <div class="row">
+          <button type="button" class="primary" id="upNow" hidden>Update now</button>
+          <button type="button" id="upCheck">Check for updates</button>
+          <button type="button" class="ghost" id="upUndo" hidden>Undo last update</button>
+        </div>
+        <p id="upResult" role="status"></p>
       </fieldset>
       <p class="hint" id="stPort"></p>
       <div class="row"><button class="primary" type="submit" id="stSave">Save settings</button><button type="button" id="stTest">Save and check Blizzard now</button></div>
@@ -1777,6 +1791,7 @@ details > summary { cursor: pointer; color: var(--muted); }
         const when = d.toDateString() === today ? "today" : d.toDateString() === yest ? "yesterday" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
         add(old ? "warn" : "good", `Backed up ${when}`, old ? "The daily backup hasn't run for over two days" : "", "ledger", "bkPanel");
       }
+      if (st.updateAvailable) add("good", "Update available", "A newer version is on GitHub", "settings", "stUpdates");
       add("", st.via === "cloudflare" ? `Signed in as ${st.user || "you"}` : "On this PC", st.via === "cloudflare" ? "Through Cloudflare with Google sign-in" : "");
     }
     box.replaceChildren(...chips);
@@ -1808,7 +1823,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   async function loadSettings() {
     try { stFill(await (await fetch("/api/settings")).json()); $("stNote").textContent = ""; }
     catch { $("stNote").textContent = "Couldn't load settings."; }
-    stWatch();
+    stWatch(); loadUpdate(false);
   }
   function stBody() {
     const b = {
@@ -1845,6 +1860,48 @@ details > summary { cursor: pointer; color: var(--muted); }
     ST.testAt = Date.now(); renderSettingsSync();
     try { await fetch("/api/sync", { method: "POST", headers: { "X-Ledger": "1" } }); } catch {}
   };
+  // ---------- updates ----------
+  const short = (sha) => (sha || "").slice(0, 7);
+  function renderUpdate(u) {
+    const when = (t) => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    const have = u.installed ? `Installed: ${short(u.installed.sha)}${u.installed.message ? " · " + u.installed.message : ""} (${when(u.installed.at)}).` : "The installed version isn't known yet; updating once fixes that.";
+    let txt = have;
+    if (u.error) txt += " " + u.error;
+    else if (u.latest) txt += u.available ? ` A newer version is on GitHub: ${short(u.latest.sha)} from ${when(u.latest.at)}.` : " You're up to date.";
+    if (u.checkedAt) txt += ` Checked ${new Date(u.checkedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.`;
+    $("upInfo").textContent = txt;
+    $("upChanges").replaceChildren(...(u.available ? u.changes : []).map((c) => { const li = el("li", null, c.message + " "); li.append(el("code", null, short(c.sha))); return li; }));
+    $("upNow").hidden = !u.available; $("upUndo").hidden = !u.canUndo;
+    $("upNow").disabled = $("upCheck").disabled = !!u.busy;
+  }
+  async function loadUpdate(fresh) {
+    try { renderUpdate(await (await fetch("/api/update" + (fresh ? "/check" : ""), fresh ? { method: "POST", headers: { "X-Ledger": "1" } } : {})).json()); }
+    catch { $("upInfo").textContent = "Couldn't reach the Leveling Ledger service."; }
+  }
+  // after an update or undo the service restarts: wait for it, then reload the page
+  async function waitAndReload() {
+    await new Promise((r) => setTimeout(r, 1500));
+    for (let i = 0; i < 60; i++) {
+      try { const r = await fetch("/api/status", { cache: "no-store" }); if (r.ok) { location.reload(); return; } } catch {}
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    $("upResult").textContent = "The service hasn't come back after a minute. Check logs\\service.log on your PC.";
+  }
+  async function runUpdate(url, confirmText) {
+    if (!confirm(confirmText)) return;
+    const out = $("upResult"); out.className = ""; out.textContent = "Working…";
+    $("upNow").disabled = $("upCheck").disabled = $("upUndo").disabled = true;
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "X-Ledger": "1" } }); const j = await r.json();
+      if (!r.ok) { out.className = "notice"; out.textContent = j.message || "That didn't work."; loadUpdate(false); return; }
+      out.textContent = j.message; waitAndReload();
+    } catch { out.className = "notice"; out.textContent = "Couldn't reach the Leveling Ledger service."; }
+    finally { $("upUndo").disabled = false; }
+  }
+  $("upCheck").onclick = () => loadUpdate(true);
+  $("upNow").onclick = () => runUpdate("/api/update", "Download and install the latest version from GitHub? The service restarts for a few seconds; your data and settings stay as they are, and you can undo it.");
+  $("upUndo").onclick = () => runUpdate("/api/update/undo", "Go back to the version you had before the last update?");
+
   // the Blizzard check's result, shown under the Settings buttons
   function renderSettingsSync() {
     const box = $("stSync"), st = S.sync || {};

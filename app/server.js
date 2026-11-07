@@ -9,6 +9,7 @@ const { checkRequest, viaCloudflare } = require("./lib/access");
 const { publicView, applyUpdate, saveConfig } = require("./lib/settings");
 const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
+const { startUpdater } = require("./lib/updater");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -86,6 +87,19 @@ function syncAfterPlay() {
 // ---------- add-on file watcher ----------
 const watcher = startWatcher({ store, publicDir: PUBLIC, config, log, onImported: syncAfterPlay });
 
+// ---------- one-click updates ----------
+// The add-on's folder is found next to the watched SavedVariables file: <game>\_forever_\Interface\AddOns\LevelingLedger
+function addonDir() {
+  for (const f of watcher.status.files) {
+    const flavor = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(f)))));
+    const d = path.join(flavor, "Interface", "AddOns", "LevelingLedger");
+    if (fs.existsSync(path.join(d, "LevelingLedger.toc"))) return d;
+  }
+  return null;
+}
+const updater = startUpdater({ appDir: APP, dataDir, config, log, addonDir });
+function restartSoon() { setTimeout(() => { try { store.flushNow(); } catch {} process.exit(0); }, 800); } // NSSM starts the service again
+
 // ---------- server ----------
 const server = http.createServer(async (req, res) => {
   try {
@@ -130,6 +144,16 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="leveling-ledger-${path.basename(f)}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       return fs.createReadStream(f).pipe(res);
     }
+    if (p === "/api/update" && req.method === "GET") return send(res, 200, updater.view());
+    if (p === "/api/update/check" && req.method === "POST") return send(res, 200, await updater.check());
+    if (p === "/api/update" && req.method === "POST") {
+      try { const r = await updater.update(); send(res, 200, r); restartSoon(); return; }
+      catch (e) { log("Update failed: " + e.message); return send(res, 400, { ok: false, message: e.message }); }
+    }
+    if (p === "/api/update/undo" && req.method === "POST") {
+      try { const r = updater.undo(); send(res, 200, r); restartSoon(); return; }
+      catch (e) { return send(res, 400, { ok: false, message: e.message }); }
+    }
     if (p === "/api/settings" && req.method === "GET") return send(res, 200, publicView(config, !viaCloudflare(req)));
     if (p === "/api/settings" && req.method === "PUT") {
       const isLocal = !viaCloudflare(req);
@@ -165,7 +189,8 @@ const server = http.createServer(async (req, res) => {
       const lastBackup = backups.list().find((b) => b.kind === "daily");
       return send(res, 200, { version: VERSION, files: watcher.status.files, lastCheck: watcher.status.lastCheck, lastError: watcher.status.lastError,
         blizzard: !!(bcfg.clientId && bcfg.clientSecret), syncEveryHours: config.syncEveryHours || 6, remote: !!(config.access && config.access.aud),
-        via: viaCloudflare(req) ? "cloudflare" : "local", user: req.userEmail || null, lastBackup: lastBackup ? lastBackup.at : null });
+        via: viaCloudflare(req) ? "cloudflare" : "local", user: req.userEmail || null, lastBackup: lastBackup ? lastBackup.at : null,
+        updateAvailable: updater.view().available });
     }
 
     // static data files

@@ -30,7 +30,14 @@ Nothing needs installing besides Node.js 18 or newer (you have it already).
 
 3. On a fresh install the first Blizzard sync runs about 15 seconds after start-up and fills in your character. To carry over data from somewhere else, put it in `data\seed.json` before the first start; it's only read when there's no data yet.
 
-**To update later:** pull or download the new version and run the same command. Your data and settings are kept.
+**To update later:** open **Settings → Updates** and press **Update now**. The service checks GitHub every 6 hours, and the health line shows **Update available** when there's something new.
+- The update downloads the new version, checks it, keeps the current one, installs the new files and restarts the service. This takes a few seconds, and the page reloads itself.
+- If the add-on is in your game's AddOns folder, it's updated too; type `/reload` in game.
+- **Undo last update** goes back.
+- Your data and settings are never touched.
+- Updates replace only the app's program files and the add-on. The install scripts only change when you run them yourself.
+
+You can still update by hand: pull or download the new version and run the install command again. Do this once to move from a version without one-click updates.
 
 **To remove:** run `scripts\uninstall.ps1`. Your data stays in `C:\LevelingLedger\data` unless you add `-RemoveFiles`.
 

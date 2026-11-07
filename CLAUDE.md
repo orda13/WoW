@@ -16,6 +16,12 @@
 - `addon/LevelingLedger/`: the WoW Forever add-on (Interface 16001, SavedVariables `LevelingLedgerDB`).
 - `tools/`: the add-on simulator (`addon-simulate.py`, needs `lupa`) and the data-build scripts.
 
+## Updates
+- `app/lib/updater.js` installs the latest commit on `main` from GitHub when the owner presses Update.
+  - It may only replace the files matched by `APP_FILES` and `ADDON_FILES`, never `scripts/` or `tools/`.
+  - The server must keep parsing after each commit, because a broken `main` is what users get.
+  - New top-level app files need adding to `APP_FILES` and to the installer's permission list.
+
 ## Testing changes
 - Run the server against a throwaway config:
 

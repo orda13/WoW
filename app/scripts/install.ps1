@@ -82,6 +82,30 @@ if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
   }
 } else { Write-Warning "World of Warcraft folder not found ($($cfg.wowFolder)). Fix wowFolder in $cfgPath, then run this again." }
 
+# --- one-click updates: the service may replace its own program files (never the install scripts) ---
+foreach ($d in @("lib", "public")) { icacls "$Dest\$d" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null }
+foreach ($f in @("server.js", "package.json", "README.md", "config.example.json")) { if (Test-Path "$Dest\$f") { icacls "$Dest\$f" /grant "${svcAcct}:M" /Q | Out-Null } }
+# record which version this is, when installing from a git clone (a ZIP download is recorded on the first one-click update)
+$repoRoot = Split-Path -Parent $Src
+$sha = $null
+if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-Path $repoRoot ".git"))) { $sha = (& git -C $repoRoot rev-parse HEAD 2>$null) }
+if ($sha -match '^[0-9a-f]{40}$') {
+  $ms = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  [IO.File]::WriteAllText("$Dest\data\installed.json", "{""sha"":""$sha"",""at"":$ms,""message"":""Installed with install.ps1""}")
+  Write-Host "Installed version $($sha.Substring(0, 7))"
+} elseif (Test-Path "$Dest\data\installed.json") { Remove-Item "$Dest\data\installed.json" -Force }
+# the add-on: refresh it wherever it's already installed, and let the service update it
+$addonSrc = Join-Path $repoRoot "addon\LevelingLedger"
+if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
+  Get-ChildItem $cfg.wowFolder -Directory -Filter "_*" -ErrorAction SilentlyContinue | ForEach-Object {
+    $ad = Join-Path $_.FullName "Interface\AddOns\LevelingLedger"
+    if (Test-Path (Join-Path $ad "LevelingLedger.toc")) {
+      if (Test-Path $addonSrc) { Copy-Item -Path "$addonSrc\*" -Destination $ad -Recurse -Force; Write-Host "Updated the add-on in $ad" }
+      icacls $ad /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
+    }
+  }
+}
+
 # --- NSSM (runs Node.js as a Windows service) ---
 $nssm = "$Dest\tools\nssm.exe"
 if (-not (Test-Path $nssm)) {

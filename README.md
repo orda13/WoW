@@ -22,7 +22,7 @@ A leveling companion for **World of Warcraft: Forever**. It tracks play sessions
   powershell -ExecutionPolicy Bypass -File .\app\scripts\install.ps1
   ```
 
-  To update later, pull or download the new version and run the same command. Your data and settings in `C:\LevelingLedger` are kept.
+  After that, updates are one click: **Settings → Updates → Update now**. That updates the app and the add-on, and it can be undone. Your data and settings in `C:\LevelingLedger` are kept.
 - **Add-on:** copy `addon/LevelingLedger` into your Forever game folder's `Interface\AddOns`, then enable it at character select.
 
 ## What is never committed
