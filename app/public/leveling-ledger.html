@@ -419,6 +419,11 @@ label.btnlike:hover { border-color: var(--muted); }
 .up-list { margin: 6px 0; padding-left: 1.2em; font-size: .9rem; }
 .up-list:empty { display: none; }
 .up-list code { font-size: .8em; color: var(--muted); }
+.inv-table td, .inv-table th { white-space: nowrap; }
+.inv-table tr.me td:first-child { font-weight: 600; }
+.inv-results { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
+.inv-results .row-i { overflow-wrap: anywhere; }
+.inv-have { font-size: .8rem; color: var(--muted); }
 .bk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .bk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
 .bk-list li .grow { flex: 1 1 12rem; min-width: 0; }
@@ -704,9 +709,18 @@ details > summary { cursor: pointer; color: var(--muted); }
         <li>Copy the <code>addon\LevelingLedger</code> folder from the project into your Forever game folder's <code>Interface\AddOns</code>, so you have <code>Interface\AddOns\LevelingLedger\LevelingLedger.toc</code>.</li>
         <li>At character select, open <b>AddOns</b> and make sure Leveling Ledger is ticked. If it shows as out of date, tick <b>Load out of date AddOns</b>.</li>
         <li>Play as usual. Talk to your class trainer and open vendors once so it can read their prices, and open each profession window once for your recipe lists. Type <code>/ledger</code> in game to see what it has recorded.</li>
+        <li>Type <code>/ledger alts</code> for your characters' details, bags and bank. Open each character's bank once so it's recorded. Item tooltips show which of your other characters hold the item.</li>
         <li>A small panel in game shows session time, XP per hour, time to level, kills, gold earned and rested XP. Drag it where you like; <code>/ledger lock</code>, <code>/ledger hide</code>, <code>/ledger show</code> and <code>/ledger reset</code> control it.</li>
       </ol>
     </details>
+  </section>
+
+  <section class="panel" id="invPanel" data-view="ledger">
+    <div class="tal-head"><h2>Your characters</h2><span class="hint" id="invNote"></span></div>
+    <p class="muted">Every character the add-on has seen, on all your WoW accounts, with gold, bags and bank. Bags update whenever you play a character; the bank updates when you open it.</p>
+    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th></tr></thead><tbody id="invRows"></tbody></table></div>
+    <label class="field"><span class="label">Find an item across your characters</span><input id="invSearch" placeholder="Linen Cloth" autocomplete="off"></label>
+    <div id="invResults" class="inv-results"></div>
   </section>
 
   <section class="panel" id="bkPanel" data-view="ledger">
@@ -773,7 +787,7 @@ details > summary { cursor: pointer; color: var(--muted); }
         <select id="rSrc"><option value="">Any way</option><option value="Trainer">Profession trainer</option><option value="Item">Any recipe item</option><option value="Vendor">Recipe sold by a vendor</option><option value="Favor">Sold for Merchant's Favor</option><option value="Drop">Recipe dropped by a creature</option><option value="WorldDrop">Recipe is a world drop</option><option value="Container">Recipe found in chests</option><option value="Quest">Recipe from a quest</option></select></label>
       <label class="field"><span class="label">Skill-up for me</span>
         <select id="rUp"><option value="">Any color</option><option value="any">Gives skill now (orange, yellow, green)</option><option value="yellow">Orange or yellow now</option><option value="orange">Orange now</option><option value="grey">Grey (no more skill)</option><option value="red">Can't learn yet</option></select></label>
-      <label class="field"><span class="label">Show</span><select id="rShow"><option value="all">Known and not known</option><option value="unknown">Not known yet</option><option value="known">Known</option></select></label>
+      <label class="field"><span class="label">Show</span><select id="rShow"><option value="all">Known and not known</option><option value="unknown">Not known yet</option><option value="known">Known</option><option value="craftable">Craftable with my characters' materials</option></select></label>
       <label class="field"><span class="label">Skill needed</span>
         <select id="rSkill"><option value="any">Any skill</option><option value="near">Up to my skill + 50</option><option value="mine">Up to my skill</option></select></label>
     </div>
@@ -974,7 +988,7 @@ details > summary { cursor: pointer; color: var(--muted); }
       $("barChips").replaceChildren(...chips);
       $("whVer").textContent = c.version || "";
     }
-    renderSession(); renderTasks(); renderLog(); renderCollections(); renderTalents(); renderQuests(); renderGear();
+    renderSession(); renderTasks(); renderLog(); renderInv(); renderCollections(); renderTalents(); renderQuests(); renderGear();
     for (const el of document.querySelectorAll("#board button, #board input, #board textarea, #board select"))
       if (!el.closest("#whForm")) el.disabled = !S.canWrite;
   }
@@ -1762,6 +1776,79 @@ details > summary { cursor: pointer; color: var(--muted); }
   };
   renderWatch(); setInterval(renderWatch, 60000);
 
+  // ---------- your characters: gold, bags and bank across every account ----------
+  const invChars = () => Object.values((S.inv && S.inv.chars) || {}).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  const isMe = (c) => { const n = ((S.char && S.char.name) || "").split(" ")[0].toLowerCase(); return !!n && c.name.toLowerCase() === n; };
+  function invItemName(id) {
+    const a = S.invItems && S.invItems.items && S.invItems.items[id];
+    if (a) return { n: a[0], q: a[1] };
+    const b = (QD.items && QD.items[id]) || (DG.data && DG.data.items[id]);
+    return b ? { n: b.n, q: b.q } : { n: "Item " + id, q: 1 };
+  }
+  // item name (lower case) -> [{ c, bags, bank }], rebuilt when the data changes
+  let holdCache = { key: "", map: new Map() };
+  function holdings() {
+    const key = ((S.inv && S.inv.updatedAt) || 0) + ":" + ((S.invItems && S.invItems.updatedAt) || 0);
+    if (holdCache.key === key) return holdCache.map;
+    const map = new Map();
+    for (const c of invChars()) {
+      const ids = new Set([...Object.keys(c.bags || {}), ...Object.keys(c.bank || {})]);
+      for (const id of ids) {
+        const n = invItemName(id).n.toLowerCase();
+        if (!map.has(n)) map.set(n, []);
+        map.get(n).push({ c, bags: (c.bags || {})[id] || 0, bank: (c.bank || {})[id] || 0 });
+      }
+    }
+    holdCache = { key, map };
+    return map;
+  }
+  const heldBy = (name) => holdings().get(String(name).toLowerCase()) || [];
+  // how many of a recipe you can make: with what this character holds, and with every character's materials
+  function craftable(e) {
+    let now = Infinity, all = Infinity;
+    for (const [n, need] of e.rg || []) {
+      const h = heldBy(n);
+      const mine = h.filter((x) => isMe(x.c)).reduce((a, x) => a + x.bags + x.bank, 0);
+      const total = h.reduce((a, x) => a + x.bags + x.bank, 0);
+      now = Math.min(now, Math.floor(mine / need)); all = Math.min(all, Math.floor(total / need));
+    }
+    return { now: isFinite(now) ? now : 0, all: isFinite(all) ? all : 0 };
+  }
+  function holdText(name) {
+    const h = heldBy(name); if (!h.length) return "";
+    return h.sort((a, b) => (b.bags + b.bank) - (a.bags + a.bank)).map((x) => `${isMe(x.c) ? "you" : x.c.name} ${x.bags + x.bank}`).join(" · ");
+  }
+  const lastPlayed = (t) => { if (!t) return "–"; const d = (Date.now() - t) / 86400000; return d < 1 ? "today" : d < 2 ? "yesterday" : `${Math.floor(d)} days ago`; };
+  function renderInv() {
+    const rows = $("invRows"); if (!rows) return;
+    const list = invChars();
+    $("invNote").textContent = list.length ? `${list.length} character${list.length === 1 ? "" : "s"} · ${money(list.reduce((a, c) => a + (c.money || 0), 0)) || "0c"} in all` : "";
+    rows.replaceChildren(...(list.length ? list.map((c) => {
+      const tr = el("tr", isMe(c) ? "me" : null);
+      const count = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+      for (const v of [c.name + (isMe(c) ? " (this ledger)" : ""), c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–", c.money != null ? money(c.money) || "0c" : "–",
+        c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at),
+        c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–", c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${lastPlayed(c.bankAt)}` : "open the bank once"]) tr.append(el("td", null, v));
+      tr.title = c.account ? "WoW account " + c.account : "";
+      return tr;
+    }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 7; tr.append(td); return tr; })()]));
+    renderInvSearch();
+  }
+  function renderInvSearch() {
+    const q = $("invSearch").value.trim().toLowerCase(), out = $("invResults");
+    if (q.length < 2) { out.replaceChildren(); return; }
+    const hits = [...holdings().entries()].filter(([n]) => n.includes(q)).slice(0, 30);
+    out.replaceChildren(...(hits.length ? hits.map(([n, h]) => {
+      const row = el("div", "row-i");
+      const id = Object.keys(h[0].c.bags || {}).concat(Object.keys(h[0].c.bank || {})).find((i) => invItemName(i).n.toLowerCase() === n);
+      const it = id ? invItemName(id) : { n, q: 1 };
+      row.append(id ? whA("item", +id, it.n, "who q" + it.q) : el("b", null, it.n), document.createTextNode(": "));
+      row.append(el("span", "muted", h.map((x) => `${isMe(x.c) ? "you" : x.c.name} ${x.bags + x.bank}` + (x.bank && x.bags ? ` (bank ${x.bank}, bags ${x.bags})` : x.bank ? " (bank)" : " (bags)")).join(" · ")));
+      return row;
+    }) : [el("p", "muted", "None of your characters has that.")]));
+  }
+  $("invSearch").oninput = renderInvSearch;
+
   // ---------- character switcher ----------
   function renderCharPick() {
     const list = (S.status && S.status.characters) || [];
@@ -2306,8 +2393,17 @@ details > summary { cursor: pointer; color: var(--muted); }
         const m = MAT.byName.get(n.toLowerCase());
         const b = el("button", "linkish reag", n); b.type = "button"; b.title = "Where to get " + n; b.onclick = () => showMaterial(n, b);
         r.append(b, document.createTextNode(" "), m ? whIcon("item", m.id, n) : whIcon("search", n, n));
+        const ht = holdText(n); if (ht) r.append(el("span", "inv-have", ` (${ht})`));
       });
       card.append(r);
+      if (S.inv) {
+        const k = craftable(e);
+        if (k.all > 0) {
+          const d = el("div", "rs");
+          d.append(el("span", "pill go", k.now > 0 ? `Can make ${k.now} now` : `Can make ${k.all} with your characters' materials`), el("span", "muted", k.now > 0 && k.all > k.now ? ` · ${k.all} with everyone's` : ""));
+          card.append(d);
+        }
+      }
     }
     card.append(learnBlock(e));
     return card;
@@ -2335,6 +2431,7 @@ details > summary { cursor: pointer; color: var(--muted); }
       const k = kn.get(e.p), isKnown = k && k.set.has(e.n.toLowerCase());
       if (show === "known" && !isKnown) continue;
       if (show === "unknown" && isKnown) continue;
+      if (show === "craftable" && !(e.rg && craftable(e).all > 0)) continue;
       if (skillMode !== "any" && k && e.sk) { const cap = k.skill + (skillMode === "near" ? 50 : 0); if (e.sk > cap) continue; }
       const up = $("rUp").value;
       if (up) {
@@ -3152,6 +3249,8 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
+    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
+    db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});

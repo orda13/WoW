@@ -19,16 +19,17 @@ function CreateFrame(kind, name, parent)
   local fr = { ev = {}, scripts = {}, shown = true, point = nil }
   function fr:RegisterEvent(e) self.ev[e] = true end
   function fr:SetScript(n, fn) self.scripts[n] = fn; if n == "OnEvent" then self.fn = fn end end
-  function fr:Show() self.shown = true end
+  function fr:Show() local was = self.shown; self.shown = true; if not was and self.scripts.OnShow then self.scripts.OnShow(self) end end
   function fr:Hide() self.shown = false end
   function fr:IsShown() return self.shown end
   function fr:SetPoint(...) self.point = { ... } end
   function fr:GetPoint() local p = self.point or {} return p[1], p[2], p[3], p[4], p[5] end
   fr.fonts = {}
-  function fr:CreateFontString() local fs = obj({}) function fs:SetText(t) self.text = t end table.insert(fr.fonts, fs) return fs end
+  function fr:CreateFontString() local fs = obj({ text = "" }) function fs:SetText(t) self.text = t end table.insert(fr.fonts, fs) return fs end
   function fr:CreateTexture() return obj({}) end
   if name then _G[name] = obj(fr) end
   if not FRAME then FRAME = fr end
+  FRAMES = FRAMES or {}; table.insert(FRAMES, fr)
   return obj(fr)
 end
 function UnitName(u) if u == "player" then return "Talwyn" elseif u == "npc" then return NPCNAME else return "Mob" end end
@@ -71,6 +72,38 @@ function GetLootSourceInfo(s) return "Creature-0-1-36-1-1763-0000AAAA", 1 end
 function GetItemInfo(link) return nil end
 C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then return 3 end return 1 end }
 SlashCmdList = {}
+-- another character already in the saved data (as if played before), with bags and bank
+LevelingLedgerDB = { chars = { ["Bob-Normal"] = { name = "Bob", level = 12, class = "MAGE", money = 52000, rested = 1200, zone = "Elwynn Forest",
+  stateAt = T - 2 * 86400, bagsAt = T - 2 * 86400, bankAt = T - 5 * 86400,
+  bags = { [2447] = 6, [2589] = 3 }, bank = { [2447] = 4, [2589] = 20, [3371] = 2 } } },
+  items = { [2447] = { n = "Peacebloom", q = 1 }, [2589] = { n = "Linen Cloth", q = 1 }, [3371] = { n = "Empty Vial", q = 1 } } }
+-- your bags and bank (C_Container, as modern clients have it)
+CONTAINERS = { [0] = { { 2589, 4, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" }, { 2447, 1, "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r" } },
+  [1] = { { 3371, 5, "|cffffffff|Hitem:3371::::::::13:::::|h[Empty Vial]|h|r" } },
+  [-1] = { { 2450, 7, "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r" } }, [5] = { { 2589, 10, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" } } }
+C_Container = { GetContainerNumSlots = function(b) return CONTAINERS[b] and #CONTAINERS[b] or 0 end,
+  GetContainerItemInfo = function(b, s) local x = CONTAINERS[b] and CONTAINERS[b][s]; if x then return { itemID = x[1], stackCount = x[2], hyperlink = x[3] } end end }
+NUM_BAG_SLOTS, NUM_BANKBAGSLOTS, BANK_CONTAINER = 4, 6, -1
+-- tooltips
+local function tooltip(name)
+  local tt = { lines = {}, hooks = {} }
+  function tt:HookScript(n, fn) self.hooks[n] = fn end
+  function tt:GetItem() return self.itemName, self.itemLink end
+  function tt:AddLine(t) table.insert(self.lines, t) end
+  function tt:AddDoubleLine(a, b) table.insert(self.lines, a .. " | " .. b) end
+  function tt:Show() end
+  function tt:SetItem(name, link) self.lines = {}; self.itemName, self.itemLink = name, link; if self.hooks.OnTooltipSetItem then self.hooks.OnTooltipSetItem(self) end end
+  return tt
+end
+GameTooltip, ItemRefTooltip = tooltip(), tooltip()
+-- a profession window: Elixir of Wisdom needs 2 Peacebloom (you have 1) and 1 Empty Vial (you have 5)
+function hooksecurefunc(name, fn) local orig = _G[name]; _G[name] = function(...) local r = orig and orig(...); fn(...); return r end end
+function TradeSkillFrame_SetSelection(i) end
+TradeSkillFrame = obj({})
+function GetTradeSkillNumReagents(i) return 2 end
+function GetTradeSkillReagentInfo(i, r) if r == 1 then return "Peacebloom", "", 2, 1 end return "Empty Vial", "", 1, 5 end
+function GetTradeSkillReagentItemLink(i, r) if r == 1 then return "|Hitem:2447::|h[Peacebloom]|h" end return "|Hitem:3371::|h[Empty Vial]|h" end
+UISpecialFrames = {}
 -- skills and professions
 SKILLS = { { "Professions", true }, { "Alchemy", false, 67, 150 }, { "Herbalism", false, 121, 150 },
            { "Secondary Skills", true }, { "Cooking", false, 108, 150 }, { "Weapon Skills", true }, { "Staves", false, 64, 70 } }
@@ -95,8 +128,10 @@ local origGUID = UnitGUID
 function UnitGUID(u) if u == "player" then return PLAYERGUID elseif u == "pet" then return PETGUID end return origGUID(u) end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
-L.execute(open(os.path.join(ROOT, 'addon', 'LevelingLedger', 'LevelingLedger.lua')).read().replace('local ADDON = ...', 'local ADDON = "LevelingLedger"'))
-fire = L.eval('function(e, ...) FRAME.fn(FRAME, e, ...) end')
+L.execute('LL_NS = {}')
+for f in ('LevelingLedger.lua', 'Alts.lua'):   # the order the .toc loads them; both get the same private table
+    L.execute(open(os.path.join(ROOT, 'addon', 'LevelingLedger', f)).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
+fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')
 # 3 kills by you (one with rested bonus), 1 by your pet, 1 by a party member (XP but not your kill), and a non-creature kill
@@ -136,6 +171,28 @@ fire('PLAYER_DEAD')
 L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')
 L.execute('RESTING = true; SUBZONE = "Lor\'danel Inn"'); fire('PLAYER_UPDATE_RESTING')
 L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
+# bags, bank, tooltip, profession window and /ledger alts
+fire('BAG_UPDATE_DELAYED'); fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
+me = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']
+print('your bags:', dict(me.bags), '| bank:', dict(me.bank), '| gold:', me.money)
+L.execute('GameTooltip:SetItem("Peacebloom", "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r")')
+print('tooltip for Peacebloom:', list(L.globals().GameTooltip.lines.values()))
+L.execute('GameTooltip:SetItem("Briarthorn", "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r")')
+print('tooltip for Briarthorn (only you have it):', list(L.globals().GameTooltip.lines.values()))
+L.execute('TradeSkillFrame_SetSelection(3)')
+helper = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.fonts and fr.fonts[1] and fr.fonts[1].text and fr.fonts[1].text:find("alts\' materials") then return fr.fonts[1].text end end end')()
+print('profession window:', helper)
+L.eval('SlashCmdList.LEVELINGLEDGER')('alts')
+alts = L.globals().LevelingLedgerAlts
+print('alts window shown:', alts.shown)
+print(L.eval('function() return LevelingLedgerAlts.info and LevelingLedgerAlts.info.text end')())
+print('\n'.join(t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t))
+L.execute('for _, b in ipairs(LevelingLedgerAlts.charButtons) do if type(rawget(b, "o")) == "table" and b.o.c.name == "Bob" then b.scripts.OnClick(b) end end')
+print('-- Bob:'); print(L.eval('function() return LevelingLedgerAlts.info.text end')())
+print('\n'.join(t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t))
+L.execute('LevelingLedgerAltsSearch.text = "linen"; function LevelingLedgerAltsSearch:GetText() return self.text end; LevelingLedgerAltsSearch.scripts.OnTextChanged(LevelingLedgerAltsSearch)')
+print('-- search "linen":', [t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t])
+
 # the in-game panel, before logging out
 show = L.eval('function() local p = LevelingLedgerPanel; p.scripts.OnUpdate(p, 1.5); local t = {} for _, f in ipairs(p.fonts) do t[#t + 1] = f.text or "" end return table.concat(t, "\\n") end')
 p = L.globals().LevelingLedgerPanel

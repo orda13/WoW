@@ -8,7 +8,9 @@
     else { try { c = localStorage.getItem("ll-char") || ""; } catch { c = ""; } }
     return /^c[0-9a-f]{8}$/.test(c) ? c : "";
   })();
-  const PRE = CHAR ? CHAR + "." : ""; // each alt's documents live under its own prefix
+  // each alt's documents live under its own prefix; "shared/..." (all characters' bags and bank) is the same for every ledger
+  const pre = (path) => (CHAR && !path.startsWith("shared/") && path !== "shared" ? CHAR + "." : "");
+  const PRE = CHAR ? CHAR + "." : "";
   window.LL_CHAR = CHAR;
   const meta = { fromCache: false, hasPendingWrites: false };
   async function call(method, url, body) {
@@ -23,12 +25,12 @@
   function docRef(path) {
     return {
       id: path.split("/").pop(), path,
-      get: async () => docSnap(path, await call("GET", "/api/doc/" + PRE + path)),
-      set: (d) => call("PUT", "/api/doc/" + PRE + path, d).then(() => undefined),
-      update: (d) => call("PATCH", "/api/doc/" + PRE + path, d).then(() => undefined),
-      delete: () => call("DELETE", "/api/doc/" + PRE + path).then(() => undefined),
+      get: async () => docSnap(path, await call("GET", "/api/doc/" + pre(path) + path)),
+      set: (d) => call("PUT", "/api/doc/" + pre(path) + path, d).then(() => undefined),
+      update: (d) => call("PATCH", "/api/doc/" + pre(path) + path, d).then(() => undefined),
+      delete: () => call("DELETE", "/api/doc/" + pre(path) + path).then(() => undefined),
       onSnapshot(next, err) {
-        const f = async () => { try { next(docSnap(path, await call("GET", "/api/doc/" + PRE + path))); } catch (e) { if (err) err(e); } };
+        const f = async () => { try { next(docSnap(path, await call("GET", "/api/doc/" + pre(path) + path))); } catch (e) { if (err) err(e); } };
         if (!docSubs.has(path)) docSubs.set(path, new Set());
         docSubs.get(path).add(f); f();
         return () => docSubs.get(path).delete(f);
@@ -67,7 +69,8 @@
     let ev; try { ev = JSON.parse(m.data); } catch { return; }
     // only this character's documents
     let p = ev.path;
-    if (PRE) { if (!p.startsWith(PRE)) return; p = p.slice(PRE.length); }
+    if (p.startsWith("shared/")) { /* the same for every character */ }
+    else if (PRE) { if (!p.startsWith(PRE)) return; p = p.slice(PRE.length); }
     else if (p.split("/")[0].includes(".")) return;
     (docSubs.get(p) || []).forEach((f) => f());
     (colSubs.get(p.split("/")[0]) || []).forEach((f) => f());

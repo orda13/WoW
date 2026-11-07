@@ -2,8 +2,9 @@
 -- It only reads game information and saves it to SavedVariables (WTF\Account\<account>\SavedVariables\LevelingLedger.lua),
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
-local ADDON = ...
-local VERSION = 8
+local ADDON, ns = ...
+ns = ns or {}
+local VERSION = 9
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -107,7 +108,61 @@ local function noteState()
   char.zone = zone()
   char.subzone = GetSubZoneText and GetSubZoneText() or ""
   char.resting = (IsResting and IsResting()) and true or false
+  char.money = GetMoney()
+  char.level = UnitLevel("player")
   char.stateAt = now()
+end
+
+-- ---------- bags and bank ----------
+-- Item counts by item id. Bags are read whenever they change; the bank only while it's open (the game has no bank data otherwise).
+local function noteItemName(id, link)
+  db.items = db.items or {}
+  if not db.items[id] then
+    local n = nameFromLink(link)
+    if n then db.items[id] = { n = n, q = qualityFromLink(link) } end
+  end
+end
+local function slotCount(bag)
+  if C_Container and C_Container.GetContainerNumSlots then return C_Container.GetContainerNumSlots(bag) or 0 end
+  return GetContainerNumSlots and GetContainerNumSlots(bag) or 0
+end
+local function slotItem(bag, slot)
+  if C_Container and C_Container.GetContainerItemInfo then
+    local info = C_Container.GetContainerItemInfo(bag, slot)
+    if info then return info.itemID, info.stackCount, info.hyperlink end
+    return
+  end
+  if GetContainerItemInfo then
+    local _, count, _, _, _, _, link, _, _, id = GetContainerItemInfo(bag, slot)
+    link = link or (GetContainerItemLink and GetContainerItemLink(bag, slot))
+    return id or idFromLink(link), count, link
+  end
+end
+local function scanContainers(bags)
+  local out = {}
+  for _, bag in ipairs(bags) do
+    for slot = 1, slotCount(bag) do
+      local id, count, link = slotItem(bag, slot)
+      if id then out[id] = (out[id] or 0) + (count or 1); if link then noteItemName(id, link) end end
+    end
+  end
+  return out
+end
+local bankOpen = false
+local function scanBags()
+  local n = NUM_BAG_SLOTS or 4
+  local list = {}
+  for b = 0, n do list[#list + 1] = b end
+  char.bags = scanContainers(list)
+  char.bagsAt = now()
+end
+local function scanBank()
+  if not bankOpen then return end
+  local n, nb = NUM_BAG_SLOTS or 4, NUM_BANKBAGSLOTS or 6
+  local list = { BANK_CONTAINER or -1 }
+  for b = n + 1, n + nb do list[#list + 1] = b end
+  char.bank = scanContainers(list)
+  char.bankAt = now()
 end
 
 local function noteZone()
@@ -556,6 +611,7 @@ f:RegisterEvent("PLAYER_TARGET_CHANGED")
 f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 f:RegisterEvent("PLAYER_MONEY")
 for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do f:RegisterEvent(e) end
+for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED" }) do f:RegisterEvent(e) end
 for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do f:RegisterEvent(e) end
 f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
 
@@ -576,7 +632,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
-      startSession(); noteZone(); noteState(); scanSkills(); scanReps()
+      startSession(); noteZone(); noteState(); scanSkills(); scanReps(); scanBags()
       createPanel()
       -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
       if not f.hooked then
@@ -594,7 +650,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif not char then
     return
   elseif event == "PLAYER_LOGOUT" then
-    safe(function() onXP(); closeSession(); noteState(); char.level = UnitLevel("player"); db.savedAt = now() end)
+    safe(function() onXP(); closeSession(); noteState(); scanBags(); char.level = UnitLevel("player"); db.savedAt = now() end)
   elseif event == "PLAYER_ENTERING_WORLD" then
     -- Ask for /played once per real login, not on every /reload or loading screen
     local isLogin = ...
@@ -604,7 +660,11 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
   elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel)
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
-  elseif event == "PLAYER_MONEY" then safe(onMoney)
+  elseif event == "PLAYER_MONEY" then safe(onMoney); safe(noteState)
+  elseif event == "BAG_UPDATE_DELAYED" then safe(scanBags); safe(scanBank)
+  elseif event == "BANKFRAME_OPENED" then bankOpen = true; safe(scanBank)
+  elseif event == "PLAYERBANKSLOTS_CHANGED" then safe(scanBank)
+  elseif event == "BANKFRAME_CLOSED" then bankOpen = false
   elseif event == "SKILL_LINES_CHANGED" or event == "CHAT_MSG_SKILL" then safe(scanSkills)
   elseif event == "UPDATE_FACTION" or event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then safe(scanReps)
   elseif event == "CHAT_MSG_SYSTEM" then local msg = ...; safe(onSystemMessage, msg)
@@ -632,6 +692,15 @@ f:SetScript("OnEvent", function(_, event, ...)
   end
 end)
 
+-- ---------- shared with Alts.lua ----------
+ns.db = function() return db end
+ns.char = function() return char end
+ns.safe = safe
+ns.now = now
+ns.idFromLink = idFromLink
+ns.fmtMoney = fmtMoney
+ns.fmtNum = fmtNum
+
 -- ---------- /ledger ----------
 SLASH_LEVELINGLEDGER1 = "/ledger"
 local TAG = "|cffd9aa5aLeveling Ledger|r: "
@@ -647,6 +716,7 @@ local function panelCommand(cmd)
 end
 SlashCmdList.LEVELINGLEDGER = function(msg)
   local cmd = strtrim and strtrim((msg or ""):lower()) or (msg or ""):lower():match("^%s*(.-)%s*$")
+  if cmd == "alts" then if ns.toggleAlts then ns.toggleAlts() end return end
   if cmd ~= "" and panelCommand(cmd) then return end
   if not char then print("|cffd9aa5aLeveling Ledger|r: not ready yet."); return end
   local v, l, t = 0, 0, 0
@@ -656,5 +726,5 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP, %d kills.",
     #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0, session and session.kills or 0))
   print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
-  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset.")
+  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts")
 end

@@ -33,7 +33,7 @@ const DEFAULT_ROOTS = [
 ];
 
 // targets(): [{ store, hint }] for every tracked character (hint = its Blizzard name, e.g. "talwyn-orda")
-function startWatcher({ targets, publicDir, config, log, onImported }) {
+function startWatcher({ targets, publicDir, config, log, onImported, onFile }) {
   const roots = () => [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
   const watched = new Map(); // file -> last mtime handled
   const status = { files: [], lastCheck: 0, lastError: "", seen: {} };
@@ -45,6 +45,7 @@ function startWatcher({ targets, publicDir, config, log, onImported }) {
     try { data = readSaved(text); } catch (e) { status.lastError = `${file}: ${e.message}`; log(status.lastError); return; }
     // every character the add-on knows about on this account (for "add a character" suggestions)
     for (const c of Object.values(data.chars || {})) if (c && c.name) status.seen[c.name.toLowerCase()] = { name: c.name, level: c.level || null, cls: c.class || "", file };
+    if (onFile) { try { onFile(data, file); } catch (e) { log("Couldn't read characters from " + file + ": " + e.message); } }
     let any = false;
     for (const t of targets()) {
       if (!pickChar(data, t.store, t.hint)) continue; // this file has no data for that character

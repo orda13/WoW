@@ -11,6 +11,7 @@ const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
 const { characters, charStore } = require("./lib/characters");
+const { mergeInventories } = require("./lib/inventory");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -97,7 +98,8 @@ function syncAfterPlay() {
 }
 
 // ---------- add-on file watcher ----------
-const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay });
+const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay,
+  onFile: (data, file) => mergeInventories(store, data, file) }); // every character on every account: gold, bags, bank
 
 // ---------- one-click updates ----------
 // The add-on's folder is found next to the watched SavedVariables file: <game>\_forever_\Interface\AddOns\LevelingLedger
