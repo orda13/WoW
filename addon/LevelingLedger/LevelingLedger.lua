@@ -470,8 +470,6 @@ local function onTrainer()
   if priced > 0 and now() - lastTrainerNote > 30 then
     lastTrainerNote = now()
     print("|cffd9aa5aLeveling Ledger|r: recorded " .. priced .. " training cost" .. (priced == 1 and "" or "s") .. (npcName and (" from " .. npcName) or "") .. ". Type /reload to send them to the ledger.")
-  elseif n == 0 then
-    print("|cffd9aa5aLeveling Ledger|r: this trainer's list is empty, so no costs were recorded.")
   end
 end
 
@@ -719,7 +717,9 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif not char then
     return
   elseif event == "PLAYER_LOGOUT" then
-    safe(function() onXP(); closeSession(); noteState(); scanBags(); char.level = UnitLevel("player"); db.savedAt = now() end)
+    -- the save time first: the app only imports a file whose save time is newer, so a failing step below mustn't block it
+    db.savedAt = now()
+    safe(onXP); safe(closeSession); safe(noteState); safe(scanBags); safe(function() char.level = UnitLevel("player") end)
   elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)

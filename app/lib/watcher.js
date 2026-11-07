@@ -52,7 +52,9 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile, ext
       // each PC's file is judged on its own (an older file from one PC doesn't block another's)
       const a = t.store.get("state/addon") || {}, key = sourceKey(file);
       const have = a.sources ? ((a.sources[key] || {}).savedAt || 0) : (key.startsWith("This PC/") ? a.savedAt || 0 : 0);
-      if ((data.savedAt || 0) * 1000 <= have && why !== "manual") continue;
+      // skip a file already imported: not newer by its save time, and not changed since the last import
+      let mtime = 0; try { mtime = fs.statSync(file).mtimeMs; } catch {}
+      if ((data.savedAt || 0) * 1000 <= have && mtime <= ((a.sources && a.sources[key] && a.sources[key].importedAt) || a.importedAt || 0) && why !== "manual") continue;
       try {
         const r = importAddon(text, t.store, publicDir, file, t.hint);
         log(`Imported ${file} (${why}): ${r.message}`);
