@@ -554,6 +554,7 @@ details > summary { cursor: pointer; color: var(--muted); }
           <div class="stat"><span class="label">Next level in</span><span class="v" id="sEta">–</span></div>
         </div>
         <p class="hint" id="sNote">Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.</p>
+        <p class="hint" id="sSplit" hidden></p>
         <div class="row">
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
         </div>
@@ -883,6 +884,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (!last) {
       $("sTime").textContent = "–"; $("sXp").textContent = "–"; $("sRate").textContent = "–"; $("sessChip").textContent = "";
       $("sNote").textContent = "Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.";
+      $("sSplit").hidden = true;
       return;
     }
     const gained = last.bz && last.bz.gained != null ? last.bz.gained : last.xp || 0;
@@ -893,11 +895,21 @@ details > summary { cursor: pointer; color: var(--muted); }
     $("sessChip").textContent = new Date(last.endedAt || last.startedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     const lvFrom = last.startLevel, lvTo = last.endLevel;
     const bits = [lvFrom != null && lvTo != null ? (lvTo > lvFrom ? `Level ${lvFrom} → ${lvTo}` : `Level ${lvTo}`) : ""];
+    if (last.killXP != null) bits.push(`${fmt(last.kills || 0)} kill${last.kills === 1 ? "" : "s"}`);
     if (last.deaths != null) bits.push(`${last.deaths} death${last.deaths === 1 ? "" : "s"}`);
     if (last.quests != null) bits.push(`${last.quests} quest${last.quests === 1 ? "" : "s"}`);
     if (last.zones && last.zones.length) bits.push(last.zones.join(", "));
     if (r) bits.push(`next level uses your last ${r.n} session${r.n === 1 ? "" : "s"} (${fmt(Math.round(r.v))} XP/hour)`);
     $("sNote").textContent = bits.filter(Boolean).join(" · ");
+    // where the XP came from (add-on 1.0.4 and later)
+    const sp = $("sSplit");
+    if (last.killXP != null && gained > 0) {
+      const other = Math.max(0, gained - (last.killXP || 0) - (last.questXP || 0));
+      const pc = (v) => `${fmt(v)} (${Math.round(v / gained * 100)}%)`;
+      sp.textContent = `XP from kills ${pc(last.killXP || 0)} · quests ${pc(last.questXP || 0)} · other ${pc(other)}`;
+      sp.title = "Kill XP includes rested bonus and kills by your group. Other is exploration and anything else.";
+      sp.hidden = false;
+    } else sp.hidden = true;
   }
 
   function renderTasks() {

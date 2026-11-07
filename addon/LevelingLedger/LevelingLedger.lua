@@ -3,7 +3,7 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 3
+local VERSION = 4
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -82,7 +82,7 @@ local function startSession()
   end
   session = {
     start = s.at, startLevel = s.level, startXP = s.xp, startXPMax = s.xpMax, startMoney = s.money, startRested = s.rested,
-    xpGained = 0, levels = 0, kills = 0, quests = 0, deaths = 0, zones = {},
+    xpGained = 0, levels = 0, kills = 0, killXP = 0, questXP = 0, quests = 0, deaths = 0, zones = {},
   }
   table.insert(char.sessions, session)
   trim(char.sessions, MAX_SESSIONS)
@@ -149,7 +149,39 @@ end
 local function onQuestTurnedIn(questID, xp, money)
   table.insert(char.quests, { id = questID, at = now(), xp = xp, money = money, zone = zone() })
   trim(char.quests, MAX_QUESTS)
-  if session then session.quests = session.quests + 1 end
+  if session then
+    session.quests = session.quests + 1
+    session.questXP = (session.questXP or 0) + (tonumber(xp) or 0)
+  end
+end
+
+-- ---------- kills ----------
+-- Kills: the combat log's PARTY_KILL events where you (or your pet) landed the killing blow.
+local function onCombatLog()
+  if not session or not CombatLogGetCurrentEventInfo then return end
+  local _, sub, _, src, _, _, _, dst = CombatLogGetCurrentEventInfo()
+  if sub ~= "PARTY_KILL" then return end
+  if src ~= UnitGUID("player") and src ~= UnitGUID("pet") then return end
+  local kind = dst and strsplit("-", dst)
+  if kind == "Creature" or kind == "Vehicle" then session.kills = (session.kills or 0) + 1 end
+end
+
+-- Kill XP: "<mob> dies, you gain <n> experience." (also counts kills by your group).
+-- The pattern comes from the game's own text, so it works in any language.
+local killXPPattern
+local function buildKillPattern()
+  local fmt = COMBATLOG_XPGAIN_FIRSTPERSON or "%s dies, you gain %d experience."
+  local cut = fmt:find("%%d") -- keep the text up to and including the XP number
+  if not cut then return "^.- dies, you gain (%d+) experience" end
+  local head = fmt:sub(1, cut + 1)
+  local pat = head:gsub("([%(%)%.%[%]%*%+%-%?%^%$])", "%%%1"):gsub("%%s", ".-"):gsub("%%d", "(%%d+)")
+  return "^" .. pat
+end
+local function onXPMessage(msg)
+  if not session or not msg then return end
+  killXPPattern = killXPPattern or buildKillPattern()
+  local n = tonumber(msg:match(killXPPattern) or "")
+  if n then session.killXP = (session.killXP or 0) + n end
 end
 
 -- ---------- trainer ----------
@@ -252,6 +284,8 @@ f:RegisterEvent("ZONE_CHANGED_INDOORS")
 f:RegisterEvent("UPDATE_EXHAUSTION")
 f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
+f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
 
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
@@ -300,6 +334,8 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then safe(onTrainer)
   elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then safe(onMerchant)
   elseif event == "LOOT_OPENED" then safe(onLoot)
+  elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then safe(onCombatLog)
+  elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then local msg = ...; safe(onXPMessage, msg)
   elseif event == "PLAYER_DEAD" then char.deaths = char.deaths + 1; if session then session.deaths = session.deaths + 1 end
   elseif event == "ZONE_CHANGED_NEW_AREA" then safe(noteZone); safe(noteState)
   elseif event == "PLAYER_TARGET_CHANGED" then
@@ -319,7 +355,7 @@ SlashCmdList.LEVELINGLEDGER = function()
   for _ in pairs(char.vendors) do v = v + 1 end
   for _ in pairs(char.loot) do l = l + 1 end
   for _ in pairs(char.trainer) do t = t + 1 end
-  print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP.",
-    #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0))
+  print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP, %d kills.",
+    #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0, session and session.kills or 0))
   print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
 end

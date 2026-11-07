@@ -49,12 +49,30 @@ function GetLootSourceInfo(s) return "Creature-0-1-36-1-1763-0000AAAA", 1 end
 function GetItemInfo(link) return nil end
 C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then return 3 end return 1 end }
 SlashCmdList = {}
+-- combat log and XP chat
+CLEU = {}
+function CombatLogGetCurrentEventInfo() return unpack(CLEU) end
+COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
+PLAYERGUID = "Player-1-0000ABCD"; PETGUID = "Creature-0-1-0-1-0000-PET0001"
+local origGUID = UnitGUID
+function UnitGUID(u) if u == "player" then return PLAYERGUID elseif u == "pet" then return PETGUID end return origGUID(u) end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute(open(os.path.join(ROOT, 'addon', 'LevelingLedger', 'LevelingLedger.lua')).read().replace('local ADDON = ...', 'local ADDON = "LevelingLedger"'))
 fire = L.eval('function(e, ...) FRAME.fn(FRAME, e, ...) end')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')
+# 3 kills by you (one with rested bonus), 1 by your pet, 1 by a party member (XP but not your kill), and a non-creature kill
+def kill(src, dst, msg=None):
+    L.execute(f'CLEU = {{ 0, "PARTY_KILL", false, "{src}", "x", 0, 0, "{dst}" }}'); fire('COMBAT_LOG_EVENT_UNFILTERED')
+    if msg: fire('CHAT_MSG_COMBAT_XP_GAIN', msg)
+kill('Player-1-0000ABCD', 'Creature-0-1-1-1-2163-01', 'Thistle Bear dies, you gain 165 experience.')
+kill('Player-1-0000ABCD', 'Creature-0-1-1-1-2163-02', 'Thistle Bear dies, you gain 330 experience. (+165 exp Rested bonus)')
+kill('Player-1-0000ABCD', 'Creature-0-1-1-1-2235-03', 'Reef Crawler dies, you gain 150 experience.')
+kill('Creature-0-1-0-1-0000-PET0001', 'Creature-0-1-1-1-2235-04', 'Reef Crawler dies, you gain 150 experience.')
+kill('Player-1-0000FFFF', 'Creature-0-1-1-1-2163-05', 'Thistle Bear dies, you gain 82 experience.')
+kill('Player-1-0000ABCD', 'Player-1-0000EEEE')
+fire('CHAT_MSG_COMBAT_XP_GAIN', 'Discovered Auberdine: 90 experience gained')
 L.execute('T = T + 900; state.level = 14; state.xp = 2000'); fire('PLAYER_LEVEL_UP', 14); fire('PLAYER_XP_UPDATE')
 fire('QUEST_TURNED_IN', 486, 1150, 0)
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')

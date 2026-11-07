@@ -27,6 +27,13 @@ function readSaved(text) {
   return parseLuaSaved(text).LevelingLedgerDB;
 }
 
+// Kills and where the XP came from (add-on 1.0.4 and later; older saves have none of these)
+function splitOf(s) {
+  const o = {};
+  if (s.killXP != null || s.questXP != null) { o.kills = s.kills || 0; o.killXP = s.killXP || 0; o.questXP = s.questXP || 0; }
+  return o;
+}
+
 function importAddon(text, store, publicDir, source, hint) {
   const data = readSaved(text);
   if (!data || !data.chars) throw new Error("That file has no Leveling Ledger data.");
@@ -48,6 +55,7 @@ function importAddon(text, store, publicDir, source, hint) {
     if (m && s.start - m.stop <= 600) {
       m.stop = s.stop; m.xpGained = (m.xpGained || 0) + (s.xpGained || 0); m.levels = (m.levels || 0) + (s.levels || 0);
       m.deaths = (m.deaths || 0) + (s.deaths || 0); m.quests = (m.quests || 0) + (s.quests || 0);
+      for (const k of ["kills", "killXP", "questXP"]) if (s[k] != null) m[k] = (m[k] || 0) + s[k];
       m.endLevel = s.endLevel; m.endXP = s.endXP; m.zones = [...arr(m.zones), ...arr(s.zones).filter((z) => !arr(m.zones).includes(z))];
     } else merged.push({ ...s, zones: arr(s.zones) });
   }
@@ -59,10 +67,11 @@ function importAddon(text, store, publicDir, source, hint) {
       const ob = overlap.bz;
       if (ob && (ob.merged || ob.combined)) continue;
       const cur = store.get("sessions/" + overlap._id);
-      if (cur && JSON.stringify(cur.bz) !== JSON.stringify(bz)) store.update("sessions/" + overlap._id, { bz });
+      const upd = { bz, ...splitOf(s) };
+      if (cur && Object.keys(upd).some((k) => JSON.stringify(cur[k]) !== JSON.stringify(upd[k]))) store.update("sessions/" + overlap._id, upd);
     } else {
       const row = { startedAt: s.start * 1000, endedAt: s.stop * 1000, durationMs: (s.stop - s.start) * 1000, xp: s.xpGained || 0,
-        levels: s.levels || 0, startLevel: s.startLevel, endLevel: s.endLevel, deaths: s.deaths || 0, quests: s.quests || 0, zones: arr(s.zones).slice(-10), src: "addon", bz };
+        levels: s.levels || 0, startLevel: s.startLevel, endLevel: s.endLevel, deaths: s.deaths || 0, quests: s.quests || 0, zones: arr(s.zones).slice(-10), src: "addon", bz, ...splitOf(s) };
       const key = "sessions/addon-" + s.start;
       if (JSON.stringify(store.get(key)) !== JSON.stringify(row)) store.set(key, row);
     }
