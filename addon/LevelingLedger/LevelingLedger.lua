@@ -10,7 +10,30 @@ local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 local f = CreateFrame("Frame")
 local db, char, session
 local lootSeen = {}          -- corpses already counted this session (by GUID)
-local suppressPlayed = false -- hide the /played chat line for our own requests
+-- Ask for /played without the chat line: the chat windows stop listening for that one reply.
+-- (Replacing Blizzard's chat function instead would taint it, and the game would blame the add-on for blocked actions.)
+local muted = nil
+local function unmutePlayed()
+  if not muted then return end
+  for _, cf in ipairs(muted) do pcall(cf.RegisterEvent, cf, "TIME_PLAYED_MSG") end
+  muted = nil
+end
+local function after(sec, fn)
+  if C_Timer and C_Timer.After then C_Timer.After(sec, fn) return end
+  local t, w = 0, CreateFrame("Frame")
+  w:SetScript("OnUpdate", function(self, dt) t = t + (dt or 0); if t >= sec then self:SetScript("OnUpdate", nil); fn() end end)
+end
+local function requestPlayed()
+  if not muted then
+    muted = {}
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do
+      local cf = _G["ChatFrame" .. i]
+      if cf and cf.IsEventRegistered and cf:IsEventRegistered("TIME_PLAYED_MSG") then cf:UnregisterEvent("TIME_PLAYED_MSG"); muted[#muted + 1] = cf end
+    end
+    after(10, unmutePlayed) -- in case no reply comes
+  end
+  RequestTimePlayed()
+end
 local lastMoney              -- money at the last PLAYER_MONEY, to work out each change
 local where = {}             -- which money windows are open: merchant, trainer, mail, auction
 
@@ -192,8 +215,7 @@ end
 local function onLevelUp(newLevel)
   char.levels[newLevel] = { at = now(), zone = zone() }
   if session then session.levels = session.levels + 1 end
-  suppressPlayed = true
-  RequestTimePlayed()
+  requestPlayed()
 end
 
 local function onPlayed(total, thisLevel)
@@ -660,18 +682,6 @@ f:SetScript("OnEvent", function(_, event, ...)
       char.xpMax[char.level] = UnitXPMax("player")
       startSession(); noteZone(); noteState(); scanSkills(); scanReps(); scanBags()
       createPanel()
-      -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
-      if not f.hooked then
-        f.hooked = true
-        if ChatFrame_DisplayTimePlayed then
-          local orig = ChatFrame_DisplayTimePlayed
-          ChatFrame_DisplayTimePlayed = function(...) if suppressPlayed then suppressPlayed = false; return end return orig(...) end
-        end
-        if ChatFrameUtil and ChatFrameUtil.DisplayTimePlayed then
-          local orig = ChatFrameUtil.DisplayTimePlayed
-          ChatFrameUtil.DisplayTimePlayed = function(...) if suppressPlayed then suppressPlayed = false; return end return orig(...) end
-        end
-      end
     end)
   elseif not char then
     return
@@ -680,11 +690,11 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "PLAYER_ENTERING_WORLD" then
     -- Ask for /played once per real login, not on every /reload or loading screen
     local isLogin = ...
-    if isLogin then suppressPlayed = true; RequestTimePlayed() end
+    if isLogin then requestPlayed() end
   elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
-  elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel)
+  elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel); after(0.5, unmutePlayed) -- after every chat window has had this reply
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
   elseif event == "PLAYER_MONEY" then safe(onMoney); safe(noteState)
   elseif event == "BAG_UPDATE_DELAYED" then safe(scanBags); safe(scanBank)
