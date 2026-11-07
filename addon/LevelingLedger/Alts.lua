@@ -57,6 +57,23 @@ local function ago(t)
   return math.floor(d) .. " days ago"
 end
 local function cap(s) s = tostring(s or ""):lower(); return (s:gsub("^%l", string.upper)) end
+-- class colours and class icons, as the game shows them
+local function classHex(class)
+  local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[tostring(class or ""):upper()]
+  if not c then return "ffd9c9a8" end
+  return c.colorStr or string.format("ff%02x%02x%02x", math.floor((c.r or 1) * 255), math.floor((c.g or 1) * 255), math.floor((c.b or 1) * 255))
+end
+local function classIcon(class, size)
+  local t = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[tostring(class or ""):upper()]
+  if not t then return "" end
+  size = size or 14
+  return string.format("|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:%d:%d:0:0:256:256:%d:%d:%d:%d|t ", size, size, t[1] * 256, t[2] * 256, t[3] * 256, t[4] * 256)
+end
+local function cname(c, key) return "|c" .. classHex(c.class) .. (c.name or key or "?") .. "|r" end
+local function itemIcon(id)
+  local tex = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(id)) or (GetItemIcon and GetItemIcon(id))
+  return tex and ("|T" .. tex .. ":14:14|t ") or ""
+end
 
 -- ---------- tooltips ----------
 local function addTooltipLines(tt, id)
@@ -69,7 +86,7 @@ local function addTooltipLines(tt, id)
       local where = {}
       if bk > 0 then where[#where + 1] = "bank " .. bk end
       if bg > 0 then where[#where + 1] = "bags " .. bg end
-      tt:AddDoubleLine(o.c.name or o.key, ns.fmtNum(bg + bk) .. "  (" .. table.concat(where, ", ") .. ")", 0.85, 0.67, 0.35, 1, 1, 1)
+      tt:AddDoubleLine(classIcon(o.c.class, 12) .. cname(o.c, o.key), ns.fmtNum(bg + bk) .. "  (" .. table.concat(where, ", ") .. ")", 1, 1, 1, 1, 1, 1)
     end
   end
   if any then tt:Show() end
@@ -112,7 +129,7 @@ local function refreshWindow()
   for i, b in ipairs(win.charButtons) do
     local o = list[i]
     if o then
-      b.text:SetText((o.c.name or o.key) .. (o.c.level and ("  " .. o.c.level) or "") .. (o.c == me and "  (you)" or ""))
+      b.text:SetText(classIcon(o.c.class) .. cname(o.c, o.key) .. (o.c.level and ("  |cffffd100" .. o.c.level .. "|r") or "") .. (o.c == me and "  |cff9d9d9d(you)|r" or ""))
       b.o = o; b:Show()
     else b:Hide() end
   end
@@ -120,8 +137,8 @@ local function refreshWindow()
   if not sel then win.info:SetText("No characters recorded yet."); return end
   local c = sel.c
   local lines = {
-    (c.name or sel.key) .. "   level " .. (c.level or "?") .. " " .. cap(c.class) .. (sel.remote and c.account and c.account ~= "" and ("   (" .. c.account .. ")") or ""),
-    "Gold " .. ns.fmtMoney(c.money or 0) .. (c.rested and c.rested > 0 and ("   rested " .. ns.fmtNum(c.rested)) or ""),
+    classIcon(c.class, 16) .. cname(c, sel.key) .. "   |cffffd100level " .. (c.level or "?") .. "|r " .. cap(c.class) .. (sel.remote and c.account and c.account ~= "" and ("   |cff9d9d9d(" .. c.account .. ")|r") or ""),
+    (ns.coins and ns.coins(c.money or 0) or ns.fmtMoney(c.money or 0)) .. (c.rested and c.rested > 0 and ("   |cff4d8ff0rested " .. ns.fmtNum(c.rested) .. "|r") or ""),
     (c.zone and c.zone ~= "" and (c.zone .. (c.subzone and c.subzone ~= "" and (", " .. c.subzone) or "")) or "Zone unknown") .. "   last played " .. ago(c.stateAt),
     "Bags updated " .. ago(c.bagsAt) .. "   bank updated " .. (c.bankAt and ago(c.bankAt) or "never (open the bank once)"),
   }
@@ -135,7 +152,7 @@ local function refreshWindow()
     local n, col = itemName(id)
     if q == "" or n:lower():find(q, 1, true) then
       local bg, bk = held(c, id)
-      items[#items + 1] = { n = n, col = col, bg = bg, bk = bk }
+      items[#items + 1] = { id = id, n = n, col = col, bg = bg, bk = bk }
     end
   end
   table.sort(items, function(a, b) return a.n < b.n end)
@@ -147,7 +164,7 @@ local function refreshWindow()
       local where = {}
       if it.bg > 0 then where[#where + 1] = "bags " .. it.bg end
       if it.bk > 0 then where[#where + 1] = "bank " .. it.bk end
-      fs:SetText((it.col and ("|c" .. it.col) or "") .. it.n .. (it.col and "|r" or "") .. "   x" .. (it.bg + it.bk) .. "  (" .. table.concat(where, ", ") .. ")")
+      fs:SetText(itemIcon(it.id) .. (it.col and ("|c" .. it.col) or "") .. it.n .. (it.col and "|r" or "") .. "   |cffffd100x" .. (it.bg + it.bk) .. "|r  |cff9d9d9d(" .. table.concat(where, ", ") .. ")|r")
     else fs:SetText("") end
   end
   local sh = shared()
@@ -155,17 +172,21 @@ local function refreshWindow()
   win.pageText:SetText(#items == 0 and (q == "" and "No items recorded" or "Nothing matches") or ("Page " .. page .. " of " .. pages .. "  (" .. #items .. " items)"))
 end
 local function makeWindow()
-  local w = CreateFrame("Frame", "LevelingLedgerAlts", UIParent)
+  -- the game's own window frame (title bar, close button) where the client has it; a bordered frame otherwise
+  local ok, w = pcall(CreateFrame, "Frame", "LevelingLedgerAlts", UIParent, "BasicFrameTemplateWithInset")
+  local templ = ok and w and rawget(w, "TitleText") ~= nil
+  if not templ then w = CreateFrame("Frame", "LevelingLedgerAlts", UIParent, ns.BACKDROP_TEMPLATE); ns.styleFrame(w, 0.95) end
   w:SetSize(560, 440)
   w:SetPoint("CENTER")
   w:SetFrameStrata("DIALOG")
   w:SetClampedToScreen(true)
   w:SetMovable(true); w:EnableMouse(true); w:RegisterForDrag("LeftButton")
   w:SetScript("OnDragStart", w.StartMoving); w:SetScript("OnDragStop", w.StopMovingOrSizing)
-  local bg = w:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints()
-  if bg.SetColorTexture then bg:SetColorTexture(0, 0, 0, 0.85) else bg:SetTexture(0, 0, 0, 0.85) end
-  local title = w:CreateFontString(nil, "OVERLAY", "GameFontNormal"); title:SetPoint("TOPLEFT", 12, -10); title:SetText("Leveling Ledger: your characters")
-  local close = CreateFrame("Button", nil, w, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", 2, 2)
+  if templ then rawget(w, "TitleText"):SetText("Leveling Ledger: your characters")
+  else
+    local title = w:CreateFontString(nil, "OVERLAY", "GameFontNormal"); title:SetPoint("TOPLEFT", 12, -10); title:SetText("Leveling Ledger: your characters")
+    local close = CreateFrame("Button", nil, w, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", 2, 2)
+  end
   w.note = w:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall"); w.note:SetPoint("BOTTOMLEFT", 12, 10)
   w.charButtons = {}
   for i = 1, 14 do
@@ -220,16 +241,15 @@ local function craftLine(numReagents, reagentInfo, reagentLink, index)
     if have < need and alt > 0 then short[#short + 1] = (name or "?") .. ": " .. table.concat(who, ", ") end
   end
   if withAlts <= now then return nil end
-  return "With your alts' materials you could make " .. withAlts .. (now > 0 and (" (" .. now .. " now)") or "") .. ".\n" .. table.concat(short, "\n")
+  return "|cffffd100With your alts' materials you could make " .. withAlts .. "|r" .. (now > 0 and (" (" .. now .. " now)") or "") .. ".\n" .. table.concat(short, "\n")
 end
 local helpers = {}
 local function attach(parent, key)
   if helpers[key] or not parent then return helpers[key] end
-  local fr = CreateFrame("Frame", nil, parent)
+  local fr = CreateFrame("Frame", nil, parent, ns.BACKDROP_TEMPLATE)
   fr:SetSize(240, 60)
   fr:SetPoint("TOPLEFT", parent, "TOPRIGHT", -30, -80)
-  local bg = fr:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints()
-  if bg.SetColorTexture then bg:SetColorTexture(0, 0, 0, 0.75) end
+  ns.styleFrame(fr, 0.9)
   fr.text = fr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   fr.text:SetPoint("TOPLEFT", 8, -8); fr.text:SetWidth(224); fr.text:SetJustifyH("LEFT")
   fr:Hide()

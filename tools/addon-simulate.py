@@ -104,6 +104,11 @@ function GetTradeSkillNumReagents(i) return 2 end
 function GetTradeSkillReagentInfo(i, r) if r == 1 then return "Peacebloom", "", 2, 1 end return "Empty Vial", "", 1, 5 end
 function GetTradeSkillReagentItemLink(i, r) if r == 1 then return "|Hitem:2447::|h[Peacebloom]|h" end return "|Hitem:3371::|h[Empty Vial]|h" end
 UISpecialFrames = {}
+-- the game's class colours, class icon positions, coin and item icons
+RAID_CLASS_COLORS = { DRUID = { r = 1, g = 0.49, b = 0.04, colorStr = "ffff7c0a" }, MAGE = { r = 0.25, g = 0.78, b = 0.92, colorStr = "ff3fc7eb" }, PRIEST = { r = 1, g = 1, b = 1 } }
+CLASS_ICON_TCOORDS = { DRUID = { 0.74609375, 0.98828125, 0, 0.25 }, MAGE = { 0.25, 0.49609375, 0, 0.25 }, PRIEST = { 0.49609375, 0.7421875, 0.25, 0.5 } }
+function GetCoinTextureString(c) return "[coins " .. c .. "]" end
+function GetItemIcon(id) return 132000 + id % 1000 end
 -- skills and professions
 SKILLS = { { "Professions", true }, { "Alchemy", false, 67, 150 }, { "Herbalism", false, 121, 150 },
            { "Secondary Skills", true }, { "Cooking", false, 108, 150 }, { "Weapon Skills", true }, { "Staves", false, 64, 70 } }

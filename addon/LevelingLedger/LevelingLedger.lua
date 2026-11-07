@@ -4,7 +4,7 @@
 
 local ADDON, ns = ...
 ns = ns or {}
-local VERSION = 9
+local VERSION = 10
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -519,6 +519,28 @@ local function fmtMoney(c)
   return table.concat(t, " ")
 end
 
+-- ---------- look: WoW's own tooltip border, gold labels, the game's icons ----------
+local GOLD, BLUE, WHITE = "|cffffd100", "|cff4d8ff0", "|r"
+-- frames get a BackdropTemplate where the client needs it (modern clients), plain frames otherwise
+local BACKDROP_TEMPLATE = BackdropTemplateMixin and "BackdropTemplate" or nil
+local function styleFrame(fr, alpha)
+  if fr.SetBackdrop then
+    fr:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+      tile = true, tileSize = 16, edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    fr:SetBackdropColor(0.07, 0.05, 0.03, alpha or 0.9)
+    fr:SetBackdropBorderColor(0.85, 0.68, 0.3, 1)
+  else
+    local bg = fr:CreateTexture(nil, "BACKGROUND"); bg:SetAllPoints()
+    if bg.SetColorTexture then bg:SetColorTexture(0.07, 0.05, 0.03, alpha or 0.9) else bg:SetTexture(0, 0, 0, alpha or 0.9) end
+  end
+end
+-- money with the game's coin icons where the client has them
+local function coins(c)
+  if GetCoinTextureString then local ok, s = pcall(GetCoinTextureString, math.floor(c or 0)); if ok and s then return s end end
+  return fmtMoney(c)
+end
+local SKULL = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:12:12|t"
+
 local function updatePanel()
   if not panel or not panel:IsShown() then return end
   if not session or not char then
@@ -531,14 +553,14 @@ local function updatePanel()
   local rate = (el >= 60 and xp > 0) and xp / el * 3600 or nil
   local lvl, cap = UnitLevel("player"), (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 60
   local togo = (UnitXPMax("player") or 0) - (UnitXP("player") or 0)
-  lines[1]:SetText("Session  " .. fmtClock(el))
-  lines[2]:SetText("XP  " .. fmtNum(xp) .. (rate and ("   " .. fmtNum(rate) .. " an hour") or ""))
-  if lvl >= cap then lines[3]:SetText("Max level")
-  else lines[3]:SetText("Level " .. (lvl + 1) .. " in  " .. (rate and fmtDur(togo / rate * 3600) or "-") .. "   " .. fmtNum(togo) .. " XP to go") end
+  lines[1]:SetText(GOLD .. "Session" .. WHITE .. "  " .. fmtClock(el))
+  lines[2]:SetText(GOLD .. "XP" .. WHITE .. "  " .. fmtNum(xp) .. (rate and ("   " .. GOLD .. "per hour" .. WHITE .. " " .. fmtNum(rate)) or ""))
+  if lvl >= cap then lines[3]:SetText(GOLD .. "Max level" .. WHITE)
+  else lines[3]:SetText(GOLD .. "Level " .. (lvl + 1) .. " in" .. WHITE .. "  " .. (rate and fmtDur(togo / rate * 3600) or "-") .. "   " .. fmtNum(togo) .. " XP to go") end
   local earned = 0
   for k, v in pairs(session.moneyIn or {}) do if k ~= "mail" then earned = earned + v end end
   local rested = GetXPExhaustion() or 0
-  lines[4]:SetText("Kills " .. fmtNum(session.kills or 0) .. "   Gold +" .. fmtMoney(earned) .. (rested > 0 and ("   Rested " .. fmtNum(rested)) or ""))
+  lines[4]:SetText(SKULL .. " " .. fmtNum(session.kills or 0) .. "    +" .. coins(earned) .. (rested > 0 and ("    " .. BLUE .. "Rested " .. fmtNum(rested) .. WHITE) or ""))
 end
 
 local function placePanel()
@@ -551,8 +573,8 @@ end
 local function createPanel()
   if panel or not CreateFrame or not UIParent then return end
   db.panel = db.panel or { shown = true }
-  local p = CreateFrame("Frame", "LevelingLedgerPanel", UIParent)
-  p:SetSize(250, 78)
+  local p = CreateFrame("Frame", "LevelingLedgerPanel", UIParent, BACKDROP_TEMPLATE)
+  p:SetSize(270, 86)
   p:SetFrameStrata("MEDIUM")
   p:SetClampedToScreen(true)
   p:SetMovable(true)
@@ -564,16 +586,14 @@ local function createPanel()
     local point, _, relPoint, x, y = self:GetPoint()
     db.panel.point, db.panel.relPoint, db.panel.x, db.panel.y = point, relPoint, x, y
   end)
-  local bg = p:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints()
-  if bg.SetColorTexture then bg:SetColorTexture(0, 0, 0, 0.55) else bg:SetTexture(0, 0, 0, 0.55) end
+  styleFrame(p, 0.82)
   local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  title:SetPoint("TOPLEFT", 8, -6)
-  title:SetText("Leveling Ledger")
+  title:SetPoint("TOPLEFT", 9, -8)
+  title:SetText("|TInterface\\Icons\\INV_Misc_Book_09:14:14|t Leveling Ledger")
   lines = {}
   for i = 1, 4 do
     local fs = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    fs:SetPoint("TOPLEFT", 8, -6 - i * 14)
+    fs:SetPoint("TOPLEFT", 10, -10 - i * 15)
     fs:SetJustifyH("LEFT")
     lines[i] = fs
   end
@@ -700,6 +720,9 @@ ns.now = now
 ns.idFromLink = idFromLink
 ns.fmtMoney = fmtMoney
 ns.fmtNum = fmtNum
+ns.styleFrame = styleFrame
+ns.coins = coins
+ns.BACKDROP_TEMPLATE = BACKDROP_TEMPLATE
 
 -- ---------- /ledger ----------
 SLASH_LEVELINGLEDGER1 = "/ledger"
