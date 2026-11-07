@@ -1757,7 +1757,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
 
   // ---------- class abilities by level (Talents page) ----------
-  const AB = { data: null, loading: false, all: false, costs: {}, saveT: null, dirty: false };
+  const AB = { data: null, loading: false, all: false, costs: {}, fromAddon: {}, saveT: null, dirty: false };
   // "1g 2s 3c", "2s50", "1.5g" or a plain number of copper → copper
   function parseMoney(txt) {
     const t = String(txt || "").toLowerCase().replace(/,/g, "").trim();
@@ -1770,7 +1770,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function saveCosts() {
     if (!db || !S.canWrite) return;
     clearTimeout(AB.saveT); AB.dirty = true;
-    AB.saveT = setTimeout(() => write(() => db.doc("state/trainercosts").set({ costs: { ...AB.costs }, updatedAt: Date.now() })).finally(() => { AB.dirty = false; }), 800);
+    AB.saveT = setTimeout(() => write(() => db.doc("state/trainercosts").set({ costs: { ...AB.costs }, fromAddon: { ...AB.fromAddon }, updatedAt: Date.now() })).finally(() => { AB.dirty = false; }), 800);
   }
   function loadAbilities() {
     if (AB.data || AB.loading) { renderAbilities(); return; }
@@ -1801,7 +1801,16 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         const meta = [e.cost, e.cast, e.range, e.cd ? `${e.cd} cooldown` : "", e.form ? `needs ${e.form}` : ""].filter(Boolean);
         if (meta.length) r.append(el("div", "ab-meta", meta.join(" · ")));
         if (e.d) r.append(el("div", "ab-d", e.d));
-        if (!e.auto) {
+        const fa = !e.auto && AB.fromAddon[e.id] && AB.costs[e.id] != null ? AB.fromAddon[e.id] : null;
+        if (fa) {
+          // read at the trainer by the add-on: shown as recorded, not editable
+          const cw = el("div", "ab-cost");
+          const p = el("span", "pill go", "From the trainer");
+          p.title = `Recorded by the add-on${fa.by ? " at " + fa.by : ""}${fa.at ? ", " + new Date(fa.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}. It changes only when the add-on sees a different price.`;
+          cw.append(el("span", "label", "Cost"), moneyEl(AB.costs[e.id]), document.createTextNode(" "), p);
+          if (fa.by) cw.append(el("span", "muted", ` at ${fa.by}`));
+          r.append(cw);
+        } else if (!e.auto) {
           const cw = el("label", "ab-cost");
           const inp = el("input"); inp.id = "cost-" + e.id; inp.placeholder = "cost"; inp.setAttribute("aria-label", `Training cost for ${e.n} ${e.r || ""}`);
           const cur = AB.costs[e.id]; inp.value = cur != null ? money(cur) || "0c" : "";
@@ -2163,6 +2172,29 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     for (const id of npcIds) { const v = V[id]; const it = v && v.items && v.items[itemId]; if (it) return { it, v }; }
     return null;
   }
+  // Gold price you've seen for an item: at one of these vendors if possible, otherwise at any vendor (newest first)
+  function seenGold(npcIds, itemId) {
+    const V = S.vendors && S.vendors.v; if (!V) return null;
+    const ok = (v) => { const it = v && v.items && v.items[itemId]; return it && it.p > 0 && !(it.c && it.c.length) ? it : null; };
+    for (const id of npcIds || []) { const it = ok(V[id]); if (it) return { p: it.p, v: V[id], id: +id }; }
+    let best = null;
+    for (const [id, v] of Object.entries(V)) { const it = ok(v); if (it && (!best || (v.at || 0) > (best.v.at || 0))) best = { p: it.p, v, id: +id }; }
+    return best;
+  }
+  // "(seen at Vendor, Nov 7)", the vendor linked
+  function seenAt(v, npcId, by, word = "seen at") {
+    const s = el("span", "muted"); s.append(document.createTextNode(` ${word} `), npcId ? whA("npc", npcId, by || v.n || "a vendor") : document.createTextNode(by || v.n || "a vendor"));
+    if (v.at) s.append(document.createTextNode(", " + shortDate(v.at)));
+    return s;
+  }
+  // What a profession trainer charged for a recipe, recorded by the add-on
+  function trainerPrice(name) {
+    const B = S.trainerRecipes && S.trainerRecipes.byName; if (!B || !name) return null;
+    const n = name.toLowerCase(); if (B[n]) return B[n];
+    let best = null;
+    for (const t of Object.values(B)) if (t.n && t.n.toLowerCase() === n && (!best || (t.at || 0) > (best.at || 0))) best = t;
+    return best;
+  }
   // Your own drops from a creature (by npc id)
   function yourDrops(npcId) { const L = S.loot && S.loot.npcs; return L ? L[npcId] : null; }
 
@@ -2380,6 +2412,13 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     };
     if (!e.learn || !e.learn.length) {
       const r = el("div", "rs"); r.append(el("span", "pill go", "Trainer"), document.createTextNode(` Learned from ${/^[AEIOU]/.test(e.p) ? "an" : "a"} ${e.p} trainer`)); box.append(r);
+      const t = trainerPrice(e.n);
+      if (t) {
+        const c = el("div", "rs"); c.append(el("span", "label", "Training "), moneyEl(t.cost), seenAt({ at: t.at, n: t.by }, t.npc, t.by, "at"));
+        const need = [t.sk && t.skr ? `needs ${t.sk} ${t.skr}` : "", t.lv > 1 ? `level ${t.lv}` : ""].filter(Boolean).join(" · ");
+        if (need) c.append(el("span", "muted", " · " + need));
+        box.append(c);
+      } else box.append(el("div", "rs muted", "Training cost not recorded yet; open the trainer with the add-on to record it."));
       return box;
     }
     for (const l of e.learn.slice(0, 2)) {
@@ -2398,7 +2437,11 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
           const seenC = seen && seen.it.c && seen.it.c.find((c) => /favor/i.test(c[0]));
           if (fav && seenC) { r.append(el("span", "cost", seenC[1] + " "), whA("currency", FAVOR.currency, "Merchant's Favor", "fv-cur"), el("span", "muted", ` (seen at ${seen.v.n}${seen.v.at ? ", " + new Date(seen.v.at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""})` + (gold ? " · at the trade hub, " : ""))); }
           else if (fav) { const a = whA("currency", FAVOR.currency, "Merchant's Favor", "fv-cur"); r.append(a, el("span", "muted", gold ? " at the trade hub, " : " (price not published yet; open the vendor with the add-on to record it)")); }
-          if (gold) r.append(el("span", "cost", money(l.price) || "price unknown"));
+          if (gold) {
+            const sg = seenGold(vs.map((x) => x.id), l.i);
+            if (sg) r.append(moneyEl(sg.p), seenAt(sg.v, sg.id));
+            else r.append(el("span", "cost", money(l.price) || "price unknown"));
+          }
           box.append(r);
           for (const x of vs.slice(0, 4)) { const v = el("div", "rs"); v.append(...npcLine(x)); box.append(v); }
           if (vs.length > 4) box.append(el("div", "rs muted", `and ${vs.length - 4} more vendors`));
@@ -2585,7 +2628,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     if (m.v) {
       const vs = m.v.filter((x) => facOk(x.f));
       if (vs.length) {
-        line(["Vendor", "go"], el("span", "cost", m.price ? money(m.price) : "price unknown"), el("span", "muted", m.vn > vs.length ? ` · ${m.vn} vendors in all` : ""));
+        const sg = seenGold(vs.map((x) => x.id), m.id);
+        line(["Vendor", "go"], ...(sg ? [moneyEl(sg.p), seenAt(sg.v, sg.id)] : [el("span", "cost", m.price ? money(m.price) : "price unknown")]), el("span", "muted", m.vn > vs.length ? ` · ${m.vn} vendors in all` : ""));
         for (const x of vs.slice(0, opts.compact ? 2 : 4)) { const r = el("div", "rs"); r.append(...npcLine(x)); box.append(r); }
         if (vs.length > (opts.compact ? 2 : 4)) box.append(el("div", "rs muted", `and ${vs.length - (opts.compact ? 2 : 4)} more vendors`));
       } else box.append(el("div", "rs muted", "Only sold by vendors of the other faction"));
@@ -3335,7 +3379,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); }, fail);
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
-    db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; renderAbilities(); }, () => {});
+    db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});
@@ -3347,7 +3391,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
-    db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
+    db.doc("state/trainerrecipes").onSnapshot((s) => { S.trainerRecipes = s.exists ? s.data() : null; renderRecipes(); }, () => {});
+    db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) { for (const d of DG.data.dungeons) d._hay = null; renderDungeons(); } }, () => {});
     db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); renderHealth(); }, () => {});
     db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); }, () => {});

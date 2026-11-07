@@ -4,7 +4,7 @@
 
 local ADDON, ns = ...
 ns = ns or {}
-local VERSION = 10
+local VERSION = 11
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -412,12 +412,18 @@ end
 local function onTrainer()
   if not GetNumTrainerServices then return end
   local npc = npcIdFromGUID(UnitGUID("npc"))
+  local npcName = UnitName("npc")
   for i = 1, GetNumTrainerServices() do
     local name, rank, category = GetTrainerServiceInfo(i)
     if name and category ~= "header" then
       local cost = GetTrainerServiceCost and GetTrainerServiceCost(i) or nil
       local req = GetTrainerServiceLevelReq and GetTrainerServiceLevelReq(i) or nil
-      char.trainer[name .. "|" .. (rank or "")] = { n = name, r = rank, cost = cost, lv = req, npc = npc, at = now(), state = category }
+      -- profession trainers: which profession, and the skill it needs (e.g. Alchemy 50)
+      local line = GetTrainerServiceSkillLine and GetTrainerServiceSkillLine(i) or nil
+      local sk, skr = nil, nil
+      if GetTrainerServiceSkillReq then sk, skr = GetTrainerServiceSkillReq(i) end
+      char.trainer[name .. "|" .. (rank or "")] = { n = name, r = rank, cost = cost, lv = req, npc = npc, npcName = npcName, at = now(), state = category,
+        line = line, sk = sk, skr = skr }
     end
   end
 end

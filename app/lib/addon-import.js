@@ -144,20 +144,35 @@ function importAddon(text, store, publicDir, source, hint) {
     if ((!prev || doc.at >= (prev.at || 0)) && JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
   }
 
-  // 3. Training costs, matched to the class's abilities by name and rank
+  // 3. Trainers: class ability costs (matched by name and rank), and what profession trainers teach.
+  //    Costs seen at a trainer are marked as coming from the add-on (the page shows them read-only).
   if (ch.trainer && Object.keys(ch.trainer).length) {
     const ab = loadAbilities(publicDir);
     const cls = ((S.char && S.char.cls) || (ch.class || "").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())).split(/[ (]/)[0];
     const list = ab.classes[cls] || [];
-    const costs = { ...((store.get("state/trainercosts") || {}).costs || {}) };
-    n = 0;
+    const prev = store.get("state/trainercosts") || {};
+    const costs = { ...(prev.costs || {}) }, fromAddon = { ...(prev.fromAddon || {}) };
+    const recipes = { ...((store.get("state/trainerrecipes") || {}).byName || {}) };
+    let nA = 0, nR = 0;
     for (const t of Object.values(ch.trainer)) {
-      if (t.cost == null) continue;
+      if (t.cost == null || !t.n) continue;
+      const at = (t.at || 0) * 1000;
       const a = list.find((e) => e.n === t.n && (e.r || "") === (t.r || "")) || list.find((e) => e.n === t.n && !t.r);
-      if (a && costs[a.id] !== t.cost) { costs[a.id] = t.cost; n++; }
+      if (a) {
+        const f = fromAddon[a.id];
+        if (f && (f.at || 0) > at) continue; // another device saw this trainer more recently
+        if (costs[a.id] !== t.cost || !f) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "" }; nA++; }
+      } else {
+        const k = t.n.toLowerCase() + (t.r ? "|" + String(t.r).toLowerCase() : "");
+        const cur = recipes[k];
+        if (cur && (cur.at || 0) > at) continue;
+        const v = { n: t.n, r: t.r || "", cost: t.cost, npc: t.npc || null, by: t.npcName || "", line: t.line || "", sk: t.sk || "", skr: t.skr || 0, lv: t.lv || 0, at };
+        if (JSON.stringify(cur) !== JSON.stringify(v)) { recipes[k] = v; nR++; }
+      }
     }
-    if (n) store.set("state/trainercosts", { costs, updatedAt: Date.now() });
-    done.push(`${n} training cost${n === 1 ? "" : "s"}`);
+    if (nA) store.set("state/trainercosts", { costs, fromAddon, updatedAt: Date.now() });
+    if (nR) store.set("state/trainerrecipes", { byName: recipes, updatedAt: Date.now() });
+    done.push(`${nA} training cost${nA === 1 ? "" : "s"}` + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : ""));
   }
 
   // 4. Vendor prices (gold and Merchant's Favor)

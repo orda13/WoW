@@ -54,8 +54,10 @@ function IsInInstance() return INSTANCE or false end
 strsplit = function(sep, s) local out = {} for p in (s .. sep):gmatch("(.-)%" .. sep) do out[#out + 1] = p end return unpack(out) end
 C_Map = { GetBestMapForUnit = function() return 1439 end, GetPlayerMapPosition = function() return { GetXY = function() return 0.374, 0.401 end } end }
 -- trainer
-function GetNumTrainerServices() return 3 end
-local TS = { { "Regrowth", "Rank 1", "available", 180, 12 }, { "Thorns", "Rank 2", "available", 200, 14 }, { "Druid", nil, "header", 0, 0 } }
+function GetNumTrainerServices() return 4 end
+local TS = { { "Regrowth", "Rank 1", "available", 180, 12 }, { "Thorns", "Rank 2", "available", 200, 14 }, { "Druid", nil, "header", 0, 0 }, { "Elixir of Minor Fortitude", nil, "available", 90, 5, "Alchemy", 50 } }
+function GetTrainerServiceSkillLine(i) return TS[i][6] end
+function GetTrainerServiceSkillReq(i) if TS[i][6] then return TS[i][6], TS[i][7], true end return nil end
 function GetTrainerServiceInfo(i) return TS[i][1], TS[i][2], TS[i][3] end
 function GetTrainerServiceCost(i) return TS[i][4] end
 function GetTrainerServiceLevelReq(i) return TS[i][5] end

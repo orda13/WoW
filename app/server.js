@@ -21,6 +21,15 @@ const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
 const PUBLIC = path.join(APP, "public");
 const VERSION = "1.0.0";
 
+// Training costs the add-on read at a trainer can't be changed from the page: they're kept as the add-on recorded them.
+function keepAddonCosts(dp, body) {
+  if (!/(^|\.)state\/trainercosts$/.test(dp) || !body || typeof body !== "object") return body;
+  const prev = store.get(dp) || {};
+  const fromAddon = prev.fromAddon || {};
+  const costs = { ...((body.costs && typeof body.costs === "object") ? body.costs : {}) };
+  for (const id of Object.keys(fromAddon)) if (prev.costs && prev.costs[id] != null) costs[id] = prev.costs[id];
+  return { ...body, costs, fromAddon };
+}
 function log(msg) { console.log(new Date().toISOString() + " " + msg); }
 function loadConfig() {
   if (!fs.existsSync(CONFIG_FILE)) { log("No config.json yet; using defaults. Copy config.example.json to config.json."); return {}; }
@@ -165,8 +174,8 @@ const server = http.createServer(async (req, res) => {
       const dp = p.slice(9);
       if (!Store.validPath(dp)) return send(res, 400, { error: "bad path" });
       if (req.method === "GET") { const d = store.get(dp); return send(res, 200, { exists: d !== undefined, data: d ?? null }); }
-      if (req.method === "PUT") { store.set(dp, await json(req)); return send(res, 200, { ok: true }); }
-      if (req.method === "PATCH") { store.update(dp, await json(req)); return send(res, 200, { ok: true }); }
+      if (req.method === "PUT") { store.set(dp, keepAddonCosts(dp, await json(req))); return send(res, 200, { ok: true }); }
+      if (req.method === "PATCH") { if (/(^|\.)state\/trainercosts$/.test(dp)) return send(res, 400, { error: "replace the whole document" }); store.update(dp, await json(req)); return send(res, 200, { ok: true }); }
       if (req.method === "DELETE") { store.delete(dp); return send(res, 200, { ok: true }); }
     }
     if (p.startsWith("/api/col/")) {
