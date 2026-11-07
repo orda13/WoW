@@ -1,0 +1,23 @@
+# Settings hold your Blizzard secret: never commit them
+app/config.json
+config.json
+
+# Your ledger data and logs
+app/data/
+app/logs/
+data/
+logs/
+
+# Downloaded service helper
+app/tools/
+
+# Data-build working folder (downloads and caches)
+tools/data-build/work/
+
+node_modules/
+*.zip
+*.tmp
+*.bak
+__pycache__/
+.DS_Store
+Thumbs.db

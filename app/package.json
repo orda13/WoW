@@ -1,0 +1,9 @@
+{
+  "name": "leveling-ledger-local",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Leveling Ledger for World of Warcraft: Forever, running on your own PC.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

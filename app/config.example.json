@@ -1,0 +1,16 @@
+{
+  "port": 8787,
+  "wowFolder": "C:\\Program Files (x86)\\World of Warcraft",
+  "syncEveryHours": 6,
+  "blizzard": {
+    "clientId": "",
+    "clientSecret": "",
+    "character": "talwyn-orda",
+    "namespace": "profile-forever-us"
+  },
+  "access": {
+    "teamDomain": "",
+    "aud": "",
+    "allowedEmails": []
+  }
+}
