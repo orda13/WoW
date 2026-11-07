@@ -27,6 +27,7 @@ if ($existing -and $existing.Status -ne "Stopped") { Stop-Service $ServiceName -
 # --- copy the relay (it reuses a few files from the app's lib folder) ---
 New-Item -ItemType Directory -Force -Path $Dest, "$Dest\lib", "$Dest\data", "$Dest\logs", "$Dest\tools" | Out-Null
 Copy-Item (Join-Path $Src "relay.js") $Dest -Force
+Copy-Item (Join-Path $Src "relay-boot.js") $Dest -Force
 Copy-Item -Path (Join-Path $Src "lib\*") -Destination "$Dest\lib" -Recurse -Force
 
 # --- settings ---
@@ -57,6 +58,9 @@ $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 icacls $cfgPath /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "${me}:M" "${svcAcct}:R" /Q | Out-Null
 icacls "$Dest\data" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
 icacls "$Dest\logs" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
+# the relay updates itself: it may replace relay.js and lib, never relay-boot.js (its starter) or these scripts
+icacls "$Dest\relay.js" /grant "${svcAcct}:M" /Q | Out-Null
+icacls "$Dest\lib" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
 if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
   Get-ChildItem $cfg.wowFolder -Directory -Filter "_*" -ErrorAction SilentlyContinue | ForEach-Object {
     $wtf = Join-Path $_.FullName "WTF"
@@ -80,9 +84,9 @@ if (-not (Test-Path $nssm)) {
     Copy-Item (Join-Path $env:TEMP "nssm-2.24\win64\nssm.exe") $nssm -Force
   }
 }
-if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) { & $nssm install $ServiceName $node "`"$Dest\relay.js`"" | Out-Null }
+if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) { & $nssm install $ServiceName $node "`"$Dest\relay-boot.js`"" | Out-Null }
 & $nssm set $ServiceName Application $node | Out-Null
-& $nssm set $ServiceName AppParameters "`"$Dest\relay.js`"" | Out-Null
+& $nssm set $ServiceName AppParameters "`"$Dest\relay-boot.js`"" | Out-Null
 & $nssm set $ServiceName AppDirectory $Dest | Out-Null
 & $nssm set $ServiceName AppEnvironmentExtra "LL_RELAY_CONFIG=$cfgPath" "LL_RELAY_STATE=$Dest\data\relay-state.json" | Out-Null
 & $nssm set $ServiceName DisplayName "Leveling Ledger relay" | Out-Null

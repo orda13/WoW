@@ -8,7 +8,7 @@ const vm = require("vm");
 
 // What an update may replace, relative to the repository root -> relative to the app folder.
 // The install scripts and tools are never touched: they run with administrator rights.
-const APP_FILES = /^app\/(server\.js|relay\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
+const APP_FILES = /^app\/(server\.js|relay\.js|relay-boot\.js|package\.json|README\.md|config\.example\.json|lib\/[A-Za-z0-9_.-]+\.js|public\/[A-Za-z0-9_.-]+\.(html|js|json|css|png|svg))$/;
 // Shared.lua is written on each device (the in-game summary), so an update never replaces it
 const ADDON_FILES = /^addon\/LevelingLedger\/(?!Shared\.lua$)[A-Za-z0-9_.-]+\.(lua|toc|xml|txt)$/;
 
@@ -96,6 +96,8 @@ function startUpdater({ appDir, dataDir, config, log, addonDir }) {
         if (APP_FILES.test(rel)) appOut.push({ rel: rel.slice(4), data: f.data });
         else if (ADDON_FILES.test(rel)) addonOut.push({ rel: rel.slice("addon/LevelingLedger/".length), data: f.data });
       }
+      // the hub also keeps a copy of the add-on in its own folder, to hand to relays on your other devices
+      for (const f of addonOut) appOut.push({ rel: "addon/LevelingLedger/" + f.rel, data: f.data });
       const must = ["server.js", "lib/store.js", "public/leveling-ledger.html", "public/local-shim.js"];
       for (const m of must) if (!appOut.some((f) => f.rel === m)) throw new Error("The download is missing " + m + ".");
       // every script must at least parse

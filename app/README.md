@@ -193,7 +193,16 @@ You need Part 2 (Cloudflare) done first.
    - Nothing outside your home folder changes, and no password is needed.
 4. Check it any time with `systemctl --user status leveling-ledger-relay`.
 
-**To update a relay**, download the new version and run its installer again. The settings are kept.
+**Relays update themselves.** After you update the hub (**Settings → Updates**), each relay notices within 15 minutes and then:
+- Downloads the matching relay and add-on files from the hub, and checks them.
+- Installs its own files and restarts.
+- Installs the add-on files once WoW is closed on that device, so a running game is never changed underneath you.
+
+If an update ever leaves a relay unable to start, it goes back to the previous version by itself after three tries. It then waits for the next version.
+
+To turn this off on a device, add `"autoUpdate": false` to its `relay.json`.
+
+Running the relay installer again still works, for example to change settings. Relays installed before self-updating existed need it once.
 
 **Your other devices on the hub:** the hub's Settings tab lists each device and when it last sent data.
 

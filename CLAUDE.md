@@ -24,6 +24,10 @@
   - The in-game summary: the hub and each relay write `Shared.lua` into the add-on folder from that JSON, using `lib/summary.js`.
     - WoW runs that file, so it's generated only through `toLua`: numbers, and strings with every special or non-ASCII byte escaped.
     - Updates and installers never overwrite `Shared.lua`.
+  - Relays update themselves to the hub's files (`/api/relay/version` and `/api/relay/bundle`, from `lib/relaybundle.js`).
+    - The files are `relay.js`, `lib/*.js` and the add-on from the hub's own `addon/` copy.
+    - Add-on files are installed only while no `Wow*.exe` is running.
+    - `relay-boot.js` starts the relay, and nothing ever updates it. It rolls back an update that fails to start three times.
 - `app/public/`: the ledger page (`leveling-ledger.html`) and its game data. `local-shim.js` gives the page the storage interface it was written against (`window.claude.use("db")`), backed by `/api/*` and live updates through Server-Sent Events.
 - `app/scripts/`: Windows install and uninstall scripts, using NSSM and the Local Service account. They can't run in Linux sessions, so review PowerShell changes by hand and keep the files ASCII-only.
 - `addon/LevelingLedger/`: the WoW Forever add-on (Interface 16001, SavedVariables `LevelingLedgerDB`).

@@ -36,7 +36,7 @@ fi
 echo "Node.js: $NODE ($("$NODE" -v))"
 
 # --- the relay (it reuses a few files from the app's lib folder) ---
-cp "$SRC/relay.js" "$DEST/app/"
+cp "$SRC/relay.js" "$SRC/relay-boot.js" "$DEST/app/"
 cp "$SRC"/lib/*.js "$DEST/app/lib/"
 
 # --- settings ---
@@ -71,7 +71,7 @@ Description=Leveling Ledger relay
 After=network-online.target
 
 [Service]
-ExecStart=$NODE $DEST/app/relay.js
+ExecStart=$NODE $DEST/app/relay-boot.js
 Environment=LL_RELAY_CONFIG=$CFG
 Environment=LL_RELAY_STATE=$DEST/data/relay-state.json
 Restart=always
@@ -89,5 +89,5 @@ EOF
 else
   echo
   echo "This system has no user services; start the relay yourself with:"
-  echo "  LL_RELAY_CONFIG=\"$CFG\" \"$NODE\" \"$DEST/app/relay.js\""
+  echo "  LL_RELAY_CONFIG=\"$CFG\" LL_RELAY_STATE=\"$DEST/data/relay-state.json\" \"$NODE\" \"$DEST/app/relay-boot.js\""
 fi

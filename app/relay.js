@@ -8,10 +8,16 @@ const os = require("os");
 const crypto = require("crypto");
 const { findFiles } = require("./lib/watcher");
 const { writeShared } = require("./lib/summary");
+const { RELAY_NAME, fingerprint } = require("./lib/relaybundle");
+const vm = require("vm");
+const { execFileSync } = require("child_process");
 
 const CONFIG_FILE = process.env.LL_RELAY_CONFIG || path.join(__dirname, "relay.json");
 const STATE_FILE = process.env.LL_RELAY_STATE || path.join(path.dirname(CONFIG_FILE), "relay-state.json");
 const log = (m) => console.log(new Date().toISOString() + " " + m);
+const UPDATE_FILE = process.env.LL_RELAY_UPDATE_FILE || path.join(path.dirname(STATE_FILE), "relay-update.json");
+const BACKUP_DIR = process.env.LL_RELAY_BACKUP_DIR || path.join(path.dirname(STATE_FILE), "relay-backup");
+const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
 
 function loadConfig() {
   const c = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8").replace(/^\uFEFF/, ""));
@@ -68,6 +74,76 @@ async function pullSummary(cfg, fl) {
   let wrote = 0, found = 0;
   for (const d of [...new Set(fl.map(addonDirOf))]) { if (fs.existsSync(path.join(d, "LevelingLedger.toc"))) { found++; if (writeShared(d, sum)) wrote++; } }
   return { chars: Object.keys(sum.chars || {}).length, wrote, found };
+}
+
+// ---------- updating itself to the hub's version ----------
+// Is World of Warcraft running? (Windows, and Proton / Wine on the Steam Deck and Linux.) Add-on files wait until it's closed.
+function wowRunning() {
+  try {
+    if (process.platform === "win32") return /"wow[^"]*\.exe"/i.test(execFileSync("tasklist", ["/FO", "CSV", "/NH"], { encoding: "utf8", windowsHide: true }));
+    if (process.platform === "linux") {
+      for (const pid of fs.readdirSync("/proc")) {
+        if (!/^\d+$/.test(pid) || +pid === process.pid) continue;
+        let c = ""; try { c = fs.readFileSync(`/proc/${pid}/cmdline`, "latin1"); } catch { continue; }
+        if (/(^|[\\/\0])wow[^\\/\0]*\.exe/i.test(c)) return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+const same = (f, buf) => { try { return Buffer.compare(fs.readFileSync(f), buf) === 0; } catch { return false; } };
+function writeAtomic(f, buf) { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + ".tmp", buf); fs.renameSync(f + ".tmp", f); }
+
+let waitingForWow = false;
+async function selfUpdate(cfg, addonDirs) {
+  if (cfg.autoUpdate === false) return;
+  const st = readJSON(UPDATE_FILE);
+  const vr = await fetch(`${cfg.hubUrl}/api/relay/version`, { headers: headers(cfg), redirect: "manual" });
+  if (!vr.ok) return;
+  const { version } = await vr.json();
+  if (!version || (st.version === version && !st.addonPending)) return;
+  // a version that had to be rolled back isn't tried again; the next one from the hub is
+  if (st.rolledBack === version) { if (!st.toldRolledBack) { log(`Skipping relay update ${version}: it didn't start before. Waiting for the next one.`); fs.writeFileSync(UPDATE_FILE, JSON.stringify({ ...st, toldRolledBack: true })); } return; }
+  const br = await fetch(`${cfg.hubUrl}/api/relay/bundle`, { headers: headers(cfg), redirect: "manual" });
+  if (!br.ok) throw new Error(`hub answered ${br.status}`);
+  const b = await br.json();
+  // check everything before touching anything
+  const files = {};
+  for (const [name, b64] of Object.entries(b.files || {})) {
+    if (!RELAY_NAME.test(name)) throw new Error("unexpected file in the update: " + name);
+    const buf = Buffer.from(String(b64), "base64");
+    if (buf.length > 2 * 1024 * 1024) throw new Error(name + " is unexpectedly large");
+    if (name.endsWith(".js")) { try { new vm.Script(buf.toString("utf8"), { filename: name }); } catch (e) { throw new Error(`${name} doesn't parse: ${e.message}`); } }
+    files[name] = buf;
+  }
+  if (!files["relay.js"] || fingerprint(files) !== b.version || b.version !== version) throw new Error("the update didn't match what the hub announced");
+  // the add-on: only while WoW is closed
+  const addon = Object.entries(files).filter(([n]) => n.startsWith("addon/LevelingLedger/"));
+  const todo = addonDirs.filter((d) => addon.some(([n, buf]) => !same(path.join(d, n.slice(21)), buf)));
+  let addonPending = false;
+  if (todo.length) {
+    if (wowRunning()) { addonPending = true; if (!waitingForWow) log("An add-on update is ready; it installs once WoW is closed."); waitingForWow = true; }
+    else { for (const d of todo) for (const [n, buf] of addon) writeAtomic(path.join(d, n.slice(21)), buf); waitingForWow = false; log(`Updated the add-on in ${todo.length} game folder${todo.length === 1 ? "" : "s"}`); }
+  }
+  // the relay itself: keep the current files, write the new ones, restart (the service manager starts it again)
+  const code = Object.entries(files).filter(([n]) => !n.startsWith("addon/"));
+  const changed = code.filter(([n, buf]) => !same(path.join(__dirname, n), buf));
+  if (changed.length) {
+    fs.rmSync(BACKUP_DIR, { recursive: true, force: true });
+    const backedUp = [], added = [];
+    for (const [n] of changed) {
+      const cur = path.join(__dirname, n);
+      if (fs.existsSync(cur)) { fs.mkdirSync(path.dirname(path.join(BACKUP_DIR, n)), { recursive: true }); fs.copyFileSync(cur, path.join(BACKUP_DIR, n)); backedUp.push(n); }
+      else added.push(n);
+    }
+    for (const [n, buf] of changed) writeAtomic(path.join(__dirname, n), buf);
+    fs.writeFileSync(UPDATE_FILE, JSON.stringify({ version, pending: true, tries: 0, backedUp, added, addonPending, previous: st.version || null }));
+    log(`Updated the relay to ${version} (${changed.length} file${changed.length === 1 ? "" : "s"}); restarting`);
+    setTimeout(() => process.exit(0), 500);
+    return;
+  }
+  // keep any "just updated" record (the starter's rollback check) and note the add-on's state
+  fs.writeFileSync(UPDATE_FILE, JSON.stringify({ ...st, version: addonPending ? st.version || null : version, addonPending, at: Date.now() }));
 }
 
 async function test() {
@@ -137,6 +213,17 @@ function run() {
   }
   setInterval(summary, 15 * 60 * 1000);
   setTimeout(summary, 10 * 1000);
+  // self-update: every 15 minutes; an add-on update waiting for WoW to close is tried every minute
+  const update = () => selfUpdate(cfg, [...new Set([...watched].map(addonDirOf))].filter((d) => fs.existsSync(path.join(d, "LevelingLedger.toc"))))
+    .catch((e) => log("Couldn't update the relay: " + e.message));
+  setTimeout(update, 30 * 1000);
+  setInterval(update, 15 * 60 * 1000);
+  setInterval(() => { if (waitingForWow) update(); }, 60 * 1000);
+  // a fresh update counts as good once the relay has run for two minutes
+  setTimeout(() => {
+    const st = readJSON(UPDATE_FILE);
+    if (st.pending) { st.pending = false; st.tries = 0; try { fs.writeFileSync(UPDATE_FILE, JSON.stringify(st)); } catch {} log("Relay update to " + st.version + " is running fine"); }
+  }, 2 * 60 * 1000);
   log(`Leveling Ledger relay for "${cfg.device}" sending to ${cfg.hubUrl}`);
   scan();
   if (!watched.size) log("No LevelingLedger.lua found yet; looking again every 5 minutes.");
