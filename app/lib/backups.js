@@ -30,7 +30,7 @@ function startBackups({ store, dir, keepDays = 14, log }) {
 
   function prune() {
     const daily = list().filter((b) => b.kind === "daily");
-    for (const b of daily.slice(keepDays)) fs.unlinkSync(path.join(dir, b.name));
+    for (const b of daily.slice(typeof keepDays === "function" ? keepDays() : keepDays)) fs.unlinkSync(path.join(dir, b.name));
     const before = list().filter((b) => b.kind === "before-restore");
     for (const b of before.slice(5)) fs.unlinkSync(path.join(dir, b.name));
   }

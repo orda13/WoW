@@ -34,7 +34,12 @@ Nothing needs installing besides Node.js 18 or newer (you have it already).
 
 **To remove:** run `scripts\uninstall.ps1`. Your data stays in `C:\LevelingLedger\data` unless you add `-RemoveFiles`.
 
-**Settings** live in `C:\LevelingLedger\config.json`. It holds your Blizzard secret, so only your Windows account, administrators and the service can open it. Edit it in Notepad, then run `Restart-Service LevelingLedger` in an administrator PowerShell.
+**Settings:** use the **Settings** tab on the page. Changes take effect right away, with no restart.
+- You can change your Blizzard keys, character, sync interval, WoW folder, how many backups to keep, and the Cloudflare sign-in settings.
+- The Blizzard secret is never shown again once saved.
+- The Cloudflare sign-in settings can only be changed on this PC, not from your phone.
+
+Settings are stored in `C:\LevelingLedger\config.json`. Only your Windows account, administrators and the service can open it. You can still edit it in Notepad; run `Restart-Service LevelingLedger` in an administrator PowerShell afterwards. The port can only be changed there.
 
 | Setting | What it does |
 |---|---|
@@ -102,7 +107,7 @@ Cloudflare's dashboard changes now and then, so menu names may differ slightly f
 3. Save. Open the application again and copy its **Application Audience (AUD) Tag**.
 
 ### F. Tell the ledger to check the sign-in
-1. In `C:\LevelingLedger\config.json`, fill in:
+1. On this PC, open the ledger's **Settings** tab and fill in **Remote access**: the team domain, the AUD tag and your Gmail address, then **Save settings**. It takes effect immediately. Or put the same values in `C:\LevelingLedger\config.json`:
    ```json
    "access": {
      "teamDomain": "<team>.cloudflareaccess.com",
@@ -110,7 +115,7 @@ Cloudflare's dashboard changes now and then, so menu names may differ slightly f
      "allowedEmails": ["<your gmail address>"]
    }
    ```
-2. Run `Restart-Service LevelingLedger` in an administrator PowerShell.
+2. If you edited `config.json` by hand, run `Restart-Service LevelingLedger` in an administrator PowerShell.
 3. Open `https://ledger.<your domain>` on your phone. Sign in with Google, and the ledger opens.
 
 **How it stays private:**
@@ -123,8 +128,9 @@ Cloudflare's dashboard changes now and then, so menu names may differ slightly f
 
 ## Troubleshooting
 
-- **"Couldn't find LevelingLedger.lua yet":** log out of the game or `/reload` once with the add-on enabled. If the game is somewhere unusual, set `wowFolder`. The service rescans every 5 minutes.
-- **Sync says Blizzard sign-in failed:** check `blizzard.clientId` and `clientSecret` in `config.json`, then restart the service.
+- **"Couldn't find LevelingLedger.lua yet":** log out of the game or `/reload` once with the add-on enabled. If the game is somewhere unusual, set its folder on the **Settings** tab. The service rescans every 5 minutes.
+- **"The service isn't allowed to save config.json yet":** run `app\scripts\install.ps1` once more; it gives the service permission to save settings.
+- **Sync says Blizzard sign-in failed:** re-enter the keys on the **Settings** tab and press **Save and check Blizzard now**.
 - **The service won't start:** look in `logs\service.log`.
   - If Node.js was installed only for your user, reinstall it for all users from https://nodejs.org.
 - **Run it without the service** (for testing): in `C:\LevelingLedger`, run `node server.js`. Stop the service first (`Stop-Service LevelingLedger`) so the port is free.

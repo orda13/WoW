@@ -398,6 +398,13 @@ label.btnlike:hover { border-color: var(--muted); }
 .imp-row { flex-wrap: wrap; align-items: center; gap: 8px; }
 #impErrors:empty, #impResult:empty { display: none; }
 .sess-lines { display: flex; flex-direction: column; gap: 4px; }
+.st-form { display: flex; flex-direction: column; gap: 16px; }
+.st-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 14px; margin: 0; min-width: 0; }
+.st-group legend { padding: 0 6px; font-weight: 600; }
+.st-group .form-grid { margin-top: 8px; }
+.st-err { color: var(--bad, #b3261e); font-size: .82rem; }
+.st-err:empty { display: none; }
+#stEmails { font: inherit; resize: vertical; }
 .bk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .bk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
 .bk-list li .grow { flex: 1 1 12rem; min-width: 0; }
@@ -484,7 +491,51 @@ details > summary { cursor: pointer; color: var(--muted); }
     <a href="#talents">Talents</a>
     <a href="#skills">Skills</a>
     <a href="#collectables">Collectables</a>
+    <a href="#settings">Settings</a>
   </nav>
+
+  <section class="panel" id="settingsPanel" data-view="settings">
+    <header><h2>Settings</h2><span class="hint" id="stNote"></span></header>
+    <form id="stForm" class="st-form" novalidate>
+      <fieldset class="st-group">
+        <legend>Blizzard</legend>
+        <p class="hint">Your API keys from <a href="https://develop.battle.net/access/clients" target="_blank" rel="noopener">develop.battle.net</a>. The secret is never shown again once saved; leave it blank to keep it.</p>
+        <div class="form-grid">
+          <label class="field"><span class="label">Client ID</span><input id="stClientId" autocomplete="off" spellcheck="false"><span class="st-err" data-for="clientId"></span></label>
+          <label class="field"><span class="label">Client secret</span><input id="stClientSecret" type="password" autocomplete="new-password" spellcheck="false"><span class="st-err" data-for="clientSecret"></span></label>
+          <label class="field"><span class="label">Character</span><input id="stCharacter" spellcheck="false" placeholder="talwyn-orda"><span class="st-err" data-for="character"></span></label>
+          <label class="field"><span class="label">Check Blizzard every (hours)</span><input id="stSyncEvery" type="number" min="1" max="24" step="0.5"><span class="st-err" data-for="syncEveryHours"></span></label>
+        </div>
+      </fieldset>
+      <fieldset class="st-group">
+        <legend>Add-on file</legend>
+        <p class="hint" id="stWatch"></p>
+        <div class="form-grid">
+          <label class="field wide"><span class="label">World of Warcraft folder</span><input id="stWowFolder" spellcheck="false" placeholder="C:\Program Files (x86)\World of Warcraft"><span class="st-err" data-for="wowFolder"></span></label>
+          <label class="field wide"><span class="label">Exact LevelingLedger.lua (optional; overrides the folder)</span><input id="stSvFile" spellcheck="false"><span class="st-err" data-for="savedVariablesFile"></span></label>
+        </div>
+      </fieldset>
+      <fieldset class="st-group">
+        <legend>Backups</legend>
+        <div class="form-grid">
+          <label class="field"><span class="label">Daily backups to keep</span><input id="stBackupDays" type="number" min="1" max="90" step="1"><span class="st-err" data-for="backupDays"></span></label>
+        </div>
+      </fieldset>
+      <fieldset class="st-group" id="stAccessGroup">
+        <legend>Remote access (Cloudflare and Google sign-in)</legend>
+        <p class="hint" id="stAccessNote"></p>
+        <div class="form-grid">
+          <label class="field"><span class="label">Team domain</span><input id="stTeam" spellcheck="false" placeholder="yourteam.cloudflareaccess.com"><span class="st-err" data-for="teamDomain"></span></label>
+          <label class="field"><span class="label">Application Audience (AUD) tag</span><input id="stAud" spellcheck="false"><span class="st-err" data-for="aud"></span></label>
+          <label class="field wide"><span class="label">Google accounts allowed in (one per line)</span><textarea id="stEmails" rows="2" spellcheck="false"></textarea><span class="st-err" data-for="allowedEmails"></span></label>
+        </div>
+      </fieldset>
+      <p class="hint" id="stPort"></p>
+      <div class="row"><button class="primary" type="submit" id="stSave">Save settings</button><button type="button" id="stTest">Save and check Blizzard now</button></div>
+      <p id="stResult" role="status"></p>
+      <p class="syncstat" id="stSync" hidden></p>
+    </form>
+  </section>
 
   <section class="panel" id="collPanel" data-view="collectables">
         <header><h2>Your collection</h2><span class="hint" id="collSync"></span></header>
@@ -509,7 +560,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     <p class="hint" id="cSource"></p>
   </section>
 
-  <section class="xpbar" aria-label="Experience">
+  <section class="xpbar" aria-label="Experience" data-view="ledger quests dungeons talents skills collectables">
     <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
       <div class="fill" id="barFill" style="width:0%"></div>
       <div class="rest" id="barRest" style="left:0%;width:0%"></div>
@@ -1674,6 +1725,77 @@ details > summary { cursor: pointer; color: var(--muted); }
   };
   renderWatch(); setInterval(renderWatch, 60000);
 
+  // ---------- settings ----------
+  const ST = { loaded: false };
+  function stFill(s) {
+    $("stClientId").value = s.blizzard.clientId; $("stClientSecret").value = "";
+    $("stClientSecret").placeholder = s.blizzard.hasSecret ? "Saved. Leave blank to keep it" : "Not set yet";
+    $("stCharacter").value = s.blizzard.character; $("stSyncEvery").value = s.syncEveryHours;
+    $("stWowFolder").value = s.wowFolder; $("stSvFile").value = s.savedVariablesFile; $("stBackupDays").value = s.backupDays;
+    $("stTeam").value = s.access.teamDomain; $("stAud").value = s.access.aud; $("stEmails").value = s.access.allowedEmails.join("\n");
+    for (const id of ["stTeam", "stAud", "stEmails"]) $(id).disabled = !s.canEditAccess;
+    $("stAccessNote").textContent = s.canEditAccess
+      ? "Fill these in from Cloudflare Zero Trust (README, Part 2). Until all three are set, visits through Cloudflare are refused."
+      : "Shown read-only: these can only be changed on the PC running the ledger, so a mistake from elsewhere can't lock you out.";
+    $("stPort").textContent = `The ledger runs on port ${s.port}. To change it, edit config.json and restart the service.`;
+    ST.canEditAccess = s.canEditAccess; ST.loaded = true;
+  }
+  async function stWatch() {
+    try {
+      const st = await (await fetch("/api/status")).json();
+      $("stWatch").textContent = st.files && st.files.length ? "Watching " + st.files.join(", ") : (st.lastError || "No add-on file found yet.");
+    } catch { $("stWatch").textContent = ""; }
+  }
+  async function loadSettings() {
+    try { stFill(await (await fetch("/api/settings")).json()); $("stNote").textContent = ""; }
+    catch { $("stNote").textContent = "Couldn't load settings."; }
+    stWatch();
+  }
+  function stBody() {
+    const b = {
+      blizzard: { clientId: $("stClientId").value, character: $("stCharacter").value },
+      syncEveryHours: $("stSyncEvery").value, backupDays: $("stBackupDays").value,
+      wowFolder: $("stWowFolder").value, savedVariablesFile: $("stSvFile").value,
+    };
+    if ($("stClientSecret").value.trim()) b.blizzard.clientSecret = $("stClientSecret").value;
+    if (ST.canEditAccess) b.access = { teamDomain: $("stTeam").value, aud: $("stAud").value, allowedEmails: $("stEmails").value };
+    return b;
+  }
+  async function saveSettings() {
+    for (const e of document.querySelectorAll(".st-err")) e.textContent = "";
+    const out = $("stResult"); out.className = ""; out.textContent = "Saving…";
+    $("stSave").disabled = $("stTest").disabled = true;
+    try {
+      const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", "X-Ledger": "1" }, body: JSON.stringify(stBody()) });
+      const j = await r.json();
+      if (!r.ok) {
+        for (const [k, msg] of Object.entries(j.errors || {})) { const e = document.querySelector(`.st-err[data-for="${k}"]`); if (e) e.textContent = msg; }
+        out.className = "notice"; out.textContent = j.message || "Nothing was saved. Fix the marked fields and try again.";
+        return false;
+      }
+      stFill(j.settings);
+      out.textContent = j.changed.length ? "Saved: " + j.changed.join(", ") + ". In effect now." : "No changes to save.";
+      stWatch();
+      return true;
+    } catch { out.className = "notice"; out.textContent = "Couldn't reach the Leveling Ledger service."; return false; }
+    finally { $("stSave").disabled = $("stTest").disabled = false; }
+  }
+  $("stForm").onsubmit = (e) => { e.preventDefault(); saveSettings(); };
+  $("stTest").onclick = async () => {
+    if (!(await saveSettings())) return;
+    ST.testAt = Date.now(); renderSettingsSync();
+    try { await fetch("/api/sync", { method: "POST", headers: { "X-Ledger": "1" } }); } catch {}
+  };
+  // the Blizzard check's result, shown under the Settings buttons
+  function renderSettingsSync() {
+    const box = $("stSync"), st = S.sync || {};
+    if (!ST.testAt) { box.hidden = true; return; }
+    box.replaceChildren(); box.hidden = false; box.className = "syncstat";
+    if (st.pending || !st.at || st.at < ST.testAt) { box.append(el("span", "pill wait", "Checking Blizzard…")); return; }
+    box.classList.add(st.ok === false ? "bad" : "good");
+    box.append(el("span", "pill " + (st.ok === false ? "no" : "go"), st.ok === false ? "Blizzard check failed" : "Blizzard works"), document.createTextNode(" " + (st.message || "")));
+  }
+
   // ---------- backups ----------
   async function renderBackups() {
     const ul = $("bkList");
@@ -2408,7 +2530,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   const ownedSet = (tab) => new Set(((S.coll && S.coll[tab]) || []).map((n) => cName(n).toLowerCase()));
   const isOwned = (e, owned) => owned.has(cName(e.n).toLowerCase()) || (e.item && owned.has(e.item.toLowerCase()));
   function myFaction() { const c = S.char || {}; return c.faction || (ALLY_RACES.includes(c.race) ? "Alliance" : c.race ? "Horde" : null); }
-  const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables"];
+  const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables", "settings"];
   let curView = null;
   function setView() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
@@ -2419,6 +2541,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (v === "dungeons") loadDungeons();
     if (v === "talents") loadAbilities();
     if (v === "quests") renderGearWorn();
+    if (v === "settings") loadSettings();
     if (curView && curView !== v) window.scrollTo({ top: 0 });
     curView = v;
   }
@@ -2874,7 +2997,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     let gotChar = false, gotSess = false;
     charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); }, fail);
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
-    db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); }, () => {});
+    db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});

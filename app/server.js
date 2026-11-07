@@ -4,8 +4,9 @@ const fs = require("fs");
 const path = require("path");
 const { Store } = require("./lib/store");
 const { startWatcher } = require("./lib/watcher");
-const { syncBlizzard } = require("./lib/blizzard");
-const { checkRequest } = require("./lib/access");
+const { syncBlizzard, resetToken } = require("./lib/blizzard");
+const { checkRequest, viaCloudflare } = require("./lib/access");
+const { publicView, applyUpdate, saveConfig } = require("./lib/settings");
 const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 
@@ -20,12 +21,15 @@ function loadConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8").replace(/^\uFEFF/, "")); // Windows editors may add a byte-order mark
 }
 const config = loadConfig();
+// these objects are shared with the watcher, sync and sign-in check, and updated in place by the Settings tab
+config.blizzard = config.blizzard || {};
+config.access = config.access || {};
 const PORT = config.port || 8787;
 const dataDir = config.dataDir ? path.resolve(APP, config.dataDir) : path.join(APP, "data");
 const store = new Store(path.join(dataDir, "store.json"), path.join(dataDir, "seed.json"));
 
 // ---------- daily backups (data/backups, last 14 days by default) ----------
-const backups = startBackups({ store, dir: path.join(dataDir, "backups"), keepDays: config.backupDays || 14, log });
+const backups = startBackups({ store, dir: path.join(dataDir, "backups"), keepDays: () => config.backupDays || 14, log });
 
 // ---------- page ----------
 let pageCache = null, pageMtime = 0;
@@ -62,10 +66,16 @@ function readBody(req, limit = 8 * 1024 * 1024) {
 async function json(req) { const t = await readBody(req); const v = t ? JSON.parse(t) : {}; if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("expected an object"); return v; }
 
 // ---------- Blizzard sync schedule ----------
-const bcfg = config.blizzard || {};
+const bcfg = config.blizzard;
 function sync(why) { log("Blizzard sync (" + why + ")"); return syncBlizzard(store, bcfg, log); }
 setTimeout(() => sync("startup"), 15000);
-setInterval(() => sync("every " + (config.syncEveryHours || 6) + " hours"), (config.syncEveryHours || 6) * 3600 * 1000);
+let syncTimer;
+function scheduleSync() {
+  clearInterval(syncTimer);
+  const h = config.syncEveryHours || 6;
+  syncTimer = setInterval(() => sync("every " + h + " hours"), h * 3600 * 1000);
+}
+scheduleSync();
 let afterImport = [];
 function syncAfterPlay() {
   // Blizzard updates the character a little after you log out, so check twice
@@ -119,6 +129,31 @@ const server = http.createServer(async (req, res) => {
       if (!f) return send(res, 404, { error: "not found" });
       res.writeHead(200, { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="leveling-ledger-${path.basename(f)}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       return fs.createReadStream(f).pipe(res);
+    }
+    if (p === "/api/settings" && req.method === "GET") return send(res, 200, publicView(config, !viaCloudflare(req)));
+    if (p === "/api/settings" && req.method === "PUT") {
+      const isLocal = !viaCloudflare(req);
+      const draft = JSON.parse(JSON.stringify(config));
+      const { changed, errors } = applyUpdate(draft, await json(req), isLocal);
+      if (Object.keys(errors).length) return send(res, 400, { ok: false, errors });
+      if (!changed.length) return send(res, 200, { ok: true, changed: [], settings: publicView(config, isLocal) });
+      try { saveConfig(CONFIG_FILE, draft); }
+      catch (e) {
+        const perm = e.code === "EPERM" || e.code === "EACCES";
+        return send(res, 500, { ok: false, message: perm ? "The service isn't allowed to save config.json yet. Run app\\scripts\\install.ps1 again once, then try again." : "Couldn't save config.json: " + e.message });
+      }
+      // switch the running service over
+      const credsChanged = draft.blizzard.clientId !== bcfg.clientId || draft.blizzard.clientSecret !== bcfg.clientSecret;
+      const folderChanged = draft.wowFolder !== config.wowFolder || draft.savedVariablesFile !== config.savedVariablesFile;
+      const intervalChanged = draft.syncEveryHours !== config.syncEveryHours;
+      Object.assign(bcfg, draft.blizzard);
+      Object.assign(config.access, draft.access);
+      for (const k of ["syncEveryHours", "backupDays", "wowFolder", "savedVariablesFile"]) config[k] = draft[k];
+      if (credsChanged) resetToken();
+      if (intervalChanged) scheduleSync();
+      if (folderChanged) watcher.reset();
+      log("Settings saved: " + changed.join(", ") + (req.userEmail ? " (by " + req.userEmail + ")" : ""));
+      return send(res, 200, { ok: true, changed, settings: publicView(config, isLocal) });
     }
     if (p === "/api/sync" && req.method === "POST") { sync("Sync button"); return send(res, 200, { ok: true }); }
     if (p === "/api/import" && req.method === "POST") {

@@ -33,7 +33,7 @@ const DEFAULT_ROOTS = [
 ];
 
 function startWatcher({ store, publicDir, config, log, onImported }) {
-  const roots = [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
+  const roots = () => [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
   const watched = new Map(); // file -> last mtime handled
   const status = { files: [], lastCheck: 0, lastError: "" };
 
@@ -56,7 +56,7 @@ function startWatcher({ store, publicDir, config, log, onImported }) {
 
   function scan() {
     status.lastCheck = Date.now();
-    const files = config.savedVariablesFile ? [config.savedVariablesFile] : findFiles(roots);
+    const files = config.savedVariablesFile ? [config.savedVariablesFile] : findFiles(roots());
     status.files = files;
     for (const f of files) {
       if (watched.has(f)) continue;
@@ -71,11 +71,16 @@ function startWatcher({ store, publicDir, config, log, onImported }) {
       });
       tryImport(f, "startup");
     }
-    if (!files.length) status.lastError = "Couldn't find LevelingLedger.lua yet. Set wowFolder or savedVariablesFile in config.json if the game is installed somewhere else.";
+    if (!files.length) status.lastError = "Couldn't find LevelingLedger.lua yet. If the game is installed somewhere else, set its folder on the Settings tab.";
   }
   scan();
   setInterval(scan, 5 * 60 * 1000); // pick up a file created after the first log-out
-  return { status, scan, importNow: () => { for (const f of status.files) tryImport(f, "manual"); } };
+  // after the folder settings change: stop watching everything and look again
+  function reset() {
+    for (const f of [...watched.keys()]) { if (!f.endsWith(":t")) fs.unwatchFile(f); else clearTimeout(watched.get(f)); }
+    watched.clear(); status.lastError = ""; scan();
+  }
+  return { status, scan, reset, importNow: () => { for (const f of status.files) tryImport(f, "manual"); } };
 }
 
 module.exports = { startWatcher, findFiles };

@@ -10,7 +10,7 @@ async function getToken(cfg) {
   const r = await fetch(cfg.oauthUrl || "https://oauth.battle.net/token", {
     method: "POST", headers: { Authorization: "Basic " + basic, "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=client_credentials",
   });
-  if (!r.ok) throw new Error(`Blizzard sign-in failed (HTTP ${r.status}). Check clientId and clientSecret in config.json.`);
+  if (!r.ok) throw new Error(`Blizzard sign-in failed (HTTP ${r.status}). Check the Blizzard keys on the Settings tab.`);
   const j = await r.json();
   token = j.access_token; tokenExp = Date.now() + (j.expires_in || 3600) * 1000;
   return token;
@@ -91,7 +91,7 @@ function syncBlizzard(store, cfg, log) {
     const now = Date.now();
     const status = (s) => store.set("state/syncstatus", { pending: false, at: Date.now(), ...s });
     try {
-      if (!cfg || !cfg.clientId || !cfg.clientSecret) { status({ ok: false, changed: false, message: "Blizzard API keys aren't set in config.json yet.", lastLogin: null }); return; }
+      if (!cfg || !cfg.clientId || !cfg.clientSecret) { status({ ok: false, changed: false, message: "Blizzard API keys aren't set yet. Add them on the Settings tab.", lastLogin: null }); return; }
       store.set("state/syncstatus", { ...(store.get("state/syncstatus") || {}), pending: true, startedAt: now });
       const sec = await fetchAll(cfg);
       const p = sec.profile;
@@ -127,4 +127,7 @@ function syncBlizzard(store, cfg, log) {
   return running;
 }
 
-module.exports = { syncBlizzard, build, summarize };
+// after new API keys are saved
+function resetToken() { token = null; tokenExp = 0; }
+
+module.exports = { syncBlizzard, build, summarize, resetToken };

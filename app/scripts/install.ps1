@@ -70,8 +70,9 @@ $svcAcct = "NT AUTHORITY\LocalService"
 icacls "$Dest\data" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
 icacls "$Dest\logs" /grant "${svcAcct}:(OI)(CI)M" /T /Q | Out-Null
 # settings hold your Blizzard secret: only you, administrators, the system and the service can open them
+# (the service may also change them, for the Settings tab)
 $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-icacls $cfgPath /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "${me}:M" "${svcAcct}:R" /Q | Out-Null
+icacls $cfgPath /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "${me}:M" "${svcAcct}:M" /Q | Out-Null
 Write-Host "You ($me) can edit $cfgPath in Notepad without administrator rights."
 # let the service read the add-on's saved files
 if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {

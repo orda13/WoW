@@ -46,23 +46,24 @@ function cookie(req, name) {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+const viaCloudflare = (req) => !!(req.headers["cf-ray"] || req.headers["cf-connecting-ip"] || req.headers["cf-access-jwt-assertion"]);
+
 // Returns null if the request may proceed, or an error message.
 async function checkRequest(req, cfg) {
-  const viaCloudflare = !!(req.headers["cf-ray"] || req.headers["cf-connecting-ip"] || req.headers["cf-access-jwt-assertion"]);
   const remote = req.socket.remoteAddress || "";
   const local = remote === "127.0.0.1" || remote === "::1" || remote === "::ffff:127.0.0.1";
   if (!local) return "Only this PC and Cloudflare may connect.";
-  if (!viaCloudflare) {
+  if (!viaCloudflare(req)) {
     // Direct use on this PC must name this PC, which stops websites that re-point their own address at 127.0.0.1
     const host = String(req.headers.host || "").replace(/:\d+$/, "").toLowerCase();
     return host === "localhost" || host === "127.0.0.1" || host === "[::1]" ? null : "Open the ledger at http://localhost on this PC, or through your Cloudflare address.";
   }
   if (!cfg || !cfg.teamDomain || !cfg.aud || !(cfg.allowedEmails || []).length)
-    return "Remote access isn't configured yet: set access.teamDomain, access.aud and access.allowedEmails in config.json.";
+    return "Remote access isn't set up yet: fill in the Remote access section on the Settings tab, on the PC running the ledger.";
   try {
     req.userEmail = await verifyAccessJwt(req.headers["cf-access-jwt-assertion"] || cookie(req, "CF_Authorization"), cfg);
     return null;
   } catch (e) { return "Sign-in check failed: " + e.message; }
 }
 
-module.exports = { checkRequest, verifyAccessJwt };
+module.exports = { checkRequest, verifyAccessJwt, viaCloudflare };

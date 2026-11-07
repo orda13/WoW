@@ -11,7 +11,7 @@ function loadAbilities(publicDir) {
 }
 
 // Returns the character table for the ledger's character, or null if the file has none.
-// hint: the character from config.json (e.g. "talwyn-orda"), used before Blizzard has filled in the character
+// hint: the character from the settings (e.g. "talwyn-orda"), used before Blizzard has filled in the character
 function pickChar(data, store, hint) {
   if (!data || !data.chars) return null;
   const chars = Object.values(data.chars);
