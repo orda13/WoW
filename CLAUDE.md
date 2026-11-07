@@ -16,6 +16,7 @@
   - Each alt's documents sit under a prefix derived from its Blizzard name (`c1a2b3c4.state/character`), in the same store.
   - `local-shim.js` adds the prefix for the character picked on the page (`?char=` or localStorage).
   - Server code that touches character data goes through `charStore(store, id)`.
+  - Characters the add-on records are tracked automatically (`newAlts` in `lib/settings.js`, as `name-<main's realm>`, up to 10). Ones removed in Settings go to `config.altsRemoved` and aren't added again.
 - Relays (`app/relay.js`; installers `scripts/install-relay.ps1` and `scripts/install-relay.sh`):
   - Other PCs and the Steam Deck send their SavedVariables to the hub's `/api/relay/upload` with a Cloudflare service token.
   - The hub stores each file under `data/relay/<device>/<account>/` and imports it like its own.
