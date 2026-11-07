@@ -544,46 +544,22 @@ details > summary { cursor: pointer; color: var(--muted); }
     <div class="col">
       <section class="panel" id="sessionPanel">
         <header>
-          <h2>This session</h2>
-          <span id="sessChip"></span>
+          <h2>Last play session</h2>
+          <span class="hint" id="sessChip"></span>
         </header>
         <div class="stats">
-          <div class="stat"><span class="label">Played</span><span class="v" id="sTime">0:00:00</span></div>
+          <div class="stat"><span class="label">Played</span><span class="v" id="sTime">–</span></div>
           <div class="stat"><span class="label">XP per hour</span><span class="v hero" id="sRate">–</span></div>
+          <div class="stat"><span class="label">XP gained</span><span class="v" id="sXp">–</span></div>
           <div class="stat"><span class="label">Next level in</span><span class="v" id="sEta">–</span></div>
-          <div class="stat"><span class="label">XP gained</span><span class="v" id="sXp">0</span></div>
         </div>
-        <p class="hint" id="sNote">Start a session when you log in. The timer and pace are saved, so closing this page is fine.</p>
+        <p class="hint" id="sNote">Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.</p>
         <div class="row">
-          <button class="primary" id="sStart">Start session</button>
-          <button id="sPause" hidden>Pause</button>
-          <button id="sEnd" hidden>End session</button>
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
         </div>
-        <p class="hint" id="syncNote" hidden>Ending a session also pulls Talwyn's level, XP and gear from Blizzard. Blizzard updates after you log out, so log out of the game first.</p>
+        <p class="hint" id="syncNote" hidden>Pulls Talwyn's level, XP and gear from Blizzard. Blizzard updates after you log out of the game.</p>
         <p class="syncstat" id="syncStat" hidden></p>
       </section>
-
-      <section class="panel" id="logPanel">
-        <header><h2>Log XP</h2><span class="seg" role="group" aria-label="Entry mode"><button id="mAdd" aria-pressed="true">Add gain</button><button id="mSet" aria-pressed="false">Set total</button></span></header>
-        <form id="xpForm" class="row">
-          <input class="grow num" id="xpIn" type="number" min="0" inputmode="numeric" placeholder="e.g. 1250 from a quest" aria-label="XP amount">
-          <button class="primary" type="submit">Log</button>
-          <button type="button" id="dingBtn">Level up</button>
-        </form>
-        <p class="hint" id="xpHint">Type the XP from a quest turn-in or kill. Going past the bar levels you up automatically.</p>
-        <form id="xpMaxForm" class="row" hidden>
-          <span class="grow">New level. How much XP does level <b id="needLv"></b> need?</span>
-          <input class="num" id="xpMaxIn" type="number" min="1" style="width:9rem" aria-label="XP needed this level">
-          <button class="primary" type="submit">Save</button>
-        </form>
-        <div class="row">
-          <label class="field grow"><span class="label">Rested XP</span><input class="num" id="restIn" type="number" min="0"></label>
-          <label class="field grow"><span class="label">Zone</span><input id="zoneIn" maxlength="40"></label>
-        </div>
-      </section>
-
-      
 
       <section class="panel">
         <header><h2>Look it up</h2><span class="hint" id="whVer"></span></header>
@@ -845,7 +821,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     const a = whA(type, id, "↗", "whi"); a.setAttribute("aria-label", "Open " + (label || "this") + " on Wowhead"); return a;
   }
 
-  const S = { char: null, session: null, dings: [], sessions: [], tasks: [], loaded: false, canWrite: true, mode: "add" };
+  const S = { char: null, session: null, dings: [], sessions: [], tasks: [], loaded: false, canWrite: true };
   let db = null;
 
   // ---------- time helpers ----------
@@ -869,15 +845,16 @@ details > summary { cursor: pointer; color: var(--muted); }
   }
 
   // ---------- rate & ETA ----------
+  // XP per hour across your most recent sessions that have exact or Blizzard XP
   function rate() {
-    const s = S.session, e = elapsed(s);
-    if (s && s.active && e > 120000 && s.xp > 0) return { v: s.xp / (e / 3600000), src: "session" };
-    let xp = 0, ms = 0;
+    let xp = 0, ms = 0, n = 0;
     for (const p of S.sessions) {
-      const g = p.bz && p.bz.gained != null ? p.bz.gained : (p.bz ? null : (p.startLogin == null ? p.xp || 0 : null));
-      if (g == null) continue; xp += g; ms += p.durationMs || 0;
+      // exact (add-on) or Blizzard XP; an old manual session counts only if XP was logged in it
+      const g = p.bz && p.bz.gained != null ? p.bz.gained : (!p.bz && p.startLogin == null && p.xp > 0 ? p.xp : null);
+      if (g == null || !(p.durationMs > 0)) continue;
+      xp += g; ms += p.durationMs; if (++n >= 10) break;
     }
-    if (ms > 300000 && xp > 0) return { v: xp / (ms / 3600000), src: "history" };
+    if (ms > 300000 && xp > 0) return { v: xp / (ms / 3600000), n };
     return null;
   }
 
@@ -906,15 +883,10 @@ details > summary { cursor: pointer; color: var(--muted); }
       $("barFill").style.width = pct + "%";
       $("barRest").style.left = pct + "%"; $("barRest").style.width = rpct + "%";
       $("bar").setAttribute("aria-valuenow", Math.round(pct));
-      $("xpText").textContent = atMax ? "Max level reached" : `${fmt(c.xp)} / ${fmt(c.xpMax)} XP · ${pct.toFixed(1)}% · ${fmt(c.xpMax - c.xp)} to go`;
+      $("xpText").textContent = atMax ? "Max level reached" : c.needsXpMax ? `${fmt(c.xp)} XP into level ${c.level} · XP needed fills in after your next log-out or /reload` : `${fmt(c.xp)} / ${fmt(c.xpMax)} XP · ${pct.toFixed(1)}% · ${fmt(c.xpMax - c.xp)} to go`;
       const chips = [];
       if (c.rested > 0 && !atMax) chips.push(chip("rested", `${fmt(c.rested)} rested`));
-      if (c.needsXpMax) chips.push(chip("warn", "Update XP needed"));
       $("barChips").replaceChildren(...chips);
-      if (document.activeElement !== $("restIn")) $("restIn").value = c.rested || 0;
-      if (document.activeElement !== $("zoneIn")) $("zoneIn").value = c.zone || "";
-      $("xpMaxForm").hidden = !c.needsXpMax;
-      $("needLv").textContent = c.level;
       $("whVer").textContent = c.version || "";
     }
     renderSession(); renderTasks(); renderLog(); renderCollections(); renderTalents(); renderQuests(); renderGear();
@@ -924,26 +896,29 @@ details > summary { cursor: pointer; color: var(--muted); }
   const chip = (cls, text) => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; };
 
   function renderSession() {
-    const s = S.session, c = S.char, active = !!(s && s.active), e = elapsed(s);
-    $("sTime").textContent = clock(e);
-    $("sXp").textContent = active ? fmt(s.xp) : "0";
+    const c = S.char;
+    const last = S.sessions.find((p) => p.src === "addon") || S.sessions.find((p) => p.bz && p.bz.gained != null) || null;
     const r = rate();
-    $("sRate").textContent = r ? fmt(r.v) : "–";
     const atMax = c && c.level >= c.maxLevel;
-    $("sEta").textContent = r && c && !atMax ? dur((c.xpMax - c.xp) / r.v * 3600000) : "–";
-    let note = "Start a session when you log in. The timer and pace are saved, so closing this page is fine.";
-    if (active) {
-      const parts = [];
-      if (s.levels) parts.push(`${s.levels} level${s.levels > 1 ? "s" : ""} this session`);
-      if (s.lastGain > 0 && c && !atMax) parts.push(`about ${Math.ceil((c.xpMax - c.xp) / s.lastGain)} more gains like your last (${fmt(s.lastGain)} XP)`);
-      if (r && r.src === "history") parts.push("pace uses your past sessions until this one has data");
-      note = parts.length ? parts.join(" · ") : "Log XP as you go to see your pace.";
-      if (!s.running) note = "Paused. " + note;
-    } else if (r) note = `Your average pace is ${fmt(r.v)} XP/hour across past sessions.`;
-    $("sNote").textContent = note;
-    $("sStart").hidden = active; $("sPause").hidden = !active; $("sEnd").hidden = !active;
-    $("sPause").textContent = s && s.running ? "Pause" : "Resume";
-    $("sessChip").replaceChildren(active ? chip(s.running ? "live" : "warn", s.running ? "Running" : "Paused") : "");
+    $("sEta").textContent = r && c && !atMax && !c.needsXpMax ? dur((c.xpMax - c.xp) / r.v * 3600000) : "–";
+    if (!last) {
+      $("sTime").textContent = "–"; $("sXp").textContent = "–"; $("sRate").textContent = "–"; $("sessChip").textContent = "";
+      $("sNote").textContent = "Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.";
+      return;
+    }
+    const gained = last.bz && last.bz.gained != null ? last.bz.gained : last.xp || 0;
+    const hrs = (last.durationMs || 0) / 3600000;
+    $("sTime").textContent = dur(last.durationMs);
+    $("sXp").textContent = fmt(gained);
+    $("sRate").textContent = hrs > 0.05 ? fmt(Math.round(gained / hrs)) : "–";
+    $("sessChip").textContent = new Date(last.endedAt || last.startedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const lvFrom = last.startLevel, lvTo = last.endLevel;
+    const bits = [lvFrom != null && lvTo != null ? (lvTo > lvFrom ? `Level ${lvFrom} → ${lvTo}` : `Level ${lvTo}`) : ""];
+    if (last.deaths != null) bits.push(`${last.deaths} death${last.deaths === 1 ? "" : "s"}`);
+    if (last.quests != null) bits.push(`${last.quests} quest${last.quests === 1 ? "" : "s"}`);
+    if (last.zones && last.zones.length) bits.push(last.zones.join(", "));
+    if (r) bits.push(`next level uses your last ${r.n} session${r.n === 1 ? "" : "s"} (${fmt(Math.round(r.v))} XP/hour)`);
+    $("sNote").textContent = bits.filter(Boolean).join(" · ");
   }
 
   function renderTasks() {
@@ -2818,70 +2793,6 @@ details > summary { cursor: pointer; color: var(--muted); }
   // ---------- actions ----------
   const charRef = () => db.doc("state/character"), sessRef = () => db.doc("state/session");
 
-  function gainXp(amount) {
-    const c = S.char; if (!c || !(amount > 0)) return;
-    let { level, xp, xpMax, rested } = c; let levels = 0; const dingDocs = [];
-    xp += amount; rested = Math.max(0, (rested || 0) - amount);
-    let needsXpMax = c.needsXpMax;
-    if (level < c.maxLevel && xp >= xpMax) { xp -= xpMax; level += 1; levels = 1; needsXpMax = level < c.maxLevel; dingDocs.push(level); }
-    if (level >= c.maxLevel) { xp = 0; needsXpMax = false; }
-    return commitXp({ level, xp, xpMax, rested, needsXpMax }, amount, levels, dingDocs);
-  }
-
-  async function commitXp(next, gained, levels, dingLevels) {
-    const s = S.session, tracked = (S.char.trackedMs || 0) + elapsed(s);
-    const ok = await write(async () => {
-      await charRef().update(next);
-      if (s && s.active && (gained > 0 || levels)) await sessRef().update({ xp: (s.xp || 0) + Math.max(0, gained), levels: (s.levels || 0) + levels, lastGain: gained > 0 ? gained : s.lastGain || 0 });
-      for (const lv of dingLevels) await db.collection("dings").add({ level: lv, at: Date.now(), trackedMs: tracked });
-    });
-    if (ok && levels) { toast(`Level ${next.level}!`); const b = $("lvl").closest(".levelbadge"); b.classList.remove("ding"); void b.offsetWidth; b.classList.add("ding"); if (next.needsXpMax) setTimeout(() => $("xpMaxIn").focus(), 50); }
-    else if (ok) toast(`+${fmt(gained)} XP`);
-  }
-
-  $("mAdd").onclick = () => { S.mode = "add"; $("mAdd").setAttribute("aria-pressed", "true"); $("mSet").setAttribute("aria-pressed", "false"); $("xpIn").placeholder = "e.g. 1250 from a quest"; $("xpHint").textContent = "Type the XP from a quest turn-in or kill. Going past the bar levels you up automatically."; };
-  $("mSet").onclick = () => { S.mode = "set"; $("mSet").setAttribute("aria-pressed", "true"); $("mAdd").setAttribute("aria-pressed", "false"); $("xpIn").placeholder = "Current XP from your bar"; $("xpHint").textContent = "Type your current XP as shown on the in-game bar. The difference counts toward this session."; };
-
-  $("xpForm").onsubmit = (e) => {
-    e.preventDefault(); const v = Number($("xpIn").value); const c = S.char;
-    if (!c || !isFinite(v) || v < 0 || $("xpIn").value === "") return;
-    $("xpIn").value = "";
-    if (S.mode === "add") return gainXp(v);
-    if (v >= c.xpMax) { toast("That's more than this level needs. Use Level up first."); return; }
-    const delta = v - c.xp;
-    commitXp({ xp: v, rested: Math.max(0, (c.rested || 0) - Math.max(0, delta)) }, delta, 0, []);
-  };
-  $("dingBtn").onclick = () => {
-    const c = S.char; if (!c || c.level >= c.maxLevel) return;
-    const remaining = c.xpMax - c.xp; const level = c.level + 1;
-    commitXp({ level, xp: 0, needsXpMax: level < c.maxLevel }, remaining, 1, [level]);
-  };
-  $("xpMaxForm").onsubmit = (e) => { e.preventDefault(); const v = Number($("xpMaxIn").value); if (!(v > 0)) return; $("xpMaxIn").value = ""; write(() => charRef().update({ xpMax: v, needsXpMax: false }), "Saved"); if (S.char) saveXpForLevel(S.char.level, v); };
-
-  let restT, zoneT;
-  $("restIn").oninput = () => { clearTimeout(restT); restT = setTimeout(() => { const v = Math.max(0, Number($("restIn").value) || 0); if (S.char && v !== (S.char.rested || 0)) write(() => charRef().update({ rested: v })); }, 700); };
-  $("zoneIn").oninput = () => { clearTimeout(zoneT); zoneT = setTimeout(() => { const v = $("zoneIn").value.trim(); if (S.char && v !== (S.char.zone || "")) write(() => charRef().update({ zone: v })); }, 900); };
-
-  $("sStart").onclick = () => { const c = S.char; if (!c) return; write(() => sessRef().set({ active: true, running: true, startedAt: Date.now(), runSince: Date.now(), elapsedMs: 0, xp: 0, levels: 0, lastGain: 0, startLevel: c.level, startXp: c.xp || 0, startLogin: c.lastLogin || 0 }), "Session started"); };
-  $("sPause").onclick = () => {
-    const s = S.session; if (!s || !s.active) return;
-    if (s.running) write(() => sessRef().update({ running: false, runSince: null, elapsedMs: elapsed(s) }), "Paused");
-    else write(() => sessRef().update({ running: true, runSince: Date.now() }), "Resumed");
-  };
-  $("sEnd").onclick = () => {
-    const s = S.session, c = S.char; if (!s || !s.active || !c) return;
-    const e = elapsed(s);
-    write(async () => {
-      if (e > 60000 || s.xp > 0) {
-        const row = { startedAt: s.startedAt, endedAt: Date.now(), durationMs: e, xp: s.xp || 0, levels: s.levels || 0, startLevel: s.startLevel || c.level, endLevel: c.level };
-        if (s.startLogin != null) { row.startLogin = s.startLogin; row.startXp = s.startXp != null ? s.startXp : 0; }
-        await db.collection("sessions").add(row);
-      }
-      await charRef().update({ trackedMs: (c.trackedMs || 0) + e });
-      await sessRef().set({ active: false });
-    }, `Session saved: ${dur(e)}, ${fmt(s.xp)} XP`).then((ok) => { if (ok) setTimeout(() => syncNow(true), 2700); });
-  };
-
   // ---------- Blizzard sync (runs a Claude scheduled task) ----------
   const SYNC_TRIGGER = "trig_0175W7JC268VxUrcbnQiRTaY";
   let mcp = null, syncing = false;
@@ -2967,7 +2878,6 @@ details > summary { cursor: pointer; color: var(--muted); }
 
   // ---------- boot ----------
   render();
-  setInterval(() => { if (S.session && S.session.active) renderSession(); }, 1000);
   // Sync status line: "Checking Blizzard…" while a sync runs, then its result
   const ago = (t) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); };
   function renderSyncStatus() {
