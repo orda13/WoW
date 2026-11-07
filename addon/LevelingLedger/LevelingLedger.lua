@@ -3,7 +3,7 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 6
+local VERSION = 7
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -288,6 +288,42 @@ local function onSystemMessage(msg)
   end
 end
 
+-- ---------- reputation ----------
+-- Values are the game's running totals (they keep counting across standings), so gains are simple subtraction.
+local function factionRows()
+  local rows = {}
+  if GetNumFactions and GetFactionInfo then
+    for i = 1, GetNumFactions() do
+      local name, _, standing, bMin, bMax, bVal, _, _, isHeader, _, hasRep, _, _, id = GetFactionInfo(i)
+      if name and (not isHeader or hasRep) and standing then
+        rows[#rows + 1] = { name = name, standing = standing, min = bMin, max = bMax, value = bVal, id = id }
+      end
+    end
+  elseif C_Reputation and C_Reputation.GetNumFactions and C_Reputation.GetFactionDataByIndex then
+    for i = 1, C_Reputation.GetNumFactions() do
+      local f = C_Reputation.GetFactionDataByIndex(i)
+      if f and f.name and (not f.isHeader or f.isHeaderWithRep) and f.reaction then
+        rows[#rows + 1] = { name = f.name, standing = f.reaction, min = f.currentReactionThreshold, max = f.nextReactionThreshold, value = f.currentStanding, id = f.factionID }
+      end
+    end
+  end
+  return rows
+end
+local function scanReps()
+  char.reps = char.reps or {}
+  for _, r in ipairs(factionRows()) do
+    local old = char.reps[r.name]
+    if session and old and old.value and r.value ~= old.value then
+      session.repGains = session.repGains or {}
+      local g = session.repGains[r.name] or { from = old.value, fromStanding = old.standing }
+      g.to, g.toStanding, g.min, g.max = r.value, r.standing, r.min, r.max
+      session.repGains[r.name] = g
+    end
+    char.reps[r.name] = { standing = r.standing, value = r.value, min = r.min, max = r.max, id = r.id }
+  end
+  char.repsAt = now()
+end
+
 -- ---------- kills ----------
 -- Kills: the combat log's PARTY_KILL events where you (or your pet) landed the killing blow.
 local function onCombatLog()
@@ -419,7 +455,7 @@ f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
 f:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 f:RegisterEvent("PLAYER_MONEY")
-for _, e in ipairs({ "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do f:RegisterEvent(e) end
+for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do f:RegisterEvent(e) end
 for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do f:RegisterEvent(e) end
 f:RegisterEvent("CHAT_MSG_COMBAT_XP_GAIN")
 
@@ -440,7 +476,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
-      startSession(); noteZone(); noteState(); scanSkills()
+      startSession(); noteZone(); noteState(); scanSkills(); scanReps()
       -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
       if not f.hooked then
         f.hooked = true
@@ -469,6 +505,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
   elseif event == "PLAYER_MONEY" then safe(onMoney)
   elseif event == "SKILL_LINES_CHANGED" or event == "CHAT_MSG_SKILL" then safe(scanSkills)
+  elseif event == "UPDATE_FACTION" or event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then safe(scanReps)
   elseif event == "CHAT_MSG_SYSTEM" then local msg = ...; safe(onSystemMessage, msg)
   elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_UPDATE" then safe(scanTradeSkills)
   elseif event == "CRAFT_SHOW" or event == "CRAFT_UPDATE" then safe(scanCrafts)

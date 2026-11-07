@@ -34,6 +34,8 @@ function splitOf(s) {
   // profession skill-ups and recipes learned (1.0.6+)
   if (s.skillups && Object.keys(s.skillups).length) o.skillups = Object.fromEntries(Object.entries(s.skillups).map(([n, v]) => [n, { from: v.from, to: v.to }]));
   if (s.recipesLearned) { const r = arr(s.recipesLearned); if (r.length) o.recipesLearned = r; }
+  // reputation gains (1.0.7+): running totals, so gained = to - from
+  if (s.repGains && Object.keys(s.repGains).length) o.repGains = Object.fromEntries(Object.entries(s.repGains).map(([n, v]) => [n, { from: v.from, to: v.to, fromStanding: v.fromStanding, toStanding: v.toStanding, min: v.min, max: v.max }]));
   // gold, in copper: start and end money (add-on 1.0.2+), and where it came from and went (1.0.5+)
   if (s.startMoney != null && s.endMoney != null) {
     o.gold = { start: s.startMoney, end: s.endMoney };
@@ -66,6 +68,7 @@ function importAddon(text, store, publicDir, source, hint) {
       for (const k of ["kills", "killXP", "questXP"]) if (s[k] != null) m[k] = (m[k] || 0) + s[k];
       if (s.endMoney != null) m.endMoney = s.endMoney;
       if (s.skillups) { m.skillups = { ...(m.skillups || {}) }; for (const [n, v] of Object.entries(s.skillups)) m.skillups[n] = { from: m.skillups[n] ? m.skillups[n].from : v.from, to: v.to }; }
+      if (s.repGains) { m.repGains = { ...(m.repGains || {}) }; for (const [n, v] of Object.entries(s.repGains)) { const p = m.repGains[n]; m.repGains[n] = p ? { ...v, from: p.from, fromStanding: p.fromStanding } : v; } }
       if (s.recipesLearned) m.recipesLearned = [...arr(m.recipesLearned), ...arr(s.recipesLearned)];
       for (const k of ["moneyIn", "moneyOut"]) if (s[k]) { m[k] = { ...(m[k] || {}) }; for (const [kind, v] of Object.entries(s[k])) m[k][kind] = (m[k][kind] || 0) + v; }
       m.endLevel = s.endLevel; m.endXP = s.endXP; m.zones = [...arr(m.zones), ...arr(s.zones).filter((z) => !arr(m.zones).includes(z))];
@@ -118,6 +121,13 @@ function importAddon(text, store, publicDir, source, hint) {
     if (JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonskills", doc);
     const nSk = Object.keys(doc.skills).length;
     done.push(`${nSk} profession${nSk === 1 ? "" : "s"}`);
+  }
+
+  // 2d. Reputation standings (1.0.7+)
+  if (ch.repsAt && ch.reps) {
+    const doc = { reps: ch.reps, at: ch.repsAt * 1000 };
+    const prev = store.get("state/addonreps");
+    if (JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
   }
 
   // 3. Training costs, matched to the class's abilities by name and rank

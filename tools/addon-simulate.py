@@ -59,6 +59,11 @@ TRADE = { { "Reagents", "header" }, { "Elixir of Minor Defense", "trivial" }, { 
 function GetTradeSkillLine() return "Alchemy", 70, 150 end
 function GetNumTradeSkills() return #TRADE end
 function GetTradeSkillInfo(i) return TRADE[i][1], TRADE[i][2] end
+-- factions: name, standing, barMin, barMax, barValue, header, hasRep
+FACTIONS = { { "Alliance", 0, 0, 0, 0, true, false }, { "Darnassus", 6, 9000, 21000, 11355 }, { "Stormwind", 5, 3000, 9000, 3795 },
+             { "Other", 0, 0, 0, 0, true, false }, { "Cenarion Circle", 4, 0, 3000, 2200 } }
+function GetNumFactions() return #FACTIONS end
+function GetFactionInfo(i) local f = FACTIONS[i] return f[1], "", f[2], f[3], f[4], f[5], false, false, f[6] or false, false, f[7] ~= false and not f[6], false, false, 100 + i end
 ERR_LEARN_RECIPE_S = "You have learned how to create a new item: %s."
 -- combat log and XP chat
 CLEU = {}
@@ -95,6 +100,9 @@ L.execute('SKILLS[3][3] = 125'); fire('CHAT_MSG_SKILL', 'Your skill in Herbalism
 L.execute('SKILLS[3][3] = 128'); fire('CHAT_MSG_SKILL', 'Your skill in Herbalism has increased to 128.')
 L.execute('SKILLS[7][3] = 66'); fire('SKILL_LINES_CHANGED')          # weapon skill: ignored
 fire('CHAT_MSG_SYSTEM', 'You have learned how to create a new item: Elixir of Wisdom.')
+L.execute('FACTIONS[2][5] = 11605'); fire('CHAT_MSG_COMBAT_FACTION_CHANGE', 'Your reputation with Darnassus has increased by 250.'); fire('UPDATE_FACTION')
+L.execute('FACTIONS[5][5] = 2950'); fire('UPDATE_FACTION')
+L.execute('FACTIONS[5][2] = 5; FACTIONS[5][3] = 3000; FACTIONS[5][4] = 9000; FACTIONS[5][5] = 3075'); fire('UPDATE_FACTION')   # Cenarion Circle: Neutral -> Friendly
 fire('CHAT_MSG_SYSTEM', 'You have learned a new spell: Moonfire (Rank 3).')   # not a recipe
 L.execute('SKILLS[2][3] = 70'); fire('SKILL_LINES_CHANGED'); fire('TRADE_SKILL_SHOW')
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')

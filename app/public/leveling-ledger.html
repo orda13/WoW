@@ -560,6 +560,7 @@ details > summary { cursor: pointer; color: var(--muted); }
           <p class="hint" id="sSplit" hidden></p>
           <p class="hint" id="sGold" hidden></p>
           <p class="hint" id="sSkillups" hidden></p>
+          <p class="hint" id="sReps" hidden></p>
         </div>
         <div class="row">
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
@@ -890,7 +891,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (!last) {
       $("sTime").textContent = "–"; $("sXp").textContent = "–"; $("sRate").textContent = "–"; $("sessChip").textContent = "";
       $("sNote").textContent = "Your sessions appear here after you log out or /reload with the Leveling Ledger add-on enabled.";
-      $("sSplit").hidden = true; $("sGold").hidden = true; $("sSkillups").hidden = true;
+      $("sSplit").hidden = true; $("sGold").hidden = true; $("sSkillups").hidden = true; $("sReps").hidden = true;
       return;
     }
     const gained = last.bz && last.bz.gained != null ? last.bz.gained : last.xp || 0;
@@ -923,6 +924,18 @@ details > summary { cursor: pointer; color: var(--muted); }
       su.textContent = [ups.length ? "Skill-ups: " + ups.map(([n, v]) => `${n} ${v.from} → ${v.to}`).join(", ") : "", learned.length ? "learned " + learned.join(", ") : ""].filter(Boolean).join(" · ");
       su.hidden = false;
     } else su.hidden = true;
+    // reputation gained, per hour, and how far to the next standing
+    const rp = $("sReps"), gains = Object.entries(last.repGains || {}).map(([n, g]) => [n, g, g.to - g.from]).filter(([, , d]) => d !== 0).sort((a, b) => Math.abs(b[2]) - Math.abs(a[2]));
+    if (gains.length) {
+      rp.textContent = "Reputation: " + gains.slice(0, 5).map(([n, g, d]) => {
+        const bits = [];
+        if (hrs > 0.05 && d > 0) bits.push(`${fmt(Math.round(d / hrs))}/hour`);
+        if (g.toStanding !== g.fromStanding && STANDING[g.toStanding]) bits.push(`now ${STANDING[g.toStanding]}`);
+        if (d > 0 && g.max > g.to && STANDING[g.toStanding + 1]) bits.push(`${fmt(g.max - g.to)} to ${STANDING[g.toStanding + 1]}`);
+        return `${n} ${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}` + (bits.length ? ` (${bits.join(", ")})` : "");
+      }).join(" · ") + (gains.length > 5 ? ` · and ${gains.length - 5} more` : "");
+      rp.hidden = false;
+    } else rp.hidden = true;
   }
 
   // Gold for a session: earned (looting, quests, selling) per hour, spent, net. Mail is shown apart: it's often gold moved between characters.
@@ -1036,6 +1049,20 @@ details > summary { cursor: pointer; color: var(--muted); }
     return base.sort((x, y) => (x.kind === y.kind ? 0 : x.kind === "primary" ? -1 : 1));
   }
 
+  // Reputation: Blizzard's list, with the add-on's newer standings folded in (same shape: value and max within the standing, tier 0 = Hated)
+  const STANDING = ["", "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted"];
+  function repsList() {
+    const base = ((S.coll && S.coll.reputations) || []).map((r) => ({ ...r }));
+    const a = S.areps; if (!a || (a.at || 0) <= ((S.coll && S.coll.syncedAt) || 0)) return base;
+    const byName = new Map(base.map((r) => [r.name, r]));
+    for (const [n, v] of Object.entries(a.reps || {})) {
+      if (!v.standing) continue;
+      const r = { name: n, standing: STANDING[v.standing] || "", tier: v.standing - 1, value: (v.value || 0) - (v.min || 0), max: Math.max(0, (v.max || 0) - (v.min || 0)) };
+      if (byName.has(n)) Object.assign(byName.get(n), r); else { base.push(r); byName.set(n, r); }
+    }
+    return base.sort((x, y) => y.tier - x.tier || y.value - x.value);
+  }
+
   function renderCollections() {
     const c = S.coll;
     const synced = c && c.syncedAt ? `synced ${shortDate(c.syncedAt)}` : "";
@@ -1069,8 +1096,9 @@ details > summary { cursor: pointer; color: var(--muted); }
     for (const [k, v] of tiles) { const t = el("div", "stat"); t.append(el("span", "label", k), el("span", "v", fmt(v))); st.append(t); }
     for (const [k, arr] of [["Mounts", c.mounts], ["Pets", c.pets], ["Toys", c.toys], ["Heirlooms", c.heirlooms], ["Titles", c.titles]])
       if (arr && arr.length) lists.append(nameList(k, arr));
-    if (!c.reputations || !c.reputations.length) reps.append(el("p", "hint", "No reputations yet."));
-    else for (const r of c.reputations) reps.append(meter(r.name, null, r.value, r.max, `${r.standing} ${fmt(r.value)}/${fmt(r.max)}`, "rep"));
+    const rl = repsList();
+    if (!rl.length) reps.append(el("p", "hint", "No reputations yet."));
+    else for (const r of rl) reps.append(meter(r.name, null, r.value, r.max, `${r.standing} ${fmt(r.value)}/${fmt(r.max)}`, "rep"));
   }
 
   // ---------- quest tracker ----------
@@ -2751,6 +2779,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
+    db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) renderDungeons(); }, () => {});
