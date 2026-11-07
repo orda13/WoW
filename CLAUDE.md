@@ -11,6 +11,11 @@
   - `addon-import.js`: add-on import
   - `blizzard.js`: Blizzard sync
   - `access.js`: Cloudflare Access JWT check
+- Characters (`lib/characters.js`):
+  - The main character's documents use plain paths (`state/character`).
+  - Each alt's documents sit under a prefix derived from its Blizzard name (`c1a2b3c4.state/character`), in the same store.
+  - `local-shim.js` adds the prefix for the character picked on the page (`?char=` or localStorage).
+  - Server code that touches character data goes through `charStore(store, id)`.
 - `app/public/`: the ledger page (`leveling-ledger.html`) and its game data. `local-shim.js` gives the page the storage interface it was written against (`window.claude.use("db")`), backed by `/api/*` and live updates through Server-Sent Events.
 - `app/scripts/`: Windows install and uninstall scripts, using NSSM and the Local Service account. They can't run in Linux sessions, so review PowerShell changes by hand and keep the files ASCII-only.
 - `addon/LevelingLedger/`: the WoW Forever add-on (Interface 16001, SavedVariables `LevelingLedgerDB`).

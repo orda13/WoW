@@ -84,10 +84,10 @@ function summarize(old, nw, oldLevel, newLevel) {
   return bits.join(", ") || "Updated from Blizzard";
 }
 
-let running = null;
+const running = new Map(); // character -> promise
 function syncBlizzard(store, cfg, log) {
-  if (running) return running;
-  running = (async () => {
+  if (running.has(cfg.character)) return running.get(cfg.character);
+  const job = (async () => {
     const now = Date.now();
     const status = (s) => store.set("state/syncstatus", { pending: false, at: Date.now(), ...s });
     try {
@@ -97,6 +97,14 @@ function syncBlizzard(store, cfg, log) {
       const p = sec.profile;
       if (p.status !== 200) { status({ ok: false, changed: false, message: `Blizzard didn't return the character (HTTP ${p.status}). Try again later.`, lastLogin: null }); return; }
       const pr = p.json;
+      // a character added on the Settings tab: start its ledger from what Blizzard knows
+      if (!store.get("state/character")) {
+        store.set("state/character", { name: pr.name || cfg.character, version: "World of Warcraft: Forever", maxLevel: 60, level: pr.level, xp: pr.experience || 0,
+          xpMax: 0, needsXpMax: true, rested: 0, zone: "", trackedMs: 0, faction: pr.faction && pr.faction.name, region: (cfg.region || "US"),
+          race: pr.race && pr.race.name, cls: pr.character_class && pr.character_class.name, blizzardId: pr.id });
+        store.set("dings/start-" + pr.level, { level: pr.level, at: Date.now(), trackedMs: 0 });
+        log(`Set up the ledger for ${pr.name || cfg.character}`);
+      }
       const c = store.get("state/character") || {};
       const old = { collections: store.get("state/collections"), quests: store.get("state/quests"), gear: store.get("state/gear") };
       if (pr.last_login_timestamp === c.lastLogin && pr.level === c.level && pr.experience === c.xp && old.collections && old.quests && old.gear) {
@@ -123,8 +131,9 @@ function syncBlizzard(store, cfg, log) {
       status({ ok: false, changed: false, message: "Couldn't reach Blizzard: " + e.message, lastLogin: null });
       log("Blizzard sync failed: " + e.message);
     }
-  })().finally(() => { running = null; });
-  return running;
+  })().finally(() => { running.delete(cfg.character); });
+  running.set(cfg.character, job);
+  return job;
 }
 
 // after new API keys are saved

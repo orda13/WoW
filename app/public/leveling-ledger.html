@@ -101,6 +101,8 @@ a { color: var(--brass); }
 .chip.live { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, transparent); }
 .chip.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
 .health { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+.char-pick { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; }
+.char-pick select { font: inherit; font-size: .9rem; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: inherit; max-width: 100%; }
 .health:empty { display: none; }
 .health .chip { text-decoration: none; color: var(--muted); }
 .health a.chip:hover { border-color: var(--muted); }
@@ -487,6 +489,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     <div class="ident">
       <span class="label" id="verLabel">Leveling Ledger</span>
       <h1 id="charName">Your character</h1>
+      <label class="char-pick" id="charPickWrap" hidden><span class="label">Character</span><select id="charPick" aria-label="Switch character"></select></label>
       <span class="sub" id="charSub">Loading your ledger…</span>
     </div>
     <div class="levelbadge">
@@ -520,6 +523,14 @@ details > summary { cursor: pointer; color: var(--muted); }
           <label class="field"><span class="label">Character</span><input id="stCharacter" spellcheck="false" placeholder="talwyn-orda"><span class="st-err" data-for="character"></span></label>
           <label class="field"><span class="label">Check Blizzard every (hours)</span><input id="stSyncEvery" type="number" min="1" max="24" step="0.5"><span class="st-err" data-for="syncEveryHours"></span></label>
         </div>
+      </fieldset>
+      <fieldset class="st-group">
+        <legend>Characters</legend>
+        <p class="hint">The character above is your main. Add others here, one per line, written as Blizzard spells them (first and last name joined by a dash, like <code>bob-smith</code>). Each gets its own ledger; switch with the menu under the name. Removing one keeps its data, so adding it back restores it.</p>
+        <div class="form-grid">
+          <label class="field wide"><span class="label">Other characters</span><textarea id="stAlts" rows="3" spellcheck="false" placeholder="bob-smith"></textarea><span class="st-err" data-for="alts"></span></label>
+        </div>
+        <p class="hint" id="stSeen"></p>
       </fieldset>
       <fieldset class="st-group">
         <legend>Add-on file</legend>
@@ -936,13 +947,13 @@ details > summary { cursor: pointer; color: var(--muted); }
     const c = S.char;
     $("readonly").hidden = S.canWrite || !db;
     const editing = !$("setup").hidden && $("setup").dataset.editing === "1";
-    if (S.loaded && !c && S.canWrite) { $("setup").hidden = false; $("setupCancel").hidden = true; }
+    if (S.loaded && !c && S.canWrite && !window.LL_CHAR) { $("setup").hidden = false; $("setupCancel").hidden = true; }
     else if (!editing) $("setup").hidden = true;
     document.body.classList.toggle("needs-setup", !!(S.loaded && !c && S.canWrite));
 
     if (!c) {
       $("charName").textContent = "Your character";
-      $("charSub").textContent = S.loaded ? (S.canWrite ? "Set up your character below to start tracking." : "This ledger has no character yet.") : "Loading your ledger…";
+      $("charSub").textContent = S.loaded ? (window.LL_CHAR ? "Setting up this character from Blizzard. This takes a few seconds; if it doesn't appear, check its name on the Settings tab." : S.canWrite ? "Set up your character below to start tracking." : "This ledger has no character yet.") : "Loading your ledger…";
       $("lvl").textContent = "–"; $("lvlMax").textContent = ""; $("xpText").textContent = "";
       $("barFill").style.width = "0%"; $("barRest").style.width = "0%"; $("barChips").replaceChildren();
     } else {
@@ -1738,7 +1749,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   async function renderWatch() {
     try {
       const st = await (await fetch("/api/status")).json();
-      S.status = st; renderHealth();
+      S.status = st; renderHealth(); renderCharPick();
       const w = $("impWatch");
       w.textContent = st.files && st.files.length ? `Watching ${st.files.join(", ")}` : "";
       if (st.lastError) w.textContent += (w.textContent ? " · " : "") + st.lastError;
@@ -1750,6 +1761,19 @@ details > summary { cursor: pointer; color: var(--muted); }
     renderWatch();
   };
   renderWatch(); setInterval(renderWatch, 60000);
+
+  // ---------- character switcher ----------
+  function renderCharPick() {
+    const list = (S.status && S.status.characters) || [];
+    const cur = window.LL_CHAR || "";
+    if (list.length && !list.some((c) => c.id === cur)) { try { localStorage.setItem("ll-char", ""); } catch {} location.search = ""; return; } // that alt was removed
+    $("charPickWrap").hidden = list.length < 2;
+    const sel = $("charPick");
+    const label = (c) => (c.name || c.character) + (c.level ? ` · ${c.level}${c.cls ? " " + c.cls : ""}` : "");
+    if (sel.options.length !== list.length || [...sel.options].some((o, i) => o.textContent !== label(list[i]))) sel.replaceChildren(...list.map((c) => { const o = el("option", null, label(c)); o.value = c.id; return o; }));
+    sel.value = cur;
+  }
+  $("charPick").onchange = () => { const v = $("charPick").value; try { localStorage.setItem("ll-char", v); } catch {} location.href = location.pathname + (v ? "?char=" + v : "?char=") + location.hash; };
 
   // ---------- health line: one chip per part, each linking to where to fix it ----------
   function renderHealth() {
@@ -1805,6 +1829,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     $("stClientId").value = s.blizzard.clientId; $("stClientSecret").value = "";
     $("stClientSecret").placeholder = s.blizzard.hasSecret ? "Saved. Leave blank to keep it" : "Not set yet";
     $("stCharacter").value = s.blizzard.character; $("stSyncEvery").value = s.syncEveryHours;
+    $("stAlts").value = (s.alts || []).join("\n");
     $("stWowFolder").value = s.wowFolder; $("stSvFile").value = s.savedVariablesFile; $("stBackupDays").value = s.backupDays;
     $("stTeam").value = s.access.teamDomain; $("stAud").value = s.access.aud; $("stEmails").value = s.access.allowedEmails.join("\n");
     for (const id of ["stTeam", "stAud", "stEmails"]) $(id).disabled = !s.canEditAccess;
@@ -1818,6 +1843,10 @@ details > summary { cursor: pointer; color: var(--muted); }
     try {
       const st = await (await fetch("/api/status")).json();
       $("stWatch").textContent = st.files && st.files.length ? "Watching " + st.files.join(", ") : (st.lastError || "No add-on file found yet.");
+      // characters the add-on has seen that aren't tracked yet (it knows first names only)
+      const tracked = new Set((st.characters || []).map((c) => (c.name || c.character).split(/[ -]/)[0].toLowerCase()));
+      const untracked = (st.seen || []).filter((c) => !tracked.has(c.name.toLowerCase()));
+      $("stSeen").textContent = untracked.length ? "The add-on has also seen: " + untracked.map((c) => c.name + (c.level ? ` (level ${c.level}${c.cls ? " " + c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""})` : "")).join(", ") + ". Add them above with their full name." : "";
     } catch { $("stWatch").textContent = ""; }
   }
   async function loadSettings() {
@@ -1830,6 +1859,7 @@ details > summary { cursor: pointer; color: var(--muted); }
       blizzard: { clientId: $("stClientId").value, character: $("stCharacter").value },
       syncEveryHours: $("stSyncEvery").value, backupDays: $("stBackupDays").value,
       wowFolder: $("stWowFolder").value, savedVariablesFile: $("stSvFile").value,
+      alts: $("stAlts").value,
     };
     if ($("stClientSecret").value.trim()) b.blizzard.clientSecret = $("stClientSecret").value;
     if (ST.canEditAccess) b.access = { teamDomain: $("stTeam").value, aud: $("stAud").value, allowedEmails: $("stEmails").value };
@@ -1858,7 +1888,7 @@ details > summary { cursor: pointer; color: var(--muted); }
   $("stTest").onclick = async () => {
     if (!(await saveSettings())) return;
     ST.testAt = Date.now(); renderSettingsSync();
-    try { await fetch("/api/sync", { method: "POST", headers: { "X-Ledger": "1" } }); } catch {}
+    try { await fetch("/api/sync?char=" + encodeURIComponent(window.LL_CHAR || ""), { method: "POST", headers: { "X-Ledger": "1" } }); } catch {}
   };
   // ---------- updates ----------
   const short = (sha) => (sha || "").slice(0, 7);
@@ -3030,7 +3060,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     if (syncing) return;
     syncing = true; $("syncBtn").disabled = true;
     try {
-      const r = await fetch("/api/sync", { method: "POST", headers: { "X-Ledger": "1" } });
+      const r = await fetch("/api/sync?char=" + encodeURIComponent(window.LL_CHAR || ""), { method: "POST", headers: { "X-Ledger": "1" } });
       if (!r.ok) throw new Error("HTTP " + r.status);
       toast("Checking Blizzard…");
       S.syncLocal = Date.now(); renderSyncStatus();

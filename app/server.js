@@ -10,6 +10,7 @@ const { publicView, applyUpdate, saveConfig } = require("./lib/settings");
 const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
+const { characters, charStore } = require("./lib/characters");
 
 const APP = __dirname;
 const CONFIG_FILE = process.env.LL_CONFIG || path.join(APP, "config.json");
@@ -68,7 +69,18 @@ async function json(req) { const t = await readBody(req); const v = t ? JSON.par
 
 // ---------- Blizzard sync schedule ----------
 const bcfg = config.blizzard;
-function sync(why) { log("Blizzard sync (" + why + ")"); return syncBlizzard(store, bcfg, log); }
+// ---------- characters (main + alts) ----------
+const chars = () => characters(config);
+const findChar = (id) => chars().find((c) => c.id === (id || ""));
+const storeFor = (id) => charStore(store, id || "");
+// Blizzard sync for one character, or all of them one after another
+function syncOne(c, why) {
+  log(`Blizzard sync for ${c.character || "the main character"} (${why})`);
+  const st = storeFor(c.id), isNew = !st.get("state/character");
+  // a newly added character: once Blizzard has set up its ledger, bring in its add-on data again (rested XP, zone, costs need the character)
+  return syncBlizzard(st, { ...bcfg, character: c.character }, log).then((r) => { if (isNew && st.get("state/character")) watcher.importNow(); return r; });
+}
+async function sync(why) { for (const c of chars()) { if (c.character) await syncOne(c, why).catch(() => {}); } }
 setTimeout(() => sync("startup"), 15000);
 let syncTimer;
 function scheduleSync() {
@@ -85,7 +97,7 @@ function syncAfterPlay() {
 }
 
 // ---------- add-on file watcher ----------
-const watcher = startWatcher({ store, publicDir: PUBLIC, config, log, onImported: syncAfterPlay });
+const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay });
 
 // ---------- one-click updates ----------
 // The add-on's folder is found next to the watched SavedVariables file: <game>\_forever_\Interface\AddOns\LevelingLedger
@@ -170,18 +182,26 @@ const server = http.createServer(async (req, res) => {
       const credsChanged = draft.blizzard.clientId !== bcfg.clientId || draft.blizzard.clientSecret !== bcfg.clientSecret;
       const folderChanged = draft.wowFolder !== config.wowFolder || draft.savedVariablesFile !== config.savedVariablesFile;
       const intervalChanged = draft.syncEveryHours !== config.syncEveryHours;
+      const altsChanged = JSON.stringify(draft.alts || []) !== JSON.stringify(config.alts || []);
       Object.assign(bcfg, draft.blizzard);
       Object.assign(config.access, draft.access);
-      for (const k of ["syncEveryHours", "backupDays", "wowFolder", "savedVariablesFile"]) config[k] = draft[k];
+      for (const k of ["syncEveryHours", "backupDays", "wowFolder", "savedVariablesFile", "alts"]) config[k] = draft[k];
       if (credsChanged) resetToken();
       if (intervalChanged) scheduleSync();
       if (folderChanged) watcher.reset();
+      if (altsChanged) { watcher.importNow(); sync("characters changed"); }
       log("Settings saved: " + changed.join(", ") + (req.userEmail ? " (by " + req.userEmail + ")" : ""));
       return send(res, 200, { ok: true, changed, settings: publicView(config, isLocal) });
     }
-    if (p === "/api/sync" && req.method === "POST") { sync("Sync button"); return send(res, 200, { ok: true }); }
+    if (p === "/api/sync" && req.method === "POST") {
+      const c = findChar(url.searchParams.get("char"));
+      if (!c) return send(res, 404, { error: "unknown character" });
+      syncOne(c, "Sync button"); return send(res, 200, { ok: true });
+    }
     if (p === "/api/import" && req.method === "POST") {
-      try { const r = importAddon(await readBody(req), store, PUBLIC, "", bcfg.character); syncAfterPlay(); return send(res, 200, { ok: true, message: r.message }); }
+      const c = findChar(url.searchParams.get("char"));
+      if (!c) return send(res, 404, { error: "unknown character" });
+      try { const r = importAddon(await readBody(req), storeFor(c.id), PUBLIC, "", c.character); syncAfterPlay(); return send(res, 200, { ok: true, message: r.message }); }
       catch (e) { return send(res, 400, { ok: false, message: e.message }); }
     }
     if (p === "/api/import-now" && req.method === "POST") { watcher.scan(); watcher.importNow(); return send(res, 200, { ok: true }); }
@@ -190,7 +210,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { version: VERSION, files: watcher.status.files, lastCheck: watcher.status.lastCheck, lastError: watcher.status.lastError,
         blizzard: !!(bcfg.clientId && bcfg.clientSecret), syncEveryHours: config.syncEveryHours || 6, remote: !!(config.access && config.access.aud),
         via: viaCloudflare(req) ? "cloudflare" : "local", user: req.userEmail || null, lastBackup: lastBackup ? lastBackup.at : null,
-        updateAvailable: updater.view().available });
+        updateAvailable: updater.view().available,
+        characters: chars().map((c) => { const d = storeFor(c.id).get("state/character") || {}; return { id: c.id, character: c.character, main: c.main, name: d.name || "", level: d.level || null, cls: d.cls || "" }; }),
+        seen: Object.values(watcher.status.seen).map(({ name, level, cls }) => ({ name, level, cls })) });
     }
 
     // static data files

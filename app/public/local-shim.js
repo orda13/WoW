@@ -1,6 +1,15 @@
 // The page's storage interface (documents and collections with live snapshots), backed by this PC's server.
 (() => {
   const H = { "Content-Type": "application/json", "X-Ledger": "1" };
+  // Which character this page shows: ?char= in the address, else the last one picked. "" is the main character.
+  const CHAR = (() => {
+    let c = new URLSearchParams(location.search).get("char");
+    if (c !== null) { try { localStorage.setItem("ll-char", c); } catch {} }
+    else { try { c = localStorage.getItem("ll-char") || ""; } catch { c = ""; } }
+    return /^c[0-9a-f]{8}$/.test(c) ? c : "";
+  })();
+  const PRE = CHAR ? CHAR + "." : ""; // each alt's documents live under its own prefix
+  window.LL_CHAR = CHAR;
   const meta = { fromCache: false, hasPendingWrites: false };
   async function call(method, url, body) {
     const r = await fetch(url, { method, headers: H, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -14,12 +23,12 @@
   function docRef(path) {
     return {
       id: path.split("/").pop(), path,
-      get: async () => docSnap(path, await call("GET", "/api/doc/" + path)),
-      set: (d) => call("PUT", "/api/doc/" + path, d).then(() => undefined),
-      update: (d) => call("PATCH", "/api/doc/" + path, d).then(() => undefined),
-      delete: () => call("DELETE", "/api/doc/" + path).then(() => undefined),
+      get: async () => docSnap(path, await call("GET", "/api/doc/" + PRE + path)),
+      set: (d) => call("PUT", "/api/doc/" + PRE + path, d).then(() => undefined),
+      update: (d) => call("PATCH", "/api/doc/" + PRE + path, d).then(() => undefined),
+      delete: () => call("DELETE", "/api/doc/" + PRE + path).then(() => undefined),
       onSnapshot(next, err) {
-        const f = async () => { try { next(docSnap(path, await call("GET", "/api/doc/" + path))); } catch (e) { if (err) err(e); } };
+        const f = async () => { try { next(docSnap(path, await call("GET", "/api/doc/" + PRE + path))); } catch (e) { if (err) err(e); } };
         if (!docSubs.has(path)) docSubs.set(path, new Set());
         docSubs.get(path).add(f); f();
         return () => docSubs.get(path).delete(f);
@@ -33,11 +42,11 @@
       limit(n) { lim = n; return q; },
       where() { return q; },
       doc: (id) => docRef(col + "/" + (id || Date.now().toString(36) + Math.random().toString(36).slice(2, 8))),
-      add: async (d) => { const r = await call("POST", "/api/col/" + col, d); return docRef(col + "/" + r.id); },
+      add: async (d) => { const r = await call("POST", "/api/col/" + PRE + col, d); return docRef(col + "/" + r.id); },
       onSnapshot(next, err) {
         const f = async () => {
           try {
-            let docs = (await call("GET", "/api/col/" + col)).docs;
+            let docs = (await call("GET", "/api/col/" + PRE + col)).docs;
             if (order) docs.sort((a, b) => { const x = a.data[order[0]], y = b.data[order[0]]; return (x > y ? 1 : x < y ? -1 : 0) * order[1]; });
             if (lim) docs = docs.slice(0, lim);
             const out = docs.map((d) => ({ id: d.id, exists: true, data: () => d.data, metadata: meta }));
@@ -56,8 +65,12 @@
   const es = new EventSource("/api/events");
   es.onmessage = (m) => {
     let ev; try { ev = JSON.parse(m.data); } catch { return; }
-    (docSubs.get(ev.path) || []).forEach((f) => f());
-    (colSubs.get(ev.path.split("/")[0]) || []).forEach((f) => f());
+    // only this character's documents
+    let p = ev.path;
+    if (PRE) { if (!p.startsWith(PRE)) return; p = p.slice(PRE.length); }
+    else if (p.split("/")[0].includes(".")) return;
+    (docSubs.get(p) || []).forEach((f) => f());
+    (colSubs.get(p.split("/")[0]) || []).forEach((f) => f());
   };
   const refreshAll = () => { docSubs.forEach((s) => s.forEach((f) => f())); colSubs.forEach((s) => s.forEach((f) => f())); };
   // connection state for the page's health line

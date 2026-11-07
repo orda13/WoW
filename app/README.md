@@ -6,6 +6,9 @@ Your Leveling Ledger, running on your own PC as a Windows service.
 - **Blizzard sync runs here.** It runs at start-up, every 6 hours, and about 1 and 6 minutes after each play session (Blizzard updates your character shortly after you log out). The **Sync from Blizzard** button runs it right away.
 - **Your data stays on your PC** in `C:\LevelingLedger\data\store.json`. A copy of the previous version is kept next to it as `store.json.bak`, and a daily backup goes into `data\backups` (the last 14 days). The **Backups** section on the Ledger page lists them, with Download and Restore; a restore saves your current data first, so it can be undone.
 - **From your phone or another computer**, use Cloudflare Tunnel with Google sign-in (Part 2). Nothing is opened on your router.
+- **Alts:** add other characters on the **Settings** tab, one per line, as Blizzard spells them (for example `bob-smith`).
+  - Each gets its own ledger, synced from Blizzard and fed from the same add-on file. Switch between them with the menu under the name.
+  - Removing a character keeps its data, so adding it back restores it.
 
 Nothing needs installing besides Node.js 18 or newer (you have it already).
 

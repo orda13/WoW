@@ -13,6 +13,7 @@ function publicView(config, isLocal) {
     wowFolder: config.wowFolder || "",
     savedVariablesFile: config.savedVariablesFile || "",
     port: config.port || 8787,
+    alts: config.alts || [],
     access: { teamDomain: a.teamDomain || "", aud: a.aud || "", allowedEmails: a.allowedEmails || [] },
     canEditAccess: isLocal,
   };
@@ -44,6 +45,15 @@ function applyUpdate(config, body, isLocal) {
       if (!/^[\p{L}\p{N}'-]+$/u.test(v)) errors.character = 'Character as Blizzard spells it, like "talwyn-orda".';
       else set(b, "character", v, "character");
     }
+  }
+  if (body.alts != null) {
+    // extra characters, as Blizzard spells them ("bob-smith"); their data is kept if one is removed and added again
+    const main = (config.blizzard && config.blizzard.character) || "";
+    const raw = Array.isArray(body.alts) ? body.alts : String(body.alts).split(/[\n,]+/);
+    const list = [...new Set(raw.map((x) => String(x).trim().toLowerCase().replace(/\s+/g, "-")).filter((x) => x && x !== main))];
+    if (list.length > 10) errors.alts = "Up to 10 extra characters.";
+    else if (list.some((x) => !/^[\p{L}\p{N}'-]+$/u.test(x) || x.length > 60)) errors.alts = 'Each character as Blizzard spells it, like "bob-smith".';
+    else if (JSON.stringify(config.alts || []) !== JSON.stringify(list)) { config.alts = list; changed.push("characters"); }
   }
   if (body.syncEveryHours != null) {
     const v = Number(body.syncEveryHours);

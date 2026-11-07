@@ -32,26 +32,31 @@ const DEFAULT_ROOTS = [
   "D:\\World of Warcraft", "D:\\Games\\World of Warcraft", "E:\\World of Warcraft",
 ];
 
-function startWatcher({ store, publicDir, config, log, onImported }) {
+// targets(): [{ store, hint }] for every tracked character (hint = its Blizzard name, e.g. "talwyn-orda")
+function startWatcher({ targets, publicDir, config, log, onImported }) {
   const roots = () => [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
   const watched = new Map(); // file -> last mtime handled
-  const status = { files: [], lastCheck: 0, lastError: "" };
+  const status = { files: [], lastCheck: 0, lastError: "", seen: {} };
 
   function tryImport(file, why) {
     let text;
     try { text = fs.readFileSync(file, "utf8"); } catch (e) { status.lastError = `Couldn't read ${file}: ${e.message}`; return; }
     let data;
     try { data = readSaved(text); } catch (e) { status.lastError = `${file}: ${e.message}`; log(status.lastError); return; }
-    const hint = (config.blizzard || {}).character;
-    if (!pickChar(data, store, hint)) return; // another account's or character's file
-    const have = (store.get("state/addon") || {}).savedAt || 0;
-    if ((data.savedAt || 0) * 1000 <= have && why !== "manual") return;
-    try {
-      const r = importAddon(text, store, publicDir, file, hint);
-      log(`Imported ${file} (${why}): ${r.message}`);
-      status.lastError = "";
-      if (onImported) onImported(r);
-    } catch (e) { status.lastError = `Import of ${file} failed: ${e.message}`; log(status.lastError); }
+    // every character the add-on knows about on this account (for "add a character" suggestions)
+    for (const c of Object.values(data.chars || {})) if (c && c.name) status.seen[c.name.toLowerCase()] = { name: c.name, level: c.level || null, cls: c.class || "", file };
+    let any = false;
+    for (const t of targets()) {
+      if (!pickChar(data, t.store, t.hint)) continue; // this file has no data for that character
+      const have = (t.store.get("state/addon") || {}).savedAt || 0;
+      if ((data.savedAt || 0) * 1000 <= have && why !== "manual") continue;
+      try {
+        const r = importAddon(text, t.store, publicDir, file, t.hint);
+        log(`Imported ${file} (${why}): ${r.message}`);
+        status.lastError = ""; any = true;
+      } catch (e) { status.lastError = `Import of ${file} failed: ${e.message}`; log(status.lastError); }
+    }
+    if (any && onImported) onImported();
   }
 
   function scan() {
