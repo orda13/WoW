@@ -3,7 +3,7 @@
 -- which the game writes when you log out or type /reload. It sends nothing anywhere.
 
 local ADDON = ...
-local VERSION = 2
+local VERSION = 3
 local MAX_SESSIONS, MAX_QUESTS = 500, 3000
 
 local f = CreateFrame("Frame")
@@ -94,6 +94,16 @@ local function closeSession()
   local s = snapshot()
   session.stop = s.at
   session.endLevel, session.endXP, session.endXPMax, session.endMoney, session.endRested = s.level, s.xp, s.xpMax, s.money, s.rested
+end
+
+-- What the character is on right now (the page shows rested XP and zone from this)
+local function noteState()
+  if not char then return end
+  char.rested = GetXPExhaustion() or 0
+  char.zone = zone()
+  char.subzone = GetSubZoneText and GetSubZoneText() or ""
+  char.resting = (IsResting and IsResting()) and true or false
+  char.stateAt = now()
 end
 
 local function noteZone()
@@ -237,6 +247,10 @@ f:RegisterEvent("MERCHANT_UPDATE")
 f:RegisterEvent("LOOT_OPENED")
 f:RegisterEvent("PLAYER_DEAD")
 f:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+f:RegisterEvent("ZONE_CHANGED")
+f:RegisterEvent("ZONE_CHANGED_INDOORS")
+f:RegisterEvent("UPDATE_EXHAUSTION")
+f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_TARGET_CHANGED")
 
 f:SetScript("OnEvent", function(_, event, ...)
@@ -256,7 +270,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
-      startSession(); noteZone()
+      startSession(); noteZone(); noteState()
       -- Hide the chat line for /played requests the add-on makes itself (whichever handler this client uses)
       if not f.hooked then
         f.hooked = true
@@ -273,12 +287,13 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif not char then
     return
   elseif event == "PLAYER_LOGOUT" then
-    safe(function() onXP(); closeSession(); char.level = UnitLevel("player"); db.savedAt = now() end)
+    safe(function() onXP(); closeSession(); noteState(); char.level = UnitLevel("player"); db.savedAt = now() end)
   elseif event == "PLAYER_ENTERING_WORLD" then
     -- Ask for /played once per real login, not on every /reload or loading screen
     local isLogin = ...
     if isLogin then suppressPlayed = true; RequestTimePlayed() end
-  elseif event == "PLAYER_XP_UPDATE" then safe(onXP)
+  elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
+  elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
   elseif event == "TIME_PLAYED_MSG" then local total, thisLevel = ...; safe(onPlayed, total, thisLevel)
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money)
@@ -286,7 +301,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then safe(onMerchant)
   elseif event == "LOOT_OPENED" then safe(onLoot)
   elseif event == "PLAYER_DEAD" then char.deaths = char.deaths + 1; if session then session.deaths = session.deaths + 1 end
-  elseif event == "ZONE_CHANGED_NEW_AREA" then safe(noteZone)
+  elseif event == "ZONE_CHANGED_NEW_AREA" then safe(noteZone); safe(noteState)
   elseif event == "PLAYER_TARGET_CHANGED" then
     -- remember names of creatures we've looted, since loot windows don't give names
     safe(function()
@@ -306,5 +321,5 @@ SlashCmdList.LEVELINGLEDGER = function()
   for _ in pairs(char.trainer) do t = t + 1 end
   print(string.format("|cffd9aa5aLeveling Ledger|r: %d sessions, %d quests, %d trainer spells, %d vendors, %d creatures looted. This session: %d XP.",
     #char.sessions, #char.quests, t, v, l, session and session.xpGained or 0))
-  print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save, then import LevelingLedger.lua on the Ledger page.")
+  print("|cffd9aa5aLeveling Ledger|r: type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
 end

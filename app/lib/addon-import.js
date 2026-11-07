@@ -77,6 +77,13 @@ function importAddon(text, store, publicDir, source, hint) {
   if (Object.keys(xm).length) done.push(`XP needed for ${Object.keys(xm).length} level${Object.keys(xm).length === 1 ? "" : "s"}`);
   if (S.char && xm[S.char.level] && S.char.needsXpMax) store.update("state/character", { xpMax: xm[S.char.level], needsXpMax: false });
 
+  // 2b. Rested XP and where you are, as of the add-on's last save
+  if (ch.stateAt && S.char && ch.stateAt * 1000 >= (S.char.stateAt || 0)) {
+    const st = { rested: Math.max(0, ch.rested || 0), zone: ch.zone || S.char.zone || "", subzone: ch.subzone || "", resting: !!ch.resting, stateAt: ch.stateAt * 1000 };
+    if (["rested", "zone", "subzone", "resting"].some((k) => S.char[k] !== st[k])) store.update("state/character", st);
+    done.push(`rested ${st.rested.toLocaleString("en-US")} XP${st.zone ? " in " + st.zone : ""}`);
+  }
+
   // 3. Training costs, matched to the class's abilities by name and rank
   if (ch.trainer && Object.keys(ch.trainer).length) {
     const ab = loadAbilities(publicDir);

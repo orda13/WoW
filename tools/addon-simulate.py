@@ -1,5 +1,7 @@
 # Runs the add-on in real Lua with a fake WoW API, then writes SavedVariables the way the game does.
-import lupa, sys
+import lupa, sys, os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = sys.argv[1] if len(sys.argv) > 1 else 'SampleSavedVariables.lua'
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
 L.execute(r'''
 T = 1794000000
@@ -15,7 +17,10 @@ function UnitFactionGroup() return "Alliance" end
 function UnitLevel() return state.level end
 function UnitXP() return state.xp end
 function UnitXPMax() return state.xpMax[state.level] end
-function GetXPExhaustion() return 0 end
+function GetXPExhaustion() return REST end
+REST = 2400
+function IsResting() return RESTING or false end
+function GetSubZoneText() return SUBZONE or "" end
 function GetMoney() return state.money end
 function GetRealZoneText() return ZONE or "Darkshore" end
 function GetZoneText() return GetRealZoneText() end
@@ -46,16 +51,18 @@ C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then retur
 SlashCmdList = {}
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
-L.execute(open('LevelingLedger/LevelingLedger.lua').read().replace('local ADDON = ...', 'local ADDON = "LevelingLedger"'))
+L.execute(open(os.path.join(ROOT, 'addon', 'LevelingLedger', 'LevelingLedger.lua')).read().replace('local ADDON = ...', 'local ADDON = "LevelingLedger"'))
 fire = L.eval('function(e, ...) FRAME.fn(FRAME, e, ...) end')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
-L.execute('T = T + 1800; state.xp = 10000'); fire('PLAYER_XP_UPDATE')
+L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')
 L.execute('T = T + 900; state.level = 14; state.xp = 2000'); fire('PLAYER_LEVEL_UP', 14); fire('PLAYER_XP_UPDATE')
 fire('QUEST_TURNED_IN', 486, 1150, 0)
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')
 L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW')
 L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-36-1-1763-0000AAAA"'); fire('PLAYER_TARGET_CHANGED'); fire('LOOT_OPENED')
 fire('PLAYER_DEAD')
+L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')
+L.execute('RESTING = true; SUBZONE = "Lor\'danel Inn"'); fire('PLAYER_UPDATE_RESTING')
 L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
 L.eval('SlashCmdList.LEVELINGLEDGER')()
 # serialize like WoW's SavedVariables writer
@@ -77,5 +84,5 @@ function(v)
   end
   return "\nLevelingLedgerDB = " .. s(v, "") .. "\n"
 end''')
-open('SampleSavedVariables.lua', 'w').write(ser(L.globals().LevelingLedgerDB))
-print(open('SampleSavedVariables.lua').read()[:2200])
+open(OUT, 'w').write(ser(L.globals().LevelingLedgerDB))
+print('wrote', OUT)

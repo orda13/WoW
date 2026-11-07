@@ -536,8 +536,6 @@ details > summary { cursor: pointer; color: var(--muted); }
       <label class="field"><span class="label">Max level</span><input id="fMax" type="number" min="1" max="200" required value="60"></label>
       <label class="field"><span class="label">Current XP</span><input id="fXp" type="number" min="0" required value="0"></label>
       <label class="field"><span class="label">XP needed this level</span><input id="fXpMax" type="number" min="1" required value="400"></label>
-      <label class="field"><span class="label">Rested XP</span><input id="fRested" type="number" min="0" value="0"></label>
-      <label class="field"><span class="label">Zone</span><input id="fZone" maxlength="40" placeholder="Teldrassil"></label>
       <div class="row wide"><button class="primary" type="submit" id="setupSave">Save character</button><button type="button" class="ghost" id="setupCancel" hidden>Cancel</button></div>
     </form>
   </section>
@@ -855,7 +853,7 @@ details > summary { cursor: pointer; color: var(--muted); }
     } else {
       $("verLabel").textContent = c.version || "Leveling Ledger";
       $("charName").textContent = c.name || "Your character";
-      $("charSub").textContent = [c.race, c.cls, c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ") + (c.zone ? `  —  ${c.zone}` : "") + (c.equippedItemLevel ? `  ·  ilvl ${c.equippedItemLevel}` : "") + (c.syncedAt ? `  ·  synced from Blizzard ${shortDate(c.syncedAt)}` : "");
+      $("charSub").textContent = [c.race, c.cls, c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ") + (c.zone ? `  —  ${c.zone}${c.subzone && c.subzone !== c.zone ? ", " + c.subzone : ""}` : "") + (c.equippedItemLevel ? `  ·  ilvl ${c.equippedItemLevel}` : "") + (c.syncedAt ? `  ·  synced from Blizzard ${shortDate(c.syncedAt)}` : "");
       $("lvl").textContent = c.level; $("lvlMax").textContent = `/ ${c.maxLevel}`;
       const atMax = c.level >= c.maxLevel;
       const pct = atMax ? 100 : Math.min(100, c.xpMax ? c.xp / c.xpMax * 100 : 0);
@@ -865,7 +863,8 @@ details > summary { cursor: pointer; color: var(--muted); }
       $("bar").setAttribute("aria-valuenow", Math.round(pct));
       $("xpText").textContent = atMax ? "Max level reached" : c.needsXpMax ? `${fmt(c.xp)} XP into level ${c.level} · XP needed fills in after your next log-out or /reload` : `${fmt(c.xp)} / ${fmt(c.xpMax)} XP · ${pct.toFixed(1)}% · ${fmt(c.xpMax - c.xp)} to go`;
       const chips = [];
-      if (c.rested > 0 && !atMax) chips.push(chip("rested", `${fmt(c.rested)} rested`));
+      if (c.rested > 0 && !atMax) { const rc = chip("rested", `${fmt(c.rested)} rested`); if (c.stateAt) rc.title = "As of your last log-out or /reload, " + new Date(c.stateAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); chips.push(rc); }
+      if (c.resting) chips.push(chip("rested", "Resting"));
       $("barChips").replaceChildren(...chips);
       $("whVer").textContent = c.version || "";
     }
@@ -2615,7 +2614,6 @@ details > summary { cursor: pointer; color: var(--muted); }
     $("setupTitle").textContent = S.char ? "Edit character" : "Set up your character";
     $("fName").value = c.name || ""; $("fVersion").value = c.version || "World of Warcraft: Forever"; $("fRace").value = c.race || ""; $("fClass").value = c.cls || "";
     $("fLevel").value = c.level || 1; $("fMax").value = c.maxLevel || 60; $("fXp").value = c.xp || 0; $("fXpMax").value = c.xpMax || 400;
-    $("fRested").value = c.rested || 0; $("fZone").value = c.zone || "";
     s.scrollIntoView({ behavior: "smooth", block: "start" }); $("fName").focus();
   };
   $("setupCancel").onclick = () => { $("setup").dataset.editing = ""; $("setup").hidden = true; };
@@ -2625,11 +2623,11 @@ details > summary { cursor: pointer; color: var(--muted); }
     const body = {
       name: $("fName").value.trim(), version: $("fVersion").value, race: $("fRace").value.trim(), cls: $("fClass").value.trim(),
       level, maxLevel, xp: Math.max(0, Number($("fXp").value) || 0), xpMax: Math.max(1, Number($("fXpMax").value) || 1),
-      rested: Math.max(0, Number($("fRested").value) || 0), zone: $("fZone").value.trim(), needsXpMax: false,
+      needsXpMax: false,
     };
     const isNew = !S.char;
     const ok = await write(async () => {
-      if (isNew) { await charRef().set({ ...body, trackedMs: 0 }); await db.collection("dings").add({ level, at: Date.now(), trackedMs: 0 }); }
+      if (isNew) { await charRef().set({ ...body, rested: 0, zone: "", trackedMs: 0 }); await db.collection("dings").add({ level, at: Date.now(), trackedMs: 0 }); }
       else await charRef().update(body);
       saveXpForLevel(body.level, body.xpMax);
     }, isNew ? "Character saved" : "Changes saved");
