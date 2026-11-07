@@ -19,7 +19,15 @@ function pickChar(data, store, hint) {
   const last = store.get("state/addon");
   const want = ((c && c.name) || (hint || "").split("-")[0] || (last && last.char) || "").split(" ")[0].toLowerCase();
   if (!want) return chars[0] || null;
-  return chars.find((x) => (x.name || "").toLowerCase() === want) || null;
+  // the same name can appear more than once (another realm, or the realm's name changed): take the one played most recently
+  const same = chars.filter((x) => (x.name || "").toLowerCase() === want);
+  return same.sort((a, b) => lastActive(b) - lastActive(a))[0] || null;
+}
+function lastActive(c) {
+  let t = c.skillsAt || 0;
+  for (const s of arr(c.sessions)) t = Math.max(t, s.stop || 0, s.start || 0);
+  for (const x of Object.values(c.trainer || {})) t = Math.max(t, (x && x.at) || 0);
+  return t;
 }
 
 // Which PC a file came from: files sent by a relay are kept in data/relay/<device>/<account>/SavedVariables/
@@ -153,26 +161,28 @@ function importAddon(text, store, publicDir, source, hint) {
     const prev = store.get("state/trainercosts") || {};
     const costs = { ...(prev.costs || {}) }, fromAddon = { ...(prev.fromAddon || {}) };
     const recipes = { ...((store.get("state/trainerrecipes") || {}).byName || {}) };
-    let nA = 0, nR = 0;
+    let nA = 0, nR = 0, noCost = 0, older = 0, same = 0;
     for (const t of Object.values(ch.trainer)) {
-      if (t.cost == null || !t.n) continue;
+      if (t.cost == null || !t.n) { noCost++; continue; }
       const at = (t.at || 0) * 1000;
       const a = list.find((e) => e.n === t.n && (e.r || "") === (t.r || "")) || list.find((e) => e.n === t.n && !t.r);
       if (a) {
         const f = fromAddon[a.id];
-        if (f && (f.at || 0) > at) continue; // another device saw this trainer more recently
-        if (costs[a.id] !== t.cost || !f) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "" }; nA++; }
+        if (f && (f.at || 0) > at) { older++; continue; } // another device saw this trainer more recently
+        if (costs[a.id] !== t.cost || !f) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "" }; nA++; } else same++;
       } else {
         const k = t.n.toLowerCase() + (t.r ? "|" + String(t.r).toLowerCase() : "");
         const cur = recipes[k];
-        if (cur && (cur.at || 0) > at) continue;
+        if (cur && (cur.at || 0) > at) { older++; continue; }
         const v = { n: t.n, r: t.r || "", cost: t.cost, npc: t.npc || null, by: t.npcName || "", line: t.line || "", sk: t.sk || "", skr: t.skr || 0, lv: t.lv || 0, at };
-        if (JSON.stringify(cur) !== JSON.stringify(v)) { recipes[k] = v; nR++; }
+        if (JSON.stringify(cur) !== JSON.stringify(v)) { recipes[k] = v; nR++; } else same++;
       }
     }
     if (nA) store.set("state/trainercosts", { costs, fromAddon, updatedAt: Date.now() });
     if (nR) store.set("state/trainerrecipes", { byName: recipes, updatedAt: Date.now() });
-    done.push(`${nA} training cost${nA === 1 ? "" : "s"}` + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : ""));
+    const total = Object.keys(ch.trainer).length;
+    const why = !nA && !nR ? ` (${total} trainer entries: ${[same && `${same} already imported`, noCost && `${noCost} without a price`, older && `${older} older than what's saved`].filter(Boolean).join(", ") || "none usable"})` : "";
+    done.push(`${nA} training cost${nA === 1 ? "" : "s"}` + (nR ? `, ${nR} trainer price${nR === 1 ? "" : "s"} for recipes` : "") + why);
   }
 
   // 4. Vendor prices (gold and Merchant's Favor)
