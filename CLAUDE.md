@@ -31,6 +31,7 @@
 - `app/public/`: the ledger page (`leveling-ledger.html`) and its game data. `local-shim.js` gives the page the storage interface it was written against (`window.claude.use("db")`), backed by `/api/*` and live updates through Server-Sent Events.
 - `app/scripts/`: Windows install and uninstall scripts, using NSSM and the Local Service account. They can't run in Linux sessions, so review PowerShell changes by hand and keep the files ASCII-only.
 - `addon/LevelingLedger/`: the WoW Forever add-on (Interface 16001, SavedVariables `LevelingLedgerDB`).
+  - Avoid taint: never assign Blizzard globals or add to `StaticPopupDialogs`; build the add-on's own frames instead. Taint makes the game blame the add-on for blocked actions.
 - `tools/`: the add-on simulator (`addon-simulate.py`, needs `lupa`) and the data-build scripts.
 
 ## Updates
