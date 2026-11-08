@@ -214,6 +214,8 @@ L.execute('LevelingLedgerAltsSearch.text = "linen"; function LevelingLedgerAltsS
 print('-- search "linen":', [t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t])
 
 # the in-game panel, before logging out
+# Bob logged out at an inn two days ago: 30% of a level rested by now, so he's the best alt
+L.execute('for k, c in pairs(LevelingLedgerDB.chars) do if c.name == "Bob" then c.level = 10; c.xpMax = { [10] = 8000 }; c.rested = 0; c.resting = true; c.stateAt = T - 48 * 3600 end end')
 show = L.eval('function() local p = LevelingLedgerPanel; p.scripts.OnUpdate(p, 1.5); local t = {} for _, f in ipairs(p.fonts) do t[#t + 1] = f.text or "" end return table.concat(t, "\\n") end')
 p = L.globals().LevelingLedgerPanel
 print('panel shown:', p.shown, '| starts at', [p.point[k] for k in (1, 3, 4, 5)])

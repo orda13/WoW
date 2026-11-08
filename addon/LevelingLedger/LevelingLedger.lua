@@ -578,6 +578,43 @@ end
 
 -- ---------- look: WoW's own tooltip border, gold labels, the game's icons ----------
 local GOLD, BLUE, WHITE = "|cffffd100", "|cff4d8ff0", "|r"
+local RED, GREEN = "|cffff5040", "|cff40d060"
+
+-- Training: from the latest visit to your class trainer, what you can train now, or else what the next level costs.
+local function nextTraining(lvl)
+  local last = 0
+  for _, t in pairs(char.trainer or {}) do if t.cost and not t.sk and t.line ~= "Riding" then last = math.max(last, t.at or 0) end end
+  if last == 0 then return nil end
+  local nowCost, nowN, nextLv, nextCost, nextN = 0, 0, nil, 0, 0
+  for _, t in pairs(char.trainer) do
+    local st = TRAINER_STATUS[t.r] and t.r or t.state
+    if t.cost and not t.sk and t.line ~= "Riding" and (t.at or 0) >= last - 300 then
+      if st == "available" then nowCost, nowN = nowCost + t.cost, nowN + 1
+      elseif st == "unavailable" and (t.lv or 0) > lvl and (not nextLv or t.lv < nextLv) then nextLv = t.lv end
+    end
+  end
+  if nextLv then
+    for _, t in pairs(char.trainer) do
+      local st = TRAINER_STATUS[t.r] and t.r or t.state
+      if t.cost and not t.sk and t.line ~= "Riding" and (t.at or 0) >= last - 300 and st == "unavailable" and t.lv == nextLv then nextCost, nextN = nextCost + t.cost, nextN + 1 end
+    end
+  end
+  return nowCost, nowN, nextLv, nextCost, nextN
+end
+-- The most rested other character on this account (estimated since they logged out; 5% of a level per 8 hours resting,
+-- a quarter of that outside, up to one and a half levels)
+local function bestAlt(cap)
+  local best, bestPct
+  for _, c in pairs(db.chars or {}) do
+    local bar = c.xpMax and c.level and c.xpMax[c.level]
+    if c ~= char and bar and bar > 0 and (c.level or 0) < cap and c.stateAt then
+      local gained = bar * 0.05 * ((now() - c.stateAt) / 28800) * (c.resting and 1 or 0.25)
+      local pct = math.min(1.5, ((c.rested or 0) + gained) / bar)
+      if pct >= 0.25 and (not bestPct or pct > bestPct) then best, bestPct = c, pct end
+    end
+  end
+  return best, bestPct
+end
 -- frames get a BackdropTemplate where the client needs it (modern clients), plain frames otherwise
 local BACKDROP_TEMPLATE = BackdropTemplateMixin and "BackdropTemplate" or nil
 local function styleFrame(fr, alpha)
@@ -602,7 +639,7 @@ local function updatePanel()
   if not panel or not panel:IsShown() then return end
   if not session or not char then
     lines[1]:SetText("Waiting for your character...")
-    for i = 2, 4 do lines[i]:SetText("") end
+    for i = 2, #lines do lines[i]:SetText("") end
     return
   end
   local el = now() - (session.start or now())
@@ -618,6 +655,15 @@ local function updatePanel()
   for k, v in pairs(session.moneyIn or {}) do if k ~= "mail" then earned = earned + v end end
   local rested = GetXPExhaustion() or 0
   lines[4]:SetText(SKULL .. " " .. fmtNum(session.kills or 0) .. "    +" .. coins(earned) .. (rested > 0 and ("    " .. BLUE .. "Rested " .. fmtNum(rested) .. WHITE) or ""))
+  -- training: now, or the next level, against the gold you carry
+  local nowCost, nowN, nextLv, nextCost = nextTraining(lvl)
+  local gold = GetMoney() or 0
+  if not nowCost then lines[5]:SetText(GOLD .. "Training" .. WHITE .. "  visit your trainer to record costs")
+  elseif nowN > 0 then lines[5]:SetText(GOLD .. "Train now" .. WHITE .. "  " .. coins(nowCost) .. (gold < nowCost and ("  " .. RED .. "short " .. WHITE .. coins(nowCost - gold)) or ""))
+  elseif nextLv then lines[5]:SetText(GOLD .. "Level " .. nextLv .. " training" .. WHITE .. "  " .. coins(nextCost) .. "  " .. (gold < nextCost and (RED .. "short " .. WHITE .. coins(nextCost - gold)) or (GREEN .. "covered" .. WHITE)))
+  else lines[5]:SetText(GOLD .. "Training" .. WHITE .. "  nothing left to train") end
+  local alt, pct = bestAlt(cap)
+  lines[6]:SetText(alt and (GOLD .. "Best alt" .. WHITE .. "  " .. alt.name .. "  " .. BLUE .. math.floor(pct * 100 + 0.5) .. "% of a level rested" .. WHITE) or "")
 end
 
 local function placePanel()
@@ -631,7 +677,7 @@ local function createPanel()
   if panel or not CreateFrame or not UIParent then return end
   db.panel = db.panel or { shown = true }
   local p = CreateFrame("Frame", "LevelingLedgerPanel", UIParent, BACKDROP_TEMPLATE)
-  p:SetSize(270, 86)
+  p:SetSize(290, 116)
   p:SetFrameStrata("MEDIUM")
   p:SetClampedToScreen(true)
   p:SetMovable(true)
@@ -648,7 +694,7 @@ local function createPanel()
   title:SetPoint("TOPLEFT", 9, -8)
   title:SetText("|TInterface\\Icons\\INV_Misc_Book_09:14:14|t Leveling Ledger")
   lines = {}
-  for i = 1, 4 do
+  for i = 1, 6 do
     local fs = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     fs:SetPoint("TOPLEFT", 10, -10 - i * 15)
     fs:SetJustifyH("LEFT")
