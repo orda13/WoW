@@ -27,6 +27,7 @@ function CreateFrame(kind, name, parent)
   function fr:Hide() self.shown = false end
   function fr:IsShown() return self.shown end
   function fr:SetPoint(...) self.point = { ... } end
+  function fr:SetAttribute(k, v) local a = rawget(self, "attrs") or {}; rawset(self, "attrs", a); a[k] = v end
   function fr:GetPoint() local p = self.point or {} return p[1], p[2], p[3], p[4], p[5] end
   fr.fonts = {}
   function fr:CreateFontString() local fs = obj({ text = "" }) function fs:SetText(t) self.text = t end table.insert(fr.fonts, fs) return fs end
@@ -293,9 +294,10 @@ L.execute('LevelingLedgerPanel.point = { "CENTER", UIParent, "CENTER", 120, -40 
 print('saved spot after drag:', dict(L.globals().LevelingLedgerDB.panel))
 slash('reset'); print('after reset:', dict(L.globals().LevelingLedgerDB.panel), [p.point[k] for k in (1, 3, 4, 5)])
 L.eval('SlashCmdList.LEVELINGLEDGER')('')
-# Save: reloads out of combat, refuses in a fight
-L.execute('RELOADED = nil; COMBAT = true'); slash('save'); print('save in a fight reloaded:', L.globals().RELOADED)
-L.execute('COMBAT = false'); slash('save'); print('save reloaded:', L.globals().RELOADED, '| binding:', L.globals().BINDING_NAME_LEVELINGLEDGER_SAVE); L.execute('RELOADED = nil')
+# Save: a secure /reload button (the key binding clicks it); add-on code never calls ReloadUI
+b = L.eval('function() local b = rawget(_G, "LevelingLedgerSaveButton"); return b and b.attrs and (b.attrs.type .. " " .. b.attrs.macrotext) end')()
+print('save button:', b, '| binding:', L.eval('function() return _G["BINDING_NAME_CLICK LevelingLedgerSaveButton:LeftButton"] end')())
+L.execute('RELOADED = nil'); slash('save'); print('/ledger save reloaded:', L.globals().RELOADED)
 # water breaks: due an hour after login, held back during a fight, "Later" asks again in 15 minutes
 tick = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.scripts.OnUpdate and fr ~= LevelingLedgerPanel then fr.scripts.OnUpdate(fr, 20) end end end')
 water = lambda: L.eval('function() local w = rawget(_G, "LevelingLedgerWater") if not w then return "none" end return (w.shown and "shown: " or "hidden: ") .. (w.text.text or "") end')()
@@ -304,7 +306,9 @@ L.execute('T = T + 3600; COMBAT = true'); tick(); print('water window in a fight
 L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the fight:', water())
 L.execute('LevelingLedgerWater.later.scripts.OnClick()'); print('after Later:', water()[:7]); slash('water')
 L.execute('T = T + 900'); tick(); print('15 min later:', water())
-L.execute('LevelingLedgerWater.ok.scripts.OnClick()'); print('reloaded:', L.globals().RELOADED)
+L.execute('COMBAT = true; LevelingLedgerWater.later.scripts.OnClick()'); print('Later in a fight, window shown:', L.globals().LevelingLedgerWater.shown)
+L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the fight, window shown:', L.globals().LevelingLedgerWater.shown)
+print('Reload now is a secure /reload:', L.eval('function() return LevelingLedgerWater.ok.attrs and LevelingLedgerWater.ok.attrs.macrotext end')())
 # full auction scan: the button appears on the auction window; newer style first, then classic; 15-minute limit
 L.execute('CreateFrame("Frame", "AuctionHouseFrame")'); fire('AUCTION_HOUSE_SHOW')
 L.execute('LL_NS.ahScan()')

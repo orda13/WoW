@@ -24,7 +24,13 @@ end
 -- Its own small window, not Blizzard's StaticPopup: adding to StaticPopupDialogs taints Blizzard's popups
 -- (release spirit, delete item, ...) and gets the add-on blamed for blocked actions.
 local win
-local function later() if B then B.next = now() + SNOOZE end; if win then win:Hide() end end
+-- (the window holds a secure button, so it can't hide during a fight: that waits for the fight to end)
+local hideAfterFight = false
+local function later()
+  if B then B.next = now() + SNOOZE end
+  if not win then return end
+  if InCombatLockdown and InCombatLockdown() then hideAfterFight = true else win:Hide() end
+end
 local function build()
   if win then return win end
   win = CreateFrame("Frame", "LevelingLedgerWater", UIParent, ns.BACKDROP_TEMPLATE)
@@ -36,8 +42,10 @@ local function build()
   local title = win:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge"); title:SetPoint("TOP", 0, -14); title:SetText("Water break!")
   win.text = win:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   win.text:SetPoint("TOPLEFT", 16, -40); win.text:SetPoint("TOPRIGHT", -16, -40); win.text:SetJustifyH("CENTER")
-  local ok = CreateFrame("Button", nil, win, "UIPanelButtonTemplate"); ok:SetSize(120, 22); ok:SetPoint("BOTTOMRIGHT", win, "BOTTOM", -6, 14); ok:SetText("Reload now")
-  ok:SetScript("OnClick", function() if B then B.since = now() end; win:Hide(); if ReloadUI then ReloadUI() end end)
+  -- a secure /reload button: the game blocks ReloadUI from add-on code
+  local ok = ns.secureReload and ns.secureReload(nil, win, "UIPanelButtonTemplate") or CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
+  ok:SetSize(120, 22); ok:SetPoint("BOTTOMRIGHT", win, "BOTTOM", -6, 14); ok:SetText("Reload now")
+  ok:SetScript("PreClick", function() if B then B.since = now() end end)
   local no = CreateFrame("Button", nil, win, "UIPanelButtonTemplate"); no:SetSize(120, 22); no:SetPoint("BOTTOMLEFT", win, "BOTTOM", 6, 14); no:SetText("Later")
   no:SetScript("OnClick", later)
   win.ok, win.later = ok, no
@@ -76,8 +84,9 @@ f:SetScript("OnEvent", function(_, event)
     if not B.alive or now() - B.alive > AWAY or not B.next then B.since = now(); B.next = now() + every()
     elseif B.shownAt and now() - B.shownAt < 5 * 60 then B.since = now(); B.next = now() + every(); B.shownAt = nil end
     B.alive = now()
-  elseif event == "PLAYER_REGEN_ENABLED" and pending then
-    pending = false; check()
+  elseif event == "PLAYER_REGEN_ENABLED" then
+    if hideAfterFight and win then hideAfterFight = false; win:Hide() end
+    if pending then pending = false; check() end
   end
 end)
 local acc = 0

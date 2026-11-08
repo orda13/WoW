@@ -767,7 +767,8 @@ local function createPanel()
   p:SetMovable(true)
   p:EnableMouse(true)
   p:RegisterForDrag("LeftButton")
-  p:SetScript("OnDragStart", function(self) if not db.panel.locked then self:StartMoving() end end)
+  -- (the panel holds a secure Save button, so it can't move during a fight)
+  p:SetScript("OnDragStart", function(self) if not db.panel.locked and not (InCombatLockdown and InCombatLockdown()) then self:StartMoving() end end)
   p:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     local point, _, relPoint, x, y = self:GetPoint()
@@ -777,9 +778,8 @@ local function createPanel()
   local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   title:SetPoint("TOPLEFT", 9, -8)
   title:SetText("|TInterface\\Icons\\INV_Misc_Book_09:14:14|t Leveling Ledger")
-  local save = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+  local save = ns.secureReload(nil, p, "UIPanelButtonTemplate")
   save:SetSize(52, 18); save:SetPoint("TOPRIGHT", -6, -5); save:SetText("Save")
-  save:SetScript("OnClick", function() LevelingLedger_Save() end)
   save:SetScript("OnEnter", function(self) if GameTooltip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Save to the ledger"); GameTooltip:AddLine("Reloads the interface so the page updates in a few seconds.", 1, 1, 1, true); GameTooltip:Show() end end)
   save:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
   lines = {}
@@ -910,15 +910,23 @@ ns.coins = coins
 ns.BACKDROP_TEMPLATE = BACKDROP_TEMPLATE
 
 -- ---------- Save: reload the interface, which makes the game write the add-on's file; the app imports it in seconds ----------
--- Key binding (Options, Keybindings, AddOns: Leveling Ledger), /ledger save and the panel's Save button.
+-- This client blocks ReloadUI from add-on code, even on a click. A secure button running the /reload macro is
+-- allowed (it's how macros and action bars work), so every Save is one: the key binding clicks a hidden one
+-- (Options, Keybindings, AddOns: Leveling Ledger), and the panel and the water break have their own.
 BINDING_HEADER_LEVELINGLEDGER = "Leveling Ledger"
-BINDING_NAME_LEVELINGLEDGER_SAVE = "Save to the ledger (reload)"
+_G["BINDING_NAME_CLICK LevelingLedgerSaveButton:LeftButton"] = "Save to the ledger (reload)"
+function ns.secureReload(name, parent, extraTemplate)
+  local b = CreateFrame("Button", name, parent, "SecureActionButtonTemplate" .. (extraTemplate and (", " .. extraTemplate) or ""))
+  b:SetAttribute("type", "macro"); b:SetAttribute("macrotext", "/reload")
+  b:RegisterForClicks("AnyUp", "AnyDown")
+  return b
+end
+do -- the key binding's button: invisible, off to the side (created at load, out of combat)
+  local b = ns.secureReload("LevelingLedgerSaveButton", UIParent)
+  b:SetSize(1, 1); b:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10, 10); b:SetAlpha(0)
+end
 function LevelingLedger_Save()
-  if InCombatLockdown and InCombatLockdown() then
-    print("|cffd9aa5aLeveling Ledger|r: can't save during a fight; try again once it's over.")
-    return
-  end
-  if ReloadUI then ReloadUI() end
+  print("|cffd9aa5aLeveling Ledger|r: type /reload, or press your Save key (Options, Keybindings, AddOns), or the panel's Save button. The game doesn't let add-on code reload by itself.")
 end
 
 -- ---------- /ledger ----------
@@ -926,6 +934,7 @@ SLASH_LEVELINGLEDGER1 = "/ledger"
 local TAG = "|cffd9aa5aLeveling Ledger|r: "
 local function panelCommand(cmd)
   if not panel then print(TAG .. "the panel isn't ready yet."); return true end
+  if InCombatLockdown and InCombatLockdown() and (cmd == "show" or cmd == "hide" or cmd == "reset") then print(TAG .. "try again once the fight is over."); return true end
   if cmd == "show" then db.panel.shown = true; panel:Show(); safe(updatePanel); print(TAG .. "panel shown.")
   elseif cmd == "hide" then db.panel.shown = false; panel:Hide(); print(TAG .. "panel hidden. /ledger show brings it back.")
   elseif cmd == "lock" then db.panel.locked = true; print(TAG .. "panel locked in place.")
