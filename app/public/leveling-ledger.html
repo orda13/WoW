@@ -398,6 +398,8 @@ div.qc-red { border: 0; }
 .ab-t { font-size: .8rem; }
 .ab-d { font-size: .82rem; color: var(--muted); }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
+.tags .planned { color: var(--rested); font-weight: 600; }
+.ql-plan { margin-top: 10px; }
 .ql-q { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .ql-ob { font-size: .85rem; margin-left: 14px; }
 .ql-ob.done { color: var(--good); }
@@ -1450,6 +1452,20 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       for (const o of q.ob || []) d.append(el("div", "ql-ob" + (o.done ? " done" : ""), (o.done ? "✓ " : "• ") + (o.text || "")));
       return d;
     }));
+    // planned quests not in the log yet
+    const inLog = new Set(qs.map((q) => q.id));
+    const planned = Object.entries(myPlan()).filter(([id]) => !inLog.has(+id) && !QD.done.has(+id) && !QD.marks.done[id]);
+    if (planned.length) {
+      const pl = el("div", "ql-plan"); pl.append(el("h3", null, "Planned"), el("p", "hint", "Questie shows their quest givers in game after a /reload, and tracks each quest once you pick it up."));
+      for (const [id, t] of planned) {
+        const r = el("div", "ql-q"); r.append(link(+id, t));
+        const z = QD.zoneOf && QD.zoneOf.get(+id); const q = z && z.q.find((x) => x.i === +id);
+        if (q && q.qs && q.qs[0]) r.append(el("span", "muted", ` · from ${q.qs[0][2]}${q.qs[0][3] ? ", " + q.qs[0][3] : ""}${q.qs[0][4] != null ? ` (${q.qs[0][4]}, ${q.qs[0][5]})` : ""}`));
+        if (S.canWrite && db) { const u = el("button", "ghost", "Unplan"); u.type = "button"; u.onclick = () => togglePlan({ i: +id, t }); r.append(document.createTextNode(" "), u); }
+        pl.append(r);
+      }
+      box.append(pl);
+    }
     // how long recent quests took, with XP per hour of that time
     const took = Object.entries((L && L.took) || {}).map(([id, v]) => ({ id: +id, ...v })).sort((a, b) => b.at - a.at).slice(0, 10);
     const tb = $("qlogTook"); tb.replaceChildren();
@@ -1564,6 +1580,18 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     blk.append(body);
     return blk;
   }
+  // ---------- planned quests: shared/questplan { byChar: { "<first name>": { [questId]: title } } }; the add-on pins
+  // their quest givers in Questie and tracks them once accepted ----------
+  const planWho = () => ((S.char && S.char.name) || "").split(" ")[0].toLowerCase();
+  const myPlan = () => ((S.plan && S.plan.byChar) || {})[planWho()] || {};
+  function togglePlan(q) {
+    const who = planWho(); if (!who || !db) return;
+    const by = { ...((S.plan && S.plan.byChar) || {}) }, mine = { ...(by[who] || {}) };
+    if (mine[q.i]) delete mine[q.i]; else mine[q.i] = q.t;
+    by[who] = mine; S.plan = { byChar: by, updatedAt: Date.now() };
+    renderQuests(); renderQuestLog();
+    write(() => db.doc("shared/questplan").set(S.plan));
+  }
   function questRow(q, hidden, part) {
     const done = isDone(q);
     const li = el("div", "qrow" + (done ? " done" : "")); li.dataset.qid = q.i;
@@ -1581,6 +1609,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const missing = (q.p || []).filter((p) => !QD.done.has(p) && !QD.marks.done[p]);
     if (!done && missing.length) tags.append(el("span", "lock", "after " + (QD.titles.get(missing[0]) || "an earlier quest")));
     if (QD.marks.done[q.i] && !QD.done.has(q.i)) tags.append(el("span", null, "marked by you"));
+    if (!done && myPlan()[q.i]) tags.append(el("span", "planned", "planned"));
     if (tags.childNodes.length) t.append(tags);
     const acts = el("span", "acts");
     if (S.canWrite && db) {
@@ -1588,7 +1617,10 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       else if (!done) {
         const m = el("button", "ghost", "Done"); m.type = "button"; m.title = "Mark done until the next sync confirms it"; m.onclick = () => { QD.marks.done[q.i] = 1; renderQuests(); renderGear(); saveMarks(); };
         const h = el("button", "ghost", "Hide"); h.type = "button"; h.title = "Not available to you, hide it"; h.onclick = () => { QD.marks.hidden[q.i] = 1; renderQuests(); renderGear(); saveMarks(); };
-        acts.append(m, h);
+        const pb = el("button", "ghost", myPlan()[q.i] ? "Unplan" : "Plan"); pb.type = "button";
+        pb.title = "Planned quests show in game: Questie pins the quest giver, and tracks the quest once you have it (after a /reload)";
+        pb.onclick = () => togglePlan(q);
+        acts.append(pb, m, h);
       } else if (QD.marks.done[q.i] && !QD.done.has(q.i)) { const u = el("button", "ghost", "Undo"); u.type = "button"; u.onclick = () => { delete QD.marks.done[q.i]; renderQuests(); renderGear(); saveMarks(); }; acts.append(u); }
     }
     main.append(t, el("span", "xp", q.x ? fmt(q.x) + " XP" : ""), acts);
@@ -3482,6 +3514,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("shared/questplan").onSnapshot((s) => { S.plan = s.exists ? s.data() : null; renderQuests(); renderQuestLog(); }, () => {});
     db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});

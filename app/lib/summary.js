@@ -24,7 +24,13 @@ function buildSummary(store) {
   }
   const items = {};
   for (const id of used) if (names[id]) items[id] = names[id];
-  return { generated: Math.floor(Date.now() / 1000), chars, items };
+  // quests planned on the page, per character (first name, lower case): { [questId]: title }
+  const plans = {};
+  for (const [who, q] of Object.entries((store.get("shared/questplan") || {}).byChar || {})) {
+    const ids = Object.entries(q || {}).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100);
+    if (ids.length) plans[String(who).toLowerCase()] = Object.fromEntries(ids.map(([id, t]) => [id, String(t || "")]));
+  }
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -58,9 +64,15 @@ function toLua(sum) {
     if (!/^\d{1,9}$/.test(id) || !Array.isArray(v)) continue;
     items.push(`[${id}]={${luaStr(v[0], 80)},${int(v[1], 7)}}`);
   }
+  const plans = [];
+  for (const [who, q] of Object.entries((sum && sum.plans) || {}).slice(0, MAX_CHARS)) {
+    if (!q || typeof q !== "object") continue;
+    const ids = Object.entries(q).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100).map(([id, t]) => `[${id}]=${luaStr(t, 80)}`);
+    if (ids.length) plans.push(`  [${luaStr(who, 40)}] = {${ids.join(",")}},`);
+  }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

@@ -151,18 +151,33 @@ C_QuestLog = {
   GetQuestObjectives = function(id) for _, q in ipairs(QLOG) do if q.questID == id then return { { text = "Thistle Bear slain: " .. q.have .. "/8", numFulfilled = q.have, numRequired = 8, finished = false }, { text = "Ursal the Mauler slain: 0/1", numFulfilled = 0, numRequired = 1, finished = false } } end end return {} end,
 }
 QUESTIE_CB = nil
-Questie = { API = { RegisterOnReady = function(cb) cb() end, RegisterForQuestUpdates = function(cb) QUESTIE_CB = cb end } }
+Questie = { API = { RegisterOnReady = function(cb) cb() end, RegisterForQuestUpdates = function(cb) QUESTIE_CB = cb end }, db = { char = { hidden = { [999] = true } } } }
+-- Questie's internals the plan bridge uses
+PINS, WATCHED, UNHIDDEN = {}, {}, {}
+local QMODS = {
+  QuestieDB = { GetQuest = function(id) if id == 999 then return { name = "The Balance of Nature", level = 5, Starts = { NPC = { 2079 } } } end end },
+  QuestieMap = { ShowNPC = function(self, npc, icon, scale, title, body) table.insert(PINS, npc .. " " .. title) end },
+  QuestieQuest = { UnhideQuest = function(self, id) UNHIDDEN[#UNHIDDEN + 1] = id; Questie.db.char.hidden[id] = nil end },
+}
+QuestieLoader = { ImportModule = function(self, name) return QMODS[name] end }
+C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 end
+C_QuestLog.GetLogIndexForQuestID = function(id) for i, q in ipairs(QLOG) do if q.questID == id then return i + 1 end end end
+C_QuestLog.GetQuestWatchType = function(id) return WATCHED[id] end
+C_QuestLog.AddQuestWatch = function(id) WATCHED[id] = 0 end
 -- water break window
 function InCombatLockdown() return COMBAT or false end
 function ReloadUI() RELOADED = true end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
-fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN'); fire('PLAYER_ENTERING_WORLD', True, False)
+L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.plans = { talwyn = { [486] = "Ursal the Mauler", [999] = "The Balance of Nature", [488] = "Zenn\'s Bidding" } }')
+fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN')
+print('plan: tracked', dict(L.globals().WATCHED), '| pins', list(L.globals().PINS.values()), '| unhidden', list(L.globals().UNHIDDEN.values()))
+slash_ = L.eval('SlashCmdList.LEVELINGLEDGER'); slash_('plan'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')
 # 5 kills that give you XP (yours, your pet's and a party member's) and a player kill with no XP: kills come from the XP messages
 def kill(src, dst, msg=None):
