@@ -1,0 +1,237 @@
+{
+ "source": "AtlasLoot Continued's WoW Forever loot tables (which boss drops which item); Forever's new items as listed, older items only where Blizzard's Forever item data has them.",
+ "curated": "AtlasLoot Continued's Forever loot tables",
+ "dungeons": [
+  {
+   "key": "THE_DEADMINES",
+   "bosses": [],
+   "other": [
+    [
+     8492,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     5397,
+     [
+      "Defias Gunpowder"
+     ]
+    ]
+   ]
+  },
+  {
+   "key": "SHADOWFANG_KEEP",
+   "bosses": [
+    {
+     "n": "Baron Silverlaine",
+     "loot": [
+      277490,
+      276631
+     ]
+    }
+   ],
+   "other": [
+    [
+     3864,
+     [
+      "Fel Steed / Shadow Charger"
+     ]
+    ],
+    [
+     6895,
+     [
+      "Jordan's Smithing Hammer"
+     ]
+    ],
+    [
+     6283,
+     [
+      "The Book of Ur"
+     ]
+    ]
+   ]
+  },
+  {
+   "key": "SCARLET_MONASTERY",
+   "bosses": [
+    {
+     "n": "Arcanist Doan",
+     "loot": [
+      274294
+     ],
+     "wing": "Library"
+    }
+   ],
+   "other": [
+    [
+     23169,
+     [
+      "Scorn"
+     ]
+    ]
+   ]
+  },
+  {
+   "key": "CITY_OF_DALARAN",
+   "bosses": [],
+   "other": [
+    [
+     286987,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     286989,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     286988,
+     [
+      "Trash"
+     ]
+    ]
+   ]
+  },
+  {
+   "key": "GNOMEREGAN",
+   "bosses": [
+    {
+     "n": "Crowd Pummeler 9-60",
+     "loot": [
+      274049
+     ]
+    },
+    {
+     "n": "Mekgineer Thermaplugg",
+     "loot": [
+      4415,
+      4393,
+      4388,
+      4376,
+      4397
+     ]
+    }
+   ],
+   "other": [
+    [
+     7191,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     9308,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     9326,
+     [
+      "Trash"
+     ]
+    ],
+    [
+     9279,
+     [
+      "Trash"
+     ]
+    ]
+   ]
+  }
+ ],
+ "items": {
+  "5397": {
+   "n": "Defias Gunpowder",
+   "src": "atlasloot"
+  },
+  "8492": {
+   "n": "Parrot Cage (Green Wing Macaw)",
+   "src": "atlasloot"
+  },
+  "3864": {
+   "n": "Item 3864",
+   "src": "atlasloot"
+  },
+  "277490": {
+   "n": "Scroll of the Saber",
+   "src": "atlasloot"
+  },
+  "276631": {
+   "n": "Coldflame Saber",
+   "src": "atlasloot"
+  },
+  "6895": {
+   "n": "Jordan's Smithing Hammer",
+   "src": "atlasloot"
+  },
+  "6283": {
+   "n": "The Book of Ur",
+   "src": "atlasloot"
+  },
+  "23169": {
+   "n": "Scorn's Icy Choker",
+   "src": "atlasloot"
+  },
+  "286987": {
+   "n": "Violet Sorcerer's Sandals",
+   "src": "atlasloot"
+  },
+  "286989": {
+   "n": "Violet Sorcerer's Wraps",
+   "src": "atlasloot"
+  },
+  "286988": {
+   "n": "Violet Sorcerer's Leggings",
+   "src": "atlasloot"
+  },
+  "274049": {
+   "n": "Schematic: 9-60 Battery Pack",
+   "src": "atlasloot"
+  },
+  "4415": {
+   "n": "Schematic: Craftsman's Monocle",
+   "src": "atlasloot"
+  },
+  "4393": {
+   "n": "Craftsman's Monocle",
+   "src": "atlasloot"
+  },
+  "4388": {
+   "n": "Discombobulator Ray",
+   "src": "atlasloot"
+  },
+  "4376": {
+   "n": "Flame Deflector",
+   "src": "atlasloot"
+  },
+  "4397": {
+   "n": "Gnomish Cloaking Device",
+   "src": "atlasloot"
+  },
+  "7191": {
+   "n": "Fused Wiring",
+   "src": "atlasloot"
+  },
+  "9308": {
+   "n": "Grime-Encrusted Object",
+   "src": "atlasloot"
+  },
+  "9326": {
+   "n": "Grime-Encrusted Ring",
+   "src": "atlasloot"
+  },
+  "9279": {
+   "n": "White Punch Card",
+   "src": "atlasloot"
+  },
+  "274294": {
+   "n": "Library Walkers",
+   "src": "atlasloot"
+  }
+ }
+}

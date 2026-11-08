@@ -443,6 +443,11 @@ table.rep td.num, table.rep th.num { text-align: right; white-space: nowrap; }
 .dgm-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .dgm-line { fill: none; stroke: #4dd2ff; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-dasharray: 6 3; }
 .dgm-pins { position: absolute; inset: 0; pointer-events: none; }
+.dgm-std { fill: none; stroke: #ff5a3c; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+.dgm-std.side { stroke-width: 2; stroke-dasharray: 5 4; opacity: .8; }
+.dgm-stop { position: absolute; transform: translate(-50%, -50%); min-width: 20px; height: 20px; padding: 0 3px; border-radius: 4px; background: #f2c14e; color: #1a1410; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #1a1410; box-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: auto; cursor: help; }
+.dgm-stop.rare, .dgm-stop.optional { background: #b9a7ff; }
+.dgm-note { position: absolute; transform: translate(-50%, -50%); width: 14px; height: 14px; border-radius: 50%; background: #fff; color: #1a1410; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid #1a1410; pointer-events: auto; cursor: help; }
 .dgm-pin { position: absolute; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #c0392b; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.6); }
 .dgm-notes { margin-top: 8px; }
 tr.dgm-elite td:first-child { color: var(--brass); font-weight: 600; }
@@ -1025,7 +1030,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <h3 class="dg-h3">New in World of Warcraft: Forever</h3>
     <p class="hint">Forever adds new instances and areas. Their bosses and loot aren't published in Blizzard's data or QuestieDB yet, so this shows their quests. Use the Wowhead link for anything else.</p>
     <div class="qblocks" id="dgForever"></div>
-    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items; for the dungeons pasted from Wowhead's Forever dungeon journal, its Drops list is added too, and MSPaintWoW's guides add pull order, drop chances, best-in-slot marks and quest rewards for the dungeons they cover (each boss's wing shown for Scarlet Monastery, Stratholme, Dire Maul and Blackrock Spire). Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
+    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items; for the dungeons pasted from Wowhead's Forever dungeon journal, its Drops list is added too, and MSPaintWoW's guides add pull order, drop chances, best-in-slot marks and quest rewards for the dungeons they cover. AtlasLoot Continued's Forever loot tables fill in items none of these list, and the maps show standard routes from the Forever Dungeon Routes add-on (each boss's wing shown for Scarlet Monastery, Stratholme, Dire Maul and Blackrock Spire). Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
   </section>
 
   <section class="panel" id="abPanel" data-view="talents">
@@ -3314,14 +3319,15 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     // plus hand-entered dungeons the other sources don't have yet (dungeons-curated-forever.json)
     // and MSPaintWoW's guides (dungeon-guides-forever.json): pull order, boss difficulty, drop chances, best-in-slot marks, quest rewards
     const opt = (f) => fetch(f).then((r) => r.ok ? r.json() : null).catch(() => null);
-    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), opt("dungeons-curated-forever.json"), opt("dungeon-guides-forever.json")]).then(([d, c, g]) => {
-      if (c) {
+    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), opt("dungeons-curated-forever.json"), opt("dungeon-guides-forever.json"), opt("dungeons-atlasloot-forever.json")]).then(([d, cur, g, al]) => {
+      // the Wowhead pastes, then AtlasLoot's Forever loot for what's still missing (same format)
+      for (const c of [cur, al].filter(Boolean)) {
         const bn = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
         for (const x of c.dungeons || []) {
           const have = d.dungeons.find((y) => y.key === x.key || bn(y.n) === bn(x.n));
           if (!have) { d.dungeons.push(x); d.forever = (d.forever || []).filter((a) => a.n !== x.n); continue; }
           // a dungeon we already have: add the pasted loot to the same boss, and bosses we don't list
-          have.curated = x.curated;
+          if (x.curated) have.curated = x.curated;
           for (const b of x.bosses || []) {
             // Wowhead names an encounter "Herod, The Scarlet Champion" or "Mograine & Whitemane": match the whole name, else each part
             const near = (a, c) => { // spelling differs by a letter or two ("Atal'alrion" / "Atal'alarion")
@@ -3582,7 +3588,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function loadDM(cb) {
     if (DM.data) return cb();
     DM.waiting.push(cb); if (DM.loading) return; DM.loading = true;
-    fetch("dungeon-maps-forever.json").then((r) => r.json()).then((d) => { DM.data = d; for (const f of DM.waiting.splice(0)) f(); }).catch(() => {});
+    // and the standard routes from the Forever Dungeon Routes add-on (dungeon-routes-forever.json), when it's there
+    Promise.all([fetch("dungeon-maps-forever.json").then((r) => r.json()), fetch("dungeon-routes-forever.json").then((r) => r.ok ? r.json() : null).catch(() => null)])
+      .then(([d, r]) => { DM.data = d; DM.std = (r && r.dungeons) || {}; for (const f of DM.waiting.splice(0)) f(); }).catch(() => {});
   }
   let routeT = null;
   function saveRoutes() { if (!db || !S.canWrite) return; clearTimeout(routeT); routeT = setTimeout(() => write(() => db.doc("shared/dungeonroutes").set({ byKey: S.routes.byKey, updatedAt: Date.now() })), 800); }
@@ -3598,6 +3606,11 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     S.routes = S.routes || { byKey: {} };
     const floors = m.floors.length ? m.floors : [null];
     let floor = floors[0], editing = false;
+    // the standard routes: pick one; its boss stops are numbered in route order across floors
+    const stds = ((DM.std || {})[d.key] || {}).routes || [];
+    let stdI = stds.length ? 0 : -1, showStd = stds.length > 0;
+    const stdFloors = () => stdI < 0 ? [] : Object.keys(stds[stdI].floors).map(Number);
+    if (stds.length && !stdFloors().includes(floor)) { const f0 = floors.find((f) => stdFloors().includes(f)); if (f0 != null) floor = f0; }
     const url = (f) => f == null ? `https://wow.zamimg.com/images/wow/classic/maps/enus/original/${m.zid}.jpg` : `https://wow.zamimg.com/images/wow/maps/enus/original/${m.zid}-${f}.jpg`;
     const bar = el("div", "row dgm-bar");
     const tabs = el("span", "dgm-floors");
@@ -3609,19 +3622,40 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const wrap = el("div", "dgm-wrap"); const img = el("img"); img.alt = `${d.n} map`; img.referrerPolicy = "no-referrer";
     const NS = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
     const pins = el("div", "dgm-pins"); wrap.append(img, svg, pins);
+    const stdBar = el("div", "row dgm-bar");
+    if (stds.length) {
+      const cb = el("label", "check"); const box = el("input"); box.type = "checkbox"; box.checked = true; box.onchange = () => { showStd = box.checked; draw(); };
+      cb.append(box, " Standard route");
+      stdBar.append(cb);
+      if (stds.length > 1) for (const [i, r] of stds.entries()) { const b = el("button", "pill", r.name); b.type = "button"; b.dataset.i = i; b.onclick = () => { stdI = i; if (!stdFloors().includes(floor)) floor = floors.find((f) => stdFloors().includes(f)) ?? floor; draw(); }; stdBar.append(b); }
+    }
     const hint = el("p", "hint", "");
     const route = () => { const r = (S.routes.byKey[d.key] = S.routes.byKey[d.key] || {}); return (r[floor == null ? "0" : String(floor)] = r[floor == null ? "0" : String(floor)] || []); };
     function draw() {
-      tabs.replaceChildren(...(floors.length > 1 ? floors.map((f, i) => { const b = el("button", f === floor ? "pill go" : "pill", `Floor ${i + 1}`); b.type = "button"; b.onclick = () => { floor = f; draw(); }; return b; }) : []));
+      tabs.replaceChildren(...(floors.length > 1 ? floors.map((f, i) => { const b = el("button", f === floor ? "pill go" : "pill", `Floor ${i + 1}` + (showStd && stdFloors().includes(f) ? " ●" : "")); b.type = "button"; b.onclick = () => { floor = f; draw(); }; return b; }) : []));
+      for (const b of stdBar.querySelectorAll("button")) b.className = Number(b.dataset.i) === stdI ? "pill go" : "pill";
       if (img.dataset.src !== url(floor)) { img.dataset.src = url(floor); img.hidden = false; img.src = url(floor); }
       const pts = route();
       svg.replaceChildren();
+      const stdPins = [];
+      if (showStd && stdI >= 0) {
+        const r = stds[stdI], fl = r.floors[String(floor == null ? 0 : floor)];
+        // number the stops through the whole route, floor by floor in the game's order
+        let n = 0; const num = new Map();
+        for (const f of Object.keys(r.floors).sort((a, b) => a - b)) for (const st of r.floors[f].stops) num.set(st, ++n);
+        if (fl) {
+          for (const p of fl.paths) { const pl = document.createElementNS(NS, "polyline"); pl.setAttribute("points", p.pts.map((q) => q[0] + "," + q[1]).join(" ")); pl.setAttribute("class", "dgm-std" + (p.kind === "main" ? "" : " side")); svg.append(pl); }
+          for (const st of fl.stops) { const b = el("div", "dgm-stop " + st.kind, String(num.get(st))); b.style.left = st.x + "%"; b.style.top = st.y + "%"; b.title = st.n + (st.kind === "rare" ? " (rare spawn)" : st.kind === "optional" ? " (optional)" : "") + (st.note ? ": " + st.note : ""); stdPins.push(b); }
+          for (const nt of fl.notes) { const b = el("div", "dgm-note", "i"); b.style.left = nt.x + "%"; b.style.top = nt.y + "%"; b.title = nt.text; stdPins.push(b); }
+        }
+      }
       if (pts.length > 1) { const pl = document.createElementNS(NS, "polyline"); pl.setAttribute("points", pts.map((p) => p[0] + "," + p[1]).join(" ")); pl.setAttribute("class", "dgm-line"); svg.append(pl); }
-      pins.replaceChildren(...pts.map((p, i) => { const b = el("div", "dgm-pin", String(i + 1)); b.style.left = p[0] + "%"; b.style.top = p[1] + "%"; if (p[2]) b.title = p[2]; return b; }));
+      pins.replaceChildren(...stdPins, ...pts.map((p, i) => { const b = el("div", "dgm-pin", String(i + 1)); b.style.left = p[0] + "%"; b.style.top = p[1] + "%"; if (p[2]) b.title = p[2]; return b; }));
       edit.textContent = editing ? "Done drawing" : "Draw route"; wrap.classList.toggle("editing", editing);
       for (const b of [undo, label, clear]) b.disabled = !editing || (b !== clear && !pts.length);
       const notes = pts.map((p, i) => p[2] ? `${i + 1}: ${p[2]}` : "").filter(Boolean);
-      hint.textContent = (editing ? "Click the map to add your next pull. " : pts.length ? "" : "No route on this floor yet: press Draw route and click the map in the order you pull. ") + (notes.length ? "Notes: " + notes.join(" · ") : "");
+      const stdHere = showStd && stdI >= 0 && stds[stdI].floors[String(floor == null ? 0 : floor)];
+      hint.textContent = (editing ? "Click the map to add your next pull. " : pts.length ? "" : stdHere ? "Yellow squares are the bosses in route order (hover for names, ● marks floors with the route). Press Draw route to add your own pulls on top. " : "No route on this floor yet: press Draw route and click the map in the order you pull. ") + (notes.length ? "Notes: " + notes.join(" · ") : "");
     }
     img.onload = () => { wrap.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; };
     img.onerror = () => { img.hidden = true; };
@@ -3647,7 +3681,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const t = el("table", "rep"); const hr = el("tr"); hr.append(el("th", null, "Trash"), el("th", "num", "level"), el("th", null, "rank")); t.append(hr);
     for (const x of trash) { const tr = el("tr", x.r !== "normal" ? "dgm-elite" : null); tr.append(el("td", null, x.n), el("td", "num", x.lv[0] === x.lv[1] ? String(x.lv[0]) : `${x.lv[0]}–${x.lv[1]}`), el("td", null, x.r)); t.append(tr); }
     notes.append(el("h3", null, `Trash (${trash.length} kinds; elites in gold)`), t);
-    body.append(bar, wrap, hint, notes, el("p", "hint", "Maps: Wowhead. Creatures, levels and ranks: QuestieDB's Forever data, which has no positions inside dungeons, so the route is yours."));
+    const credit = el("p", "hint", "Maps: Wowhead. Creatures, levels and ranks: QuestieDB's Forever data." + (stds.length ? " Standard routes: the Forever Dungeon Routes add-on by Checkov23 (MIT license), traced from aetherflask.com's walkthrough maps." : " No standard route for this one yet, so the route is yours to draw."));
+    body.append(stdBar, bar, wrap, hint, notes, credit);
     draw();
   }
   function renderDungeons() {
