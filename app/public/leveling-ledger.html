@@ -3325,6 +3325,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
             if (mine) { mine.loot = [...new Set([...(mine.loot || []), ...(b.loot || [])])]; if (!mine.wh) mine.wh = b.wh; }
             else have.bosses.push(b);
           }
+          // drops several bosses share: into the dungeon's other drops, with who drops them
+          const otherIds = new Set((have.other || []).map(([id]) => id));
+          for (const [id, from] of x.other || []) if (!otherIds.has(id) && !have.bosses.some((b) => (b.loot || []).includes(id))) (have.other = have.other || []).push([id, from]);
         }
         for (const [id, it] of Object.entries(c.items || {})) if (!d.items[id]) d.items[id] = it;
         d.dungeons.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "Raid" ? 1 : -1) || a.lv[0] - b.lv[0]);

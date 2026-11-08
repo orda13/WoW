@@ -54,6 +54,283 @@
     "The Hall of Thanes"
    ],
    "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "THE_DEADMINES",
+   "n": "The Deadmines",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Westfall",
+   "lv": [
+    17,
+    26
+   ],
+   "bosses": [
+    {
+     "n": "Rhahk'Zor",
+     "loot": [
+      5187,
+      872,
+      273289
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/rhahkzor"
+    },
+    {
+     "n": "Sneed's Shredder",
+     "loot": [
+      7365,
+      2169,
+      1937,
+      285292,
+      5195,
+      5194,
+      273293
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/sneeds-shredder"
+    },
+    {
+     "n": "Gilnid",
+     "loot": [
+      5199,
+      1156,
+      273297
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/gilnid"
+    },
+    {
+     "n": "Mr. Smite",
+     "loot": [
+      5192,
+      5196,
+      7230,
+      284715
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/mr-smite"
+    },
+    {
+     "n": "Captain Greenskin",
+     "loot": [
+      5201,
+      5200,
+      10403
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/captain-greenskin"
+    },
+    {
+     "n": "Edwin VanCleef",
+     "loot": [
+      2874,
+      3637,
+      5193,
+      5202,
+      10399,
+      5191,
+      253938,
+      251380,
+      252801,
+      252802,
+      251382,
+      251383,
+      252798,
+      252799,
+      252800,
+      252803
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/edwin-vancleef"
+    },
+    {
+     "n": "Cookie",
+     "loot": [
+      5197,
+      5198,
+      273298
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/cookie"
+    },
+    {
+     "n": "Miner Johnson",
+     "loot": [
+      5444,
+      5443
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-deadmines/miner-johnson-rare",
+     "rare": 1
+    }
+   ],
+   "other": [
+    [
+     253904,
+     [
+      "Sneed's Shredder",
+      "Gilnid"
+     ]
+    ],
+    [
+     252777,
+     [
+      "Gilnid",
+      "Mr. Smite"
+     ]
+    ],
+    [
+     251362,
+     [
+      "Rhahk'Zor",
+      "Mr. Smite",
+      "Cookie"
+     ]
+    ],
+    [
+     251361,
+     [
+      "Sneed's Shredder",
+      "Mr. Smite",
+      "Captain Greenskin"
+     ]
+    ],
+    [
+     251363,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite"
+     ]
+    ],
+    [
+     251364,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Captain Greenskin"
+     ]
+    ],
+    [
+     252780,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite"
+     ]
+    ],
+    [
+     253912,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ],
+    [
+     252782,
+     [
+      "Rhahk'Zor",
+      "Gilnid",
+      "Mr. Smite",
+      "Cookie"
+     ]
+    ],
+    [
+     253906,
+     [
+      "Rhahk'Zor",
+      "Gilnid",
+      "Mr. Smite",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ],
+    [
+     252781,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Mr. Smite",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ],
+    [
+     253908,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite",
+      "Cookie"
+     ]
+    ],
+    [
+     253910,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite",
+      "Cookie"
+     ]
+    ],
+    [
+     251360,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ],
+    [
+     253902,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite",
+      "Captain Greenskin"
+     ]
+    ],
+    [
+     252778,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ],
+    [
+     252779,
+     [
+      "Rhahk'Zor",
+      "Gilnid",
+      "Mr. Smite",
+      "Captain Greenskin",
+      "Cookie",
+      "Miner Johnson"
+     ]
+    ],
+    [
+     251341,
+     [
+      "Rhahk'Zor",
+      "Sneed's Shredder",
+      "Gilnid",
+      "Mr. Smite",
+      "Captain Greenskin",
+      "Cookie"
+     ]
+    ]
+   ],
+   "qz": [
+    "The Deadmines"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
   }
  ],
  "items": {
@@ -158,6 +435,417 @@
    "src": "wowhead",
    "sl": "Chest",
    "rl": 13
+  },
+  "5187": {
+   "n": "Rhahk'Zor's Hammer",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Mace",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "872": {
+   "n": "Rockslicer",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "273289": {
+   "n": "Ogre Loincloth",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "7365": {
+   "n": "Gnoam Sprecklesprocket",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "2169": {
+   "n": "Buzzer Blade",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "1937": {
+   "n": "Buzz Saw",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "285292": {
+   "n": "Dull Sawblade",
+   "src": "wowhead",
+   "sl": "Thrown",
+   "sc": "Thrown Weapon",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "5195": {
+   "n": "Gold-flecked Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "5194": {
+   "n": "Taskmaster Axe",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "273293": {
+   "n": "Bandsaw Wristbands",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "5199": {
+   "n": "Smelting Pants",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "1156": {
+   "n": "Lavishly Jeweled Ring",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "273297": {
+   "n": "Goblin Hammer",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "5192": {
+   "n": "Thief's Blade",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "5196": {
+   "n": "Smite's Reaver",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Axe",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "7230": {
+   "n": "Smite's Mighty Hammer",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Mace",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "284715": {
+   "n": "First Mate Band",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "5201": {
+   "n": "Emberstone Staff",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "5200": {
+   "n": "Impaling Harpoon",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Polearm",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "10403": {
+   "n": "Blackened Defias Belt",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "2874": {
+   "n": "An Unsent Letter",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest",
+   "rl": 16
+  },
+  "3637": {
+   "n": "Head of VanCleef",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "5193": {
+   "n": "Cape of the Brotherhood",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "5202": {
+   "n": "Corsair's Overshirt",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "10399": {
+   "n": "Blackened Defias Armor",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "5191": {
+   "n": "Cruel Barb",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 19
+  },
+  "253938": {
+   "n": "Pattern: Filigreed Pristine Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "251380": {
+   "n": "Plans: Veteran's Silvered Chain Helm",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "252801": {
+   "n": "Pattern: Totemic Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252802": {
+   "n": "Pattern: Stormrider's Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "251382": {
+   "n": "Plans: Protector's Silvered Chain Helm",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251383": {
+   "n": "Plans: Acolyte's Silvered Chain Helm",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "252798": {
+   "n": "Pattern: Brawler's Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252799": {
+   "n": "Pattern: Trapper's Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252800": {
+   "n": "Pattern: Defender's Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252803": {
+   "n": "Pattern: Wisdom's Leather Hood",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "5197": {
+   "n": "Cookie's Tenderizer",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "5198": {
+   "n": "Cookie's Stirring Rod",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Wand",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "273298": {
+   "n": "Lookie's Spyglass",
+   "src": "wowhead",
+   "sl": "Trinket",
+   "sc": "Trinket",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "5444": {
+   "n": "Miner's Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "5443": {
+   "n": "Gold-plated Buckler",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "253904": {
+   "n": "Pattern: Filigreed Silky Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252777": {
+   "n": "Pattern: Brawler's Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "251362": {
+   "n": "Plans: Protector's Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251361": {
+   "n": "Plans: Guard's Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251363": {
+   "n": "Plans: Acolyte's Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251364": {
+   "n": "Plans: Crusader's Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "252780": {
+   "n": "Pattern: Totemic Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253912": {
+   "n": "Pattern: Filigreed Shining Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252782": {
+   "n": "Pattern: Wisdom's Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253906": {
+   "n": "Pattern: Filigreed Flame Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252781": {
+   "n": "Pattern: Stormrider's Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253908": {
+   "n": "Pattern: Filigreed Shadow Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "253910": {
+   "n": "Pattern: Filigreed Pearly Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "251360": {
+   "n": "Plans: Veteran's Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "253902": {
+   "n": "Pattern: Filigreed Pristine Gown",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252778": {
+   "n": "Pattern: Trapper's Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252779": {
+   "n": "Pattern: Defender's Leather Gloves",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "251341": {
+   "n": "Plans: Guard's Chain Shirt",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
   }
  }
 }
