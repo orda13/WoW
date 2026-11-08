@@ -995,6 +995,11 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <div class="worn-list" id="wornList"></div>
   </section>
 
+  <section class="panel" id="amrPanel" data-view="quests">
+    <div class="tal-head"><h2>Ask Mr. Robot</h2><span class="hint" id="amrAt"></span></div>
+    <div id="amrBody"></div>
+  </section>
+
   <section class="panel" id="gearPanel" data-view="quests">
     <div class="tal-head"><h2>Find gear from quests</h2><span class="num muted" id="gCount"></span></div>
     <div class="gfilters">
@@ -1951,6 +1956,58 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       box.append(row);
     }
     $("wornSync").textContent = S.gear.syncedAt ? `synced ${shortDate(S.gear.syncedAt)}` : "";
+  }
+
+  // ---------- Ask Mr. Robot: its gear setups and sell list, copied in-game by MrRobot.lua (state/amr) ----------
+  const AMR_SLOT = { 1: "HEAD", 2: "NECK", 3: "SHOULDER", 4: "SHIRT", 5: "CHEST", 6: "WAIST", 7: "LEGS", 8: "FEET", 9: "WRIST", 10: "HANDS", 11: "FINGER_1", 12: "FINGER_2", 13: "TRINKET_1", 14: "TRINKET_2", 15: "BACK", 16: "MAIN_HAND", 17: "OFF_HAND", 18: "RANGED", 19: "TABARD" };
+  const AMR = { pick: 0 };
+  const amrName = (id) => (S.amr && S.amr.names && S.amr.names[id]) || ((S.gear && S.gear.items || []).find((g) => g.id === id) || {}).n
+    || (DG.data && DG.data.items[id] || {}).n || (QD.items && QD.items[id] || {}).n || "Item " + id;
+  const amrPicks = () => new Set(((S.amr && S.amr.setups) || []).flatMap((x) => x.gear.map((g) => g.id)));
+  function renderAmr() {
+    const box = $("amrBody"); if (!box) return;
+    box.replaceChildren();
+    const a = S.amr, link = el("a", null, "askmrrobot.com/forever"); link.href = "https://www.askmrrobot.com/forever"; link.target = "_blank"; link.rel = "noopener";
+    if (!a || !a.setups || (!a.setups.length && !(a.junk || []).length)) {
+      const p = el("p", "hint"); p.append("Install the Ask Mr. Robot Classic add-on, export your character from it, optimize at ", link,
+        ", paste the result back into the add-on, then /reload. Its gear setups and sell list show up here.");
+      box.append(p); $("amrAt").textContent = ""; return;
+    }
+    $("amrAt").textContent = `from your last save ${shortDate(a.at)}`;
+    const setups = [...a.setups].sort((x, y) => x.bib - y.bib);
+    if (AMR.pick >= setups.length) AMR.pick = 0;
+    if (setups.length > 1) {
+      const bar = el("div", "row");
+      setups.forEach((x, i) => { const b = el("button", i === AMR.pick ? "pill go" : "pill", x.label + (x.bib ? " (best in bags)" : "")); b.type = "button"; b.onclick = () => { AMR.pick = i; renderAmr(); }; bar.append(b); });
+      box.append(bar);
+    }
+    const st = setups[AMR.pick];
+    if (st) {
+      const worn = new Map(((S.gear && S.gear.items) || []).map((g) => [g.slot, g]));
+      const pair = { FINGER_1: "FINGER_2", FINGER_2: "FINGER_1", TRINKET_1: "TRINKET_2", TRINKET_2: "TRINKET_1" };
+      const bySlot = new Map(st.gear.map((g) => [AMR_SLOT[g.slot], g]));
+      let match = 0, total = 0;
+      const list = el("div", "worn-list");
+      for (const s of SLOT_ORDER) {
+        const g = bySlot.get(s); if (!g || s === "SHIRT" || s === "TABARD") continue;
+        total++;
+        const w = worn.get(s), w2 = pair[s] && worn.get(pair[s]);
+        const on = (w && w.id === g.id) || (w2 && w2.id === g.id);
+        if (on) match++;
+        const row = el("div", "worn"); row.append(el("span", "label", SLOT_NAME[s]), whA("item", g.id, amrName(g.id), "iname"));
+        if (on) row.append(el("span", "pill go", "Wearing"));
+        else if (S.gear) row.append(el("span", "pill wait", w ? `Swap: you wear ${w.n}` : "Empty slot now"));
+        if (g.ench) row.title = "Ask Mr. Robot also picked an enchant for this slot; its add-on shows which.";
+        list.append(row);
+      }
+      box.append(el("p", match === total ? "muted" : null, S.gear ? `${st.label}: you're wearing ${match} of ${total} pieces it picked.` : `${st.label}: ${total} pieces. Your worn gear shows after the next Blizzard sync.`), list);
+    }
+    const junk = a.junk || [];
+    if (junk.length) {
+      const d = el("details"); d.append(el("summary", null, `Safe to sell, says Ask Mr. Robot (${junk.length})`));
+      const names = el("div", "names"); for (const id of junk) names.append(whA("item", id, amrName(id))); d.append(names); box.append(d);
+    }
+    const p = el("p", "hint"); p.append("From the Ask Mr. Robot Classic add-on's last import (", link, "), copied in-game at logout or /reload. Re-optimize there after new gear, then /reload."); box.append(p);
   }
 
   // ---------- gear sets ----------
@@ -3402,6 +3459,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (bis.length) row.append(el("span", "pill go", `Best in slot: ${bis.join(", ")}`));
       else if (top.length) row.append(el("span", "pill", `Top 3: ${top.join(", ")}`));
     }
+    if (S.amr && amrPicks().has(Number(id))) row.append(el("span", "pill go", "Mr. Robot pick"));
     const up = upgradePill(it); if (up) row.append(up);
     const sb = setBlock(id); if (sb) row.append(sb);
     if (it.src === "wowhead") row.title = "From Wowhead's Forever data";
@@ -4208,7 +4266,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
-    db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); renderAmr(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/journal").onSnapshot((s) => { S.journal = s.exists ? s.data() : null; renderJournalStatus(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/dungeonroutes").onSnapshot((s) => { if (s.metadata && s.metadata.hasPendingWrites) return; S.routes = s.exists ? { byKey: s.data().byKey || {} } : { byKey: {} }; }, () => {});
     db.doc("shared/recipeneeds").onSnapshot((s) => { S.recipeNeeds = s.exists ? s.data() : null; }, () => {});

@@ -186,7 +186,7 @@ function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -245,6 +245,15 @@ print('gathers:', [dict(g) for g in L.globals().LevelingLedgerDB.chars['Talwyn-N
 fire('PLAYER_DEAD')
 L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')
 L.execute('RESTING = true; SUBZONE = "Lor\'danel Inn"'); fire('PLAYER_UPDATE_RESTING')
+# Ask Mr. Robot Classic's saved table after an import from the website (AceDB: char["Name - Realm"])
+L.execute(r'''
+AskMrRobotDb5 = { char = { ["Talwyn - Normal"] = {
+  GearSetups = { { IsBib = false, SpecSlot = 2, Id = "AMR1", Label = "Feral leveling",
+    Gear = { [1] = { id = 274155, enchantId = 0, gemIds = {} }, [16] = { id = 6681, enchantId = 241, gemIds = {} }, [11] = { id = 6693, enchantId = 0, gemIds = {} } } } },
+  JunkData = { Junk = { { id = 2589 }, { id = 4306 } }, Keep = { ["x"] = { id = 6693 } } } } } }
+C_Item = C_Item or {}
+C_Item.GetItemNameByID = function(id) return ({ [274155] = "Geomancer Headdress", [6681] = "Thornspike" })[id] end
+''')
 L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
 # bags, bank, tooltip, profession window and /ledger alts
 fire('BAG_UPDATE_DELAYED'); fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')

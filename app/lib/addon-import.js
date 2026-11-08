@@ -180,6 +180,23 @@ function importAddon(text, store, publicDir, source, hint) {
     if ((!prev || doc.at >= (prev.at || 0)) && JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
   }
 
+  // 2e. Ask Mr. Robot's gear setups and sell list, copied by MrRobot.lua from its add-on (the newest copy wins)
+  if (ch.amr && ch.amr.at) {
+    const list = (v) => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];
+    const ids = (v) => list(v).map(Number).filter((n) => n > 0);
+    const doc = {
+      at: ch.amr.at * 1000,
+      setups: list(ch.amr.setups).map((s) => ({
+        label: String(s.label || "Setup").slice(0, 80), spec: Number(s.spec) || 0, bib: !!Number(s.bib),
+        gear: list(s.gear).map((g) => list(g).map(Number)).filter((g) => g[0] > 0 && g[1] > 0).map(([slot, id, ench]) => ({ slot, id, ench: ench || 0 })),
+      })).filter((s) => s.gear.length),
+      junk: ids(ch.amr.junk), keep: ids(ch.amr.keep), names: {},
+    };
+    for (const [k, v] of Object.entries(ch.amr.names || {})) if (Number(k) > 0 && typeof v === "string") doc.names[Number(k)] = v.slice(0, 100);
+    const prev = store.get("state/amr");
+    if (!prev || doc.at > (prev.at || 0)) { store.set("state/amr", doc); done.push(`Ask Mr. Robot: ${doc.setups.length} gear setup${doc.setups.length === 1 ? "" : "s"}`); }
+  }
+
   // 3. Trainers: class ability costs (matched by name and rank), and what profession trainers teach.
   //    Costs seen at a trainer are marked as coming from the add-on (the page shows them read-only).
   if (ch.trainer && Object.keys(ch.trainer).length) {
