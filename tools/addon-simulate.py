@@ -78,7 +78,8 @@ function GetMerchantItemCostInfo(i) return 1 end
 function GetMerchantItemCostItem(i, j) return 0, 120, nil, "Merchant's Favor" end
 -- loot
 function GetNumLootItems() return 2 end
-function GetLootSlotLink(s) if s == 1 then return "|cff0070dd|Hitem:273297::::::::13:::::|h[Goblin Hammer]|h|r" end return "|cff9d9d9d|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" end
+function GetItemInfoInstant(id) if id == 2318 then return 2318, "Tradeskill", "Leather", "", 0, 7, 6 end return id, "Misc", "Junk", "", 0, 15, 0 end
+function GetLootSlotLink(s) if LOOTLINKS then return LOOTLINKS[s] end if s == 1 then return "|cff0070dd|Hitem:273297::::::::13:::::|h[Goblin Hammer]|h|r" end return "|cff9d9d9d|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" end
 LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"
 function GetLootSourceInfo(s) return LOOTSRC, 1 end
 function GetItemInfo(link) return nil end
@@ -232,6 +233,9 @@ L.execute('T = T + 60'); fire('MAIL_SHOW'); money(10000); money(-30); fire('MAIL
 L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-36-1-1763-0000AAAA"'); fire('PLAYER_TARGET_CHANGED'); fire('LOOT_OPENED')
 # gathering a Peacebloom node (object 1618) in Darkshore: recorded with its map position
 L.execute('ZONE = "Darkshore"; INSTANCE = false; LOOTSRC = "GameObject-0-1-1-1-1618-0000BBBB"'); fire('LOOT_OPENED')
+# skinning a Thistle Bear (creature 2163): Light Leather from its corpse is a skinning spot
+L.execute('LOOTLINKS = { "|cffffffff|Hitem:2318::::::::13:::::|h[Light Leather]|h|r", "|cffffffff|Hitem:2318::::::::13:::::|h[Light Leather]|h|r" }; LOOTSRC = "Creature-0-1-1-1-2163-0000CCCC"'); fire('LOOT_OPENED')
+L.execute('LOOTLINKS = nil')
 L.execute('LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"')
 print('gathers:', [dict(g) for g in L.globals().LevelingLedgerDB.chars['Talwyn-Normal'].gathers.values()])
 fire('PLAYER_DEAD')

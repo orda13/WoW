@@ -883,9 +883,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 
   <section class="panel" id="gatherPanel" data-view="skills">
     <h2>Gathering</h2>
-    <p class="hint">Where herbs and ore spawn (QuestieDB's Forever data), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Map images: Wowhead.</p>
+    <p class="hint">Where herbs, ore and skinnable beasts spawn (QuestieDB's Forever data; beasts are picked by name, since the data has no creature type, so a few may be wrong), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Map images: Wowhead.</p>
     <div class="row g-controls">
-      <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option></select></label>
+      <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option><option>Skinning</option></select></label>
       <label>Zone <select id="gZoneSel"></select></label>
       <label><input type="checkbox" id="gGreen"> include green</label>
       <label><input type="checkbox" id="gGrey"> show grey</label>
@@ -2887,7 +2887,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     GA.loading = true;
     fetch("gathering-forever.json").then((r) => r.json()).then((d) => {
       GA.data = d;
-      const ps = profs().map((p) => p.name); if (!ps.includes("Herbalism") && ps.includes("Mining")) $("gProf").value = "Mining";
+      const ps = profs().map((p) => p.name); const first = ["Herbalism", "Mining", "Skinning"].find((n) => ps.includes(n)); if (first) $("gProf").value = first;
       renderGather();
     }).catch(() => { $("gInfo").textContent = "Couldn't load the gathering data."; });
   }
@@ -2945,7 +2945,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       const pts = n.spawns[zid]; if (!pts) continue;
       const col = gColor(n.sk, skill);
       if (col === "grey" && !$("gGrey").checked) continue;
-      legend.set(n.n, { col, sk: n.sk, count: (legend.get(n.n)?.count || 0) + pts.length });
+      legend.set(n.n, { col, sk: n.sk, lv: n.lv, count: (legend.get(n.n)?.count || 0) + pts.length });
       for (const [x, y] of pts) {
         const r = want.has(col) ? 0.55 : 0.38; // the map is 3:2, so a round dot is 1.5 times taller in these units
         const c = mk("ellipse", { cx: x, cy: y, rx: r, ry: r * 1.5, class: "gn " + col }); const tt = mk("title", {}); tt.textContent = `${n.n}${n.sk != null ? ` (needs ${n.sk})` : ""}`; c.append(tt); svg.append(c);
@@ -2954,7 +2954,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     // your own gathers in this zone (the add-on saves the zone by name)
     const zn = GA.data.zones[zid];
-    const mine = $("gMine").checked ? ((S.gathers && S.gathers.list) || []).filter((g) => g.z === zn && nodes.some((n) => n.id === g.o)) : [];
+    const skin = prof === "Skinning";
+    const mine = $("gMine").checked ? ((S.gathers && S.gathers.list) || []).filter((g) => g.z === zn && !!g.s === skin && nodes.some((n) => n.id === g.o)) : [];
     for (const g of mine) svg.append(mk("ellipse", { cx: g.x, cy: g.y, rx: 0.9, ry: 1.35, class: "gmine" }));
     // the loop (thinned to one point per 2% square when there are many)
     let pts = routePts;
@@ -2962,7 +2963,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const loop = routeLoop(pts);
     if (loop.length > 2) svg.append(mk("polyline", { points: [...loop, loop[0]].map((p) => p.join(",")).join(" "), class: "groute" }));
     const lg = $("gLegend"); lg.replaceChildren(el("h3", null, zn || "Zone"));
-    for (const [nm, v] of [...legend].sort((a, b) => (a[1].sk ?? 999) - (b[1].sk ?? 999))) { const p = el("div"); const dot = el("span", "g-dot"); dot.style.background = GCOL[v.col]; p.append(dot, document.createTextNode(`${nm} `), el("span", "muted", `${v.sk != null ? "needs " + v.sk + " · " : ""}${v.count} spots`)); lg.append(p); }
+    for (const [nm, v] of [...legend].sort((a, b) => (a[1].sk ?? 999) - (b[1].sk ?? 999))) { const p = el("div"); const dot = el("span", "g-dot"); dot.style.background = GCOL[v.col]; p.append(dot, document.createTextNode(`${nm} `), el("span", "muted", `${v.lv ? `level ${v.lv[0]}${v.lv[1] > v.lv[0] ? "–" + v.lv[1] : ""} · ` : ""}${v.sk != null ? "needs " + v.sk + " · " : ""}${v.count} spots`)); lg.append(p); }
     const myHere = mine.length, myAll = ((S.gathers && S.gathers.list) || []).length;
     $("gInfo").textContent = (skill == null ? `This character has no ${prof}. ` : `${prof} ${skill}. `) + (loop.length > 2 ? `The dashed loop runs through ${pts.length} skill-up spot${pts.length === 1 ? "" : "s"}${pts.length < routePts.length ? ` (${routePts.length} in all)` : ""}.` : "Not enough skill-up spots here for a route.") + (myAll ? ` You've gathered ${myHere} here (${myAll} recorded in all).` : "");
   }

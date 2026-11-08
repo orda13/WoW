@@ -55,6 +55,36 @@ for oid, (name, kind) in sorted(kinds.items()):
         if pts: sp[str(z)] = pts; used_zones.add(int(z))
     if sp: nodes.append({'id': oid, 'n': name, 'kind': kind, 'sk': SKILL.get(name), 'spawns': sp})
 
+# Skinning: hostile beasts (QuestieDB has no creature type, so by family name), spawns per outdoor zone, and the
+# skill the original game asks for their level: 1 up to 10, (level - 10) * 10 up to 20, level * 5 above.
+BEAST = re.compile(r"\b(wolf|wolves|worg|bear|boar|lion|lioness|tiger|panther|leopard|lynx|cougar|saber|nightsaber|frostsaber|prowler|"
+                   r"raptor|crocolisk|basilisk|kodo|plainstrider|tallstrider|strider|stag|gazelle|gorilla|silverback|hyena|scorpid|"
+                   r"turtle|snapjaw|bat|serpent|hydra|threshadon|devilsaur|lizard|diemetradon|yeti|mammoth|coyote|jaguar|mastiff|"
+                   r"ridgeback|shardtooth|courser|rhino|zhevra|thunderhawk|cat|felstalker|mangeclaw|stalker|ravager|cub|"
+                   r"wendigo|chimaera|direhorn|stegodon|ape|kitten|jackal|hound)s?\b"
+                   # family words inside a longer name: Moonstalker, Frostsaber, Ghostpaw, Timberwolf
+                   r"|\b\w+(stalker|saber|strider|wolf)s?\b|\bghostpaw\b", re.I)
+NOT = re.compile(r"\b(rider|worgen|gnoll|trainer|druid|tauren|ogre|spirit|ghost|elemental|totem|quilboar|kobold|furbolg|tamer|"
+                 r"handler|hunter|master|keeper|trapper|clan|tribe|shaman|warrior|mystic|witch|seer|brave|guard|crawler|"
+                 r"felmusk|bleakheart|legion|satyr|dreamstalker|riverpaw|gnarlpine)\b", re.I)
+skill_for = lambda lv: 1 if lv <= 10 else (lv - 10) * 10 if lv <= 20 else lv * 5
+outdoor = set(used_zones)
+npcs = parse_data_string(open(os.path.join(QDB, 'data', 'Forever', 'foreverNpcDB.lua'), encoding='utf-8').read(), 'QuestieDB.npcData')
+skinners = 0
+for nid, o in sorted(npcs.items()):
+    row = o if isinstance(o, list) else [o.get(i) for i in range(1, 16)]
+    row = row + [None] * (15 - len(row))
+    name, minlv, maxlv, spawns, friendly = row[0], row[3] or 0, row[4] or 0, row[6], row[12]
+    if not name or not BEAST.search(name) or NOT.search(name) or friendly or not isinstance(spawns, dict) or minlv <= 0: continue
+    sp = {}
+    for z, pts in spawns.items():
+        if int(z) not in outdoor: continue
+        pts = [[round(p[0], 1), round(p[1], 1)] for p in (pts or []) if isinstance(p, list) and len(p) == 2 and 0 <= p[0] <= 100 and 0 <= p[1] <= 100]
+        if pts: sp[str(z)] = pts
+    if sp:
+        nodes.append({'id': nid, 'n': name, 'kind': 'Skinning', 'sk': skill_for(minlv), 'lv': [minlv, maxlv], 'spawns': sp}); skinners += 1
+print(skinners, 'skinnable creatures')
+
 # zone names: QuestieDB's constants, matched to the names our quest data uses where possible
 consts = {}
 for line in open(os.path.join(QDB, 'src', 'corrections', 'enum', 'zones.lua'), encoding='utf-8'):

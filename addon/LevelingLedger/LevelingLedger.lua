@@ -16,6 +16,7 @@ local function listen(fr, e)
 end
 ns.listen = listen
 local db, char, session
+local skinSeen = {}          -- corpses already counted as a skinning spot
 local lootSeen = {}          -- corpses already counted this session (by GUID)
 -- /played isn't asked for at login: the game may only allow it from a key press, so it's asked when you type /ledger
 -- (and read whenever you type /played yourself).
@@ -571,6 +572,24 @@ local function onLoot()
                 trim(char.gathers, 3000)
               end
             end) end
+          end
+          -- leather or hide from a creature: a skinning spot (once per corpse), for the gathering map
+          if npc > 0 and not inInstance and not skinSeen[guid] and GetItemInfoInstant then
+            local _, _, _, _, _, classID, subClassID = GetItemInfoInstant(id)
+            if classID == 7 and subClassID == 6 then
+              skinSeen[guid] = true
+              safe(function()
+                local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+                local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+                local x, y = nil, nil
+                if pos and pos.GetXY then x, y = pos:GetXY() end
+                if x and y and x > 0 and y > 0 then
+                  char.gathers = char.gathers or {}
+                  table.insert(char.gathers, { o = npc, s = 1, z = z, x = math.floor(x * 1000 + 0.5) / 10, y = math.floor(y * 1000 + 0.5) / 10, at = now() })
+                  trim(char.gathers, 3000)
+                end
+              end)
+            end
           end
           local it = e.items[id] or { n = nameFromLink(link), q = qualityFromLink(link), c = 0 }
           it.c = it.c + 1

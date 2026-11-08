@@ -314,6 +314,7 @@ function importAddon(text, store, publicDir, source, hint) {
     for (const g of arr(ch.gathers)) {
       if (!g || !g.o || g.x == null || g.y == null) continue;
       const e = { o: g.o, z: String(g.z || ""), x: +g.x, y: +g.y, at: (g.at || 0) * 1000 };
+      if (g.s) e.s = 1; // skinned (o is a creature), not an object
       const k = `${e.o}|${e.at}|${e.x}|${e.y}`; if (seen.has(k)) continue;
       seen.add(k); list.push(e); added++;
     }
