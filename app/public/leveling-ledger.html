@@ -1025,7 +1025,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <h3 class="dg-h3">New in World of Warcraft: Forever</h3>
     <p class="hint">Forever adds new instances and areas. Their bosses and loot aren't published in Blizzard's data or QuestieDB yet, so this shows their quests. Use the Wowhead link for anything else.</p>
     <div class="qblocks" id="dgForever"></div>
-    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items that aren't published yet. Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
+    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items; for the dungeons pasted from Wowhead's Forever dungeon journal, its Drops list is added too (each boss's wing shown for Scarlet Monastery and Stratholme). Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
   </section>
 
   <section class="panel" id="abPanel" data-view="talents">
@@ -3321,9 +3321,24 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
           // a dungeon we already have: add the pasted loot to the same boss, and bosses we don't list
           have.curated = x.curated;
           for (const b of x.bosses || []) {
-            const mine = have.bosses.find((y) => bn(y.n) === bn(b.n));
-            if (mine) { mine.loot = [...new Set([...(mine.loot || []), ...(b.loot || [])])]; if (!mine.wh) mine.wh = b.wh; }
-            else have.bosses.push(b);
+            // Wowhead names an encounter "Herod, The Scarlet Champion" or "Mograine & Whitemane": match the whole name, else each part
+            const near = (a, c) => { // spelling differs by a letter or two ("Atal'alrion" / "Atal'alarion")
+              if (a.length < 7 || Math.abs(a.length - c.length) > 2) return false;
+              let p = Array.from({ length: c.length + 1 }, (_, j) => j);
+              for (let i = 1; i <= a.length; i++) { const q = [i]; for (let j = 1; j <= c.length; j++) q[j] = Math.min(p[j] + 1, q[j - 1] + 1, p[j - 1] + (a[i - 1] === c[j - 1] ? 0 : 1)); p = q; }
+              return p[c.length] <= 2;
+            };
+            const bare = bn(String(b.n).replace(/\s+event$/i, ""));
+            let mine = have.bosses.find((y) => bn(y.n) === bn(b.n)) || have.bosses.find((y) => bn(y.n) === bare) || have.bosses.find((y) => near(bn(y.n), bare)), also = [];
+            if (!mine) {
+              const parts = String(b.n).split(/\s*&\s*/).map((t) => bn(t.split(",")[0]));
+              const hits = parts.map((t) => have.bosses.find((y) => bn(y.n) === t)).filter(Boolean);
+              if (hits.length === parts.length) { [mine, ...also] = hits; }
+            }
+            if (mine) {
+              mine.loot = [...new Set([...(mine.loot || []), ...(b.loot || [])])]; if (!mine.wh) mine.wh = b.wh; if (b.wing) mine.wing = b.wing;
+              for (const o of also) { if (!o.wh) o.wh = b.wh; if (b.wing) o.wing = b.wing; if (b.loot && b.loot.length) o.lootWith = mine.n; }
+            } else have.bosses.push(b);
           }
           // drops several bosses share: into the dungeon's other drops, with who drops them
           const otherIds = new Set((have.other || []).map(([id]) => id));
@@ -3450,8 +3465,10 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       else h.append(whA("search", b.n, b.n, "who"));
       const meta = [b.lv != null ? "level " + (Array.isArray(b.lv) ? b.lv.join("–") : b.lv) : "", b.r || ""].filter(Boolean).join(" · ");
       if (meta) h.append(el("span", "muted", " " + meta));
+      if (b.wing) h.append(el("span", "pill", b.wing));
       if (b.rare) h.append(el("span", "pill wait", "Rare spawn"));
       c.append(h);
+      if (b.lootWith && !(b.loot || []).length) c.append(el("div", "muted", `Fought together with ${b.lootWith}: the loot is listed there.`));
       const yd = b.id ? yourDrops(b.id) : null;
       const mine = yd && yd.items ? Object.entries(yd.items).sort((x, y) => (y[1][1] - x[1][1]) || (y[1][2] - x[1][2])) : [];
       const je = journalLoot(jr, b); if (je) seenJ.add(je.id);

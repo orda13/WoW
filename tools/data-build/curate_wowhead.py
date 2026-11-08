@@ -74,16 +74,28 @@ if not lv:
 LOC = {'Ruins of Lordaeron': 'Tirisfal Glades', 'Excavation Site: Wetlands': 'Wetlands', 'City of Dalaran': 'Alterac Mountains',
        'The Hall of Thanes': 'Ironforge'}
 
-key = re.sub(r'[^A-Z0-9]+', '_', name.upper()).strip('_')
+# a wing of a dungeon the data lists as one ("Scarlet Monastery: Library"): its bosses join that dungeon's entry
+whole, wing = name, None
+WINGS = ('Scarlet Monastery', 'Stratholme')
+for w in WINGS:
+    if name.startswith(w + ':') or name.startswith(w + ' '): whole, wing = w, name[len(w):].lstrip(':').strip()
+key = re.sub(r'[^A-Z0-9]+', '_', whole.upper()).strip('_')
 known = json.load(open(os.path.join(PUB, 'dungeons-forever.json')))['dungeons']
-have = next((d for d in known if d['n'].lower() == name.lower()), None)
+have = next((d for d in known if d['n'].lower() == whole.lower()), None)
 if have: key = have['key']
-entry = {'key': key, 'n': name, 'kind': have['kind'] if have else 'Dungeon', 'size': have.get('size', 5) if have else 5,
+entry = {'key': key, 'n': whole, 'kind': have['kind'] if have else 'Dungeon', 'size': have.get('size', 5) if have else 5,
          'loc': have['loc'] if have else LOC.get(name, ''), 'lv': have['lv'] if have else (lv or [0, 0]),
-         'bosses': [{'n': b, 'loot': loot.get(b, []), **({'wh': url} if url else {}), **({'rare': 1} if b in rare else {})} for b, url in bosses],
-         'other': other, 'qz': have['qz'] if have else [name], 'curated': "Wowhead's dungeon journal, pasted 2026-11-08"}
+         'bosses': [{'n': b, 'loot': loot.get(b, []), **({'wh': url} if url else {}), **({'rare': 1} if b in rare else {}), **({'wing': wing} if wing else {})} for b, url in bosses],
+         'other': other, 'qz': have['qz'] if have else [whole], 'curated': "Wowhead's dungeon journal, pasted 2026-11-08"}
 
 data = json.load(open(out)) if os.path.exists(out) else {'source': '', 'dungeons': [], 'items': {}}
+if wing:
+    # keep the other wings already pasted; replace this wing's bosses and shared drops
+    prev = next((d for d in data['dungeons'] if d['key'] == key), None)
+    if prev:
+        mine = {b['n'] for b in entry['bosses']}
+        entry['bosses'] = [b for b in prev['bosses'] if b.get('wing') != wing] + entry['bosses']
+        entry['other'] = [o for o in prev.get('other', []) if not set(o[1]) <= mine] + entry['other']
 data['dungeons'] = [d for d in data['dungeons'] if d['key'] != key] + [entry]
 data['items'].update(items)
 json.dump(data, open(out, 'w'), indent=1, ensure_ascii=False)

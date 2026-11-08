@@ -1329,6 +1329,1387 @@
     "Blackfathom Deeps"
    ],
    "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "RAZORFEN_KRAUL",
+   "n": "Razorfen Kraul",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "The Barrens",
+   "lv": [
+    29,
+    38
+   ],
+   "bosses": [
+    {
+     "n": "Roogug",
+     "loot": [
+      274155,
+      274152,
+      274149
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/roogug"
+    },
+    {
+     "n": "Aggem Thorncurse",
+     "loot": [
+      274159,
+      6681,
+      274158
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/aggem-thorncurse"
+    },
+    {
+     "n": "Death Speaker Jargba",
+     "loot": [
+      6685,
+      6682,
+      2816
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/death-speaker-jargba"
+    },
+    {
+     "n": "Overlord Ramtusk",
+     "loot": [
+      6686,
+      6687,
+      274161
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/overlord-ramtusk"
+    },
+    {
+     "n": "Agathelos the Raging",
+     "loot": [
+      6690,
+      6691,
+      274160
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/agathelos-the-raging"
+    },
+    {
+     "n": "Charlga Razorflank",
+     "loot": [
+      17008,
+      5793,
+      5792,
+      6694,
+      6693,
+      6692
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/charlga-razorflank"
+    },
+    {
+     "n": "Blind Hunter",
+     "loot": [
+      6697,
+      6696,
+      6695
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/blind-hunter-rare",
+     "rare": 1
+    },
+    {
+     "n": "Earthcaller Halmgar",
+     "loot": [
+      6688,
+      6689
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-kraul/earthcaller-halmgar-rare",
+     "rare": 1
+    }
+   ],
+   "other": [
+    [
+     252456,
+     [
+      "Aggem Thorncurse",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     252825,
+     [
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging"
+     ]
+    ],
+    [
+     251378,
+     [
+      "Roogug",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     251375,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging"
+     ]
+    ],
+    [
+     252823,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     253976,
+     [
+      "Aggem Thorncurse",
+      "Overlord Ramtusk",
+      "Charlga Razorflank",
+      "Blind Hunter"
+     ]
+    ],
+    [
+     251376,
+     [
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     252513,
+     [
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     252514,
+     [
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank",
+      "Earthcaller Halmgar"
+     ]
+    ],
+    [
+     252821,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Blind Hunter"
+     ]
+    ],
+    [
+     252822,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging"
+     ]
+    ],
+    [
+     253978,
+     [
+      "Roogug",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     251377,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     251379,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Earthcaller Halmgar"
+     ]
+    ],
+    [
+     253980,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     253984,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Blind Hunter"
+     ]
+    ],
+    [
+     253982,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     252455,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Agathelos the Raging",
+      "Charlga Razorflank",
+      "Earthcaller Halmgar"
+     ]
+    ],
+    [
+     252512,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Agathelos the Raging",
+      "Charlga Razorflank",
+      "Blind Hunter"
+     ]
+    ],
+    [
+     252515,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     252824,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank"
+     ]
+    ],
+    [
+     253986,
+     [
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Overlord Ramtusk",
+      "Agathelos the Raging",
+      "Charlga Razorflank",
+      "Blind Hunter"
+     ]
+    ],
+    [
+     252820,
+     [
+      "Roogug",
+      "Aggem Thorncurse",
+      "Death Speaker Jargba",
+      "Agathelos the Raging",
+      "Charlga Razorflank",
+      "Blind Hunter",
+      "Earthcaller Halmgar"
+     ]
+    ]
+   ],
+   "qz": [
+    "Razorfen Kraul"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "THE_STOCKADE",
+   "n": "The Stockade",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Stormwind City",
+   "lv": [
+    24,
+    32
+   ],
+   "bosses": [
+    {
+     "n": "Targorr the Dread",
+     "loot": [
+      3630,
+      273805,
+      273806,
+      273804,
+      251380,
+      252803,
+      251383,
+      252802,
+      253938,
+      253942,
+      253944,
+      251381,
+      251382,
+      251384,
+      252800,
+      252801,
+      253948
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/targorr-the-dread"
+    },
+    {
+     "n": "Kam Deepfury",
+     "loot": [
+      3640,
+      2280,
+      273807,
+      273808
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/kam-deepfury"
+    },
+    {
+     "n": "Hamhock",
+     "loot": [
+      273811,
+      273809,
+      273810,
+      252512,
+      251377,
+      253980
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/hamhock"
+    },
+    {
+     "n": "Bazil Thredd",
+     "loot": [
+      2926,
+      273827,
+      273824,
+      273829,
+      273825,
+      720
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/bazil-thredd"
+    },
+    {
+     "n": "Dextren Ward",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/dextren-ward"
+    },
+    {
+     "n": "Bruegal Ironknuckle",
+     "loot": [
+      3228,
+      2942,
+      2941
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-stockade/bruegal-ironknuckle-rare",
+     "rare": 1
+    }
+   ],
+   "other": [
+    [
+     252515,
+     [
+      "Kam Deepfury",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     253982,
+     [
+      "Kam Deepfury",
+      "Hamhock"
+     ]
+    ],
+    [
+     252513,
+     [
+      "Kam Deepfury",
+      "Hamhock"
+     ]
+    ],
+    [
+     252514,
+     [
+      "Kam Deepfury",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     253978,
+     [
+      "Kam Deepfury",
+      "Hamhock"
+     ]
+    ],
+    [
+     251379,
+     [
+      "Kam Deepfury",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252820,
+     [
+      "Kam Deepfury",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252823,
+     [
+      "Kam Deepfury",
+      "Hamhock"
+     ]
+    ],
+    [
+     252824,
+     [
+      "Kam Deepfury",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252821,
+     [
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     253984,
+     [
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     253976,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     251375,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252455,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252822,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     253986,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     252825,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd"
+     ]
+    ],
+    [
+     251376,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd",
+      "Bruegal Ironknuckle"
+     ]
+    ],
+    [
+     251378,
+     [
+      "Kam Deepfury",
+      "Hamhock",
+      "Bazil Thredd",
+      "Bruegal Ironknuckle"
+     ]
+    ]
+   ],
+   "qz": [
+    "The Stockade"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "GNOMEREGAN",
+   "n": "Gnomeregan",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Dun Morogh",
+   "lv": [
+    29,
+    38
+   ],
+   "bosses": [
+    {
+     "n": "Grubbis",
+     "loot": [
+      9445,
+      274043,
+      274042
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/grubbis"
+    },
+    {
+     "n": "Viscous Fallout",
+     "loot": [
+      9454,
+      9452,
+      9453
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/viscous-fallout"
+    },
+    {
+     "n": "Electrocutioner 6000",
+     "loot": [
+      6893,
+      9448,
+      9447,
+      9446
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/electrocutioner-6000"
+    },
+    {
+     "n": "Crowd Pummeler 9-60",
+     "loot": [
+      9450,
+      9449,
+      274068
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/crowd-pummeler-9-60"
+    },
+    {
+     "n": "Mekgineer Thermaplugg",
+     "loot": [
+      9299,
+      9461,
+      9458,
+      9459,
+      9492
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/mekgineer-thermaplugg"
+    },
+    {
+     "n": "Dark Iron Ambassador",
+     "loot": [
+      9455,
+      9456,
+      9457,
+      252514,
+      253978
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/gnomeregan/dark-iron-ambassador-rare",
+     "rare": 1
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Gnomeregan"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "SCARLET_MONASTERY",
+   "n": "Scarlet Monastery",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Tirisfal Glades",
+   "lv": [
+    34,
+    45
+   ],
+   "bosses": [
+    {
+     "n": "Interrogator Vishas",
+     "loot": [
+      7683,
+      7682,
+      274290,
+      252515
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-graveyard/interrogator-vishas",
+     "wing": "Graveyard"
+    },
+    {
+     "n": "Bloodmage Thalnos",
+     "loot": [
+      7685,
+      7684,
+      274291
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-graveyard/bloodmage-thalnos",
+     "wing": "Graveyard"
+    },
+    {
+     "n": "Azshir the Sleepless",
+     "loot": [
+      7731,
+      7708,
+      7709
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-graveyard/azshir-the-sleepless-rare",
+     "rare": 1,
+     "wing": "Graveyard"
+    },
+    {
+     "n": "Fallen Champion",
+     "loot": [
+      7691,
+      7690,
+      7689
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-graveyard/fallen-champion-rare",
+     "rare": 1,
+     "wing": "Graveyard"
+    },
+    {
+     "n": "Ironspine",
+     "loot": [
+      7686,
+      7688,
+      7687
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-graveyard/ironspine-rare",
+     "rare": 1,
+     "wing": "Graveyard"
+    },
+    {
+     "n": "Houndmaster Loksey",
+     "loot": [
+      7756,
+      3456,
+      7710,
+      274292,
+      251378,
+      252512,
+      253984
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-library/houndmaster-loksey",
+     "wing": "Library"
+    },
+    {
+     "n": "Arcanist Doan",
+     "loot": [
+      7713,
+      7711,
+      7714,
+      7712,
+      274293,
+      252845,
+      252846,
+      252847,
+      252899
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-library/arcanist-doan",
+     "wing": "Library"
+    },
+    {
+     "n": "Herod, The Scarlet Champion",
+     "loot": [
+      7717,
+      10330,
+      7719,
+      7718
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-armory/herod-the-scarlet-champion",
+     "wing": "Armory"
+    },
+    {
+     "n": "Scarlet Commander Mograine & High Inquisitor Whitemane",
+     "loot": [
+      7726,
+      7722,
+      7720,
+      7721,
+      7724,
+      10330
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-cathedral/scarlet-commander-mograine-high-inquisitor-whitemane",
+     "wing": "Cathedral"
+    },
+    {
+     "n": "High Inquisitor Fairbanks",
+     "loot": [
+      19508,
+      19507,
+      19509
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scarlet-monastery-cathedral/high-inquisitor-fairbanks",
+     "wing": "Cathedral"
+    }
+   ],
+   "other": [
+    [
+     251378,
+     [
+      "Interrogator Vishas",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     251376,
+     [
+      "Interrogator Vishas",
+      "Azshir the Sleepless"
+     ]
+    ],
+    [
+     251377,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos"
+     ]
+    ],
+    [
+     253982,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos"
+     ]
+    ],
+    [
+     252822,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos"
+     ]
+    ],
+    [
+     252821,
+     [
+      "Interrogator Vishas",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     252514,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos"
+     ]
+    ],
+    [
+     251375,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     251379,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     253986,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless"
+     ]
+    ],
+    [
+     253980,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless"
+     ]
+    ],
+    [
+     252823,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless"
+     ]
+    ],
+    [
+     252825,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless"
+     ]
+    ],
+    [
+     252820,
+     [
+      "Interrogator Vishas",
+      "Fallen Champion",
+      "Ironspine"
+     ]
+    ],
+    [
+     252455,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Ironspine"
+     ]
+    ],
+    [
+     252512,
+     [
+      "Azshir the Sleepless",
+      "Fallen Champion",
+      "Ironspine"
+     ]
+    ],
+    [
+     253978,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     253976,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Ironspine"
+     ]
+    ],
+    [
+     253984,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     252824,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Ironspine"
+     ]
+    ],
+    [
+     252456,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Fallen Champion"
+     ]
+    ],
+    [
+     252513,
+     [
+      "Interrogator Vishas",
+      "Bloodmage Thalnos",
+      "Azshir the Sleepless",
+      "Fallen Champion"
+     ]
+    ]
+   ],
+   "qz": [
+    "Scarlet Monastery"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "RAZORFEN_DOWNS",
+   "n": "Razorfen Downs",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "The Barrens",
+   "lv": [
+    37,
+    46
+   ],
+   "bosses": [
+    {
+     "n": "Tuten'kash",
+     "loot": [
+      10776,
+      10775,
+      10777
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/tutenkash"
+    },
+    {
+     "n": "Mordresh Fire Eye",
+     "loot": [
+      10771,
+      10770,
+      10769
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/mordresh-fire-eye"
+    },
+    {
+     "n": "Glutton",
+     "loot": [
+      10772,
+      10774
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/glutton"
+    },
+    {
+     "n": "Amnennar the Coldbringer",
+     "loot": [
+      10762,
+      10763
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/amnennar-the-coldbringer"
+    },
+    {
+     "n": "Plaguemaw the Rotting Event",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/plaguemaw-the-rotting-event"
+    },
+    {
+     "n": "Ragglesnout",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/razorfen-downs/ragglesnout-rare",
+     "rare": 1
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Razorfen Downs"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "ULDAMAN",
+   "n": "Uldaman",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Badlands",
+   "lv": [
+    41,
+    51
+   ],
+   "bosses": [
+    {
+     "n": "The Lost Dwarves",
+     "loot": [
+      9398,
+      9403,
+      9400,
+      9404,
+      9401,
+      9394
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/the-lost-dwarves"
+    },
+    {
+     "n": "Revelosh",
+     "loot": [
+      7741,
+      9390,
+      9387,
+      9389,
+      9388
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/revelosh"
+    },
+    {
+     "n": "Ironaya",
+     "loot": [
+      9408,
+      9407,
+      9409
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/ironaya"
+    },
+    {
+     "n": "Obsidian Sentinel",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/obsidian-sentinel"
+    },
+    {
+     "n": "Ancient Stone Keeper",
+     "loot": [
+      9411,
+      9410
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/ancient-stone-keeper"
+    },
+    {
+     "n": "Galgann Firehammer",
+     "loot": [
+      11311,
+      9419,
+      9412,
+      11310
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/galgann-firehammer"
+    },
+    {
+     "n": "Grimlok",
+     "loot": [
+      9415,
+      9414,
+      9416
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/grimlok"
+    },
+    {
+     "n": "Archaedas",
+     "loot": [
+      11118
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/uldaman/archaedas"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Uldaman"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "ZUL_FARRAK",
+   "n": "Zul'Farrak",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Tanaris",
+   "lv": [
+    44,
+    54
+   ],
+   "bosses": [
+    {
+     "n": "Antu'sul",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/antusul"
+    },
+    {
+     "n": "Theka the Martyr",
+     "loot": [
+      10660
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/theka-the-martyr"
+    },
+    {
+     "n": "Witch Doctor Zum'rah",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/witch-doctor-zumrah"
+    },
+    {
+     "n": "Nekrum Gutchewer & Shadowpriest Sezz'ziz",
+     "loot": [
+      9471
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/nekrum-gutchewer-shadowpriest-sezzziz"
+    },
+    {
+     "n": "Sergeant Bly",
+     "loot": [
+      8548
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/sergeant-bly"
+    },
+    {
+     "n": "Hydromancer Velratha",
+     "loot": [
+      9234,
+      10661
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/hydromancer-velratha"
+    },
+    {
+     "n": "Chief Ukorz Sandscalp",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/chief-ukorz-sandscalp"
+    },
+    {
+     "n": "Gahz'rilla",
+     "loot": [
+      8707
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/gahzrilla"
+    },
+    {
+     "n": "Zerillis",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/zulfarrak/zerillis-rare",
+     "rare": 1
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Zul'Farrak"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "MARAUDON",
+   "n": "Maraudon",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Desolace",
+   "lv": [
+    46,
+    55
+   ],
+   "bosses": [
+    {
+     "n": "Lord Vyletongue",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/lord-vyletongue"
+    },
+    {
+     "n": "Noxxion",
+     "loot": [
+      17702
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/noxxion"
+    },
+    {
+     "n": "Razorlash",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/razorlash"
+    },
+    {
+     "n": "Celebras the Cursed",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/celebras-the-cursed"
+    },
+    {
+     "n": "Landslide",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/landslide"
+    },
+    {
+     "n": "Princess Theradras",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/princess-theradras"
+    },
+    {
+     "n": "Rotgrip",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/rotgrip"
+    },
+    {
+     "n": "Tinkerer Gizlock",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/tinkerer-gizlock"
+    },
+    {
+     "n": "Meshlok the Harvester",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/maraudon/meshlok-the-harvester-rare",
+     "rare": 1
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Maraudon"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "SUNKEN_TEMPLE",
+   "n": "The Temple of Atal'Hakkar",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Swamp of Sorrows",
+   "lv": [
+    50,
+    56
+   ],
+   "bosses": [
+    {
+     "n": "Atal'alrion",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/atalalrion"
+    },
+    {
+     "n": "Atal'ai Defenders",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/atalai-defenders"
+    },
+    {
+     "n": "Jammal'an the Prophet & Ogom the Wretched",
+     "loot": [
+      6212
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/jammalan-the-prophet-ogom-the-wretched"
+    },
+    {
+     "n": "Weaver & Dreamscythe",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/weaver-dreamscythe"
+    },
+    {
+     "n": "Hazzas & Morphaz",
+     "loot": [
+      20019
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/hazzas-morphaz"
+    },
+    {
+     "n": "Shade of Eranikus",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/shade-of-eranikus"
+    },
+    {
+     "n": "Avatar of Hakkar",
+     "loot": [
+      10663
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-temple-of-atalhakkar/avatar-of-hakkar"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "The Temple of Atal'Hakkar",
+    "Sunken Temple"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "STRATHOLME",
+   "n": "Stratholme",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Eastern Plaguelands",
+   "lv": [
+    58,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Ezra Grimm",
+     "loot": [
+      13172
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/ezra-grimm",
+     "wing": "Live"
+    },
+    {
+     "n": "The Unforgiven",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/the-unforgiven",
+     "wing": "Live"
+    },
+    {
+     "n": "Postmaster Malown",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/postmaster-malown",
+     "wing": "Live"
+    },
+    {
+     "n": "Timmy the Cruel",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/timmy-the-cruel",
+     "wing": "Live"
+    },
+    {
+     "n": "Malor the Zealous",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/malor-the-zealous",
+     "wing": "Live"
+    },
+    {
+     "n": "Cannon Master Willey",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/cannon-master-willey",
+     "wing": "Live"
+    },
+    {
+     "n": "Archivist Galford",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/archivist-galford",
+     "wing": "Live"
+    },
+    {
+     "n": "Balnazzar",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/balnazzar",
+     "wing": "Live"
+    },
+    {
+     "n": "Skul",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/skul-rare",
+     "rare": 1,
+     "wing": "Live"
+    },
+    {
+     "n": "Hearthsinger Forresten",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/hearthsinger-forresten-rare",
+     "rare": 1,
+     "wing": "Live"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Stratholme"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
   }
  ],
  "items": {
@@ -3214,6 +4595,1175 @@
    "src": "wowhead",
    "cl": "Recipe",
    "sc": "Tailoring Pattern"
+  },
+  "274155": {
+   "n": "Geomancer Headdress",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "274152": {
+   "n": "Roogug's Severed Head",
+   "src": "wowhead",
+   "sl": "Trinket",
+   "sc": "Trinket",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "274149": {
+   "n": "Thornweaver Drape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "274159": {
+   "n": "Thorncursed Grips",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "6681": {
+   "n": "Thornspike",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 27
+  },
+  "274158": {
+   "n": "Death Prophet Spine",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 26
+  },
+  "6685": {
+   "n": "Death Speaker Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "6682": {
+   "n": "Death Speaker Robes",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "2816": {
+   "n": "Death Speaker Scepter",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 28
+  },
+  "6686": {
+   "n": "Tusken Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6687": {
+   "n": "Corpsemaker",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "274161": {
+   "n": "Quillord Mail Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6690": {
+   "n": "Ferine Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6691": {
+   "n": "Swinetusk Shank",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "274160": {
+   "n": "Quilrager Throwing Axe",
+   "src": "wowhead",
+   "sl": "Thrown",
+   "sc": "Thrown Weapon",
+   "cl": "Weapon",
+   "rl": 31
+  },
+  "17008": {
+   "n": "Small Scroll",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest",
+   "rl": 28
+  },
+  "5793": {
+   "n": "Razorflank's Heart",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "5792": {
+   "n": "Razorflank's Medallion",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6694": {
+   "n": "Heart of Agamaggan",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "6693": {
+   "n": "Agamaggan's Clutch",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "6692": {
+   "n": "Pronged Reaver",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Axe",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "6697": {
+   "n": "Batwing Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6696": {
+   "n": "Nightstalker Bow",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Bow",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "6695": {
+   "n": "Stygian Bone Amulet",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6688": {
+   "n": "Whisperwind Headdress",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "6689": {
+   "n": "Wind Spirit Staff",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "3630": {
+   "n": "Head of Targorr",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "273805": {
+   "n": "Blackrock Harness",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "273806": {
+   "n": "Dark Horde Band",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "273804": {
+   "n": "Executioner Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "3640": {
+   "n": "Head of Deepfury",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "2280": {
+   "n": "Kam's Walking Stick",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 24
+  },
+  "273807": {
+   "n": "Demolition Girdle",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 24
+  },
+  "273808": {
+   "n": "Bridgebreaker Bindings",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 24
+  },
+  "273811": {
+   "n": "Repurposed Rack",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "273809": {
+   "n": "Hamhock's Cleaver",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Axe",
+   "cl": "Weapon",
+   "rl": 25
+  },
+  "273810": {
+   "n": "Ogre Grips",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "2926": {
+   "n": "Head of Bazil Thredd",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "273827": {
+   "n": "Debt Collector",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 26
+  },
+  "273824": {
+   "n": "Defias Jailbreakers",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273829": {
+   "n": "Concealed Hand Crossbow",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Crossbow",
+   "cl": "Weapon",
+   "rl": 26
+  },
+  "273825": {
+   "n": "Red Wool Cloak",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "720": {
+   "n": "Brawler Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "3228": {
+   "n": "Jimmied Handcuffs",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "2942": {
+   "n": "Iron Knuckles",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Fist Weapon",
+   "cl": "Weapon",
+   "rl": 23
+  },
+  "2941": {
+   "n": "Prison Shank",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 23
+  },
+  "9445": {
+   "n": "Grubbis Paws",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "274043": {
+   "n": "Irradiated Shield",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "274042": {
+   "n": "Skullduggery Belt",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "9454": {
+   "n": "Acidic Walkers",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "9452": {
+   "n": "Hydrocane",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 27
+  },
+  "9453": {
+   "n": "Toxic Revenger",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 27
+  },
+  "6893": {
+   "n": "Workshop Key",
+   "src": "wowhead",
+   "cl": "Key",
+   "sc": "Key"
+  },
+  "9448": {
+   "n": "Spidertank Oilrag",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "9447": {
+   "n": "Electrocutioner Lagnut",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "9446": {
+   "n": "Electrocutioner Leg",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "9450": {
+   "n": "Gnomebot Operating Boots",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "9449": {
+   "n": "Manual Crowd Pummeler",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Mace",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "274068": {
+   "n": "Thermaplugg Medal of Honor",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "9299": {
+   "n": "Thermaplugg's Safe Combination",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "9461": {
+   "n": "Charged Gear",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 31
+  },
+  "9458": {
+   "n": "Thermaplugg's Central Core",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 31
+  },
+  "9459": {
+   "n": "Thermaplugg's Left Arm",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 31
+  },
+  "9492": {
+   "n": "Electromagnetic Gigaflux Reactivator",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 31
+  },
+  "9455": {
+   "n": "Emissary Cuffs",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "9456": {
+   "n": "Glass Shooter",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Gun",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "9457": {
+   "n": "Royal Diplomatic Scepter",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "7683": {
+   "n": "Bloody Brass Knuckles",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Fist Weapon",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "7682": {
+   "n": "Torturing Poker",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "274290": {
+   "n": "Painwalker Buckler",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "7685": {
+   "n": "Orb of the Forgotten Seer",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 32
+  },
+  "7684": {
+   "n": "Bloodmage Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "274291": {
+   "n": "Polished Skullcap",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 31
+  },
+  "7731": {
+   "n": "Ghostshard Talisman",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7708": {
+   "n": "Necrotic Wand",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Wand",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "7709": {
+   "n": "Blighted Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7691": {
+   "n": "Embalmed Shroud",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7690": {
+   "n": "Ebon Vise",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7689": {
+   "n": "Morbid Dawn",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Sword",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "7686": {
+   "n": "Ironspine's Eye",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7688": {
+   "n": "Ironspine's Ribcage",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "7687": {
+   "n": "Ironspine's Fist",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 30
+  },
+  "7756": {
+   "n": "Dog Training Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 31
+  },
+  "3456": {
+   "n": "Dog Whistle",
+   "src": "wowhead",
+   "sl": "Trinket",
+   "sc": "Trinket",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "7710": {
+   "n": "Loksey's Training Stick",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 31
+  },
+  "274292": {
+   "n": "Houndmaster Boomerang",
+   "src": "wowhead",
+   "sl": "Thrown",
+   "sc": "Thrown Weapon",
+   "cl": "Weapon",
+   "rl": 31
+  },
+  "7713": {
+   "n": "Illusionary Rod",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 34
+  },
+  "7711": {
+   "n": "Robe of Doan",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 34
+  },
+  "7714": {
+   "n": "Hypnotic Blade",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 34
+  },
+  "7712": {
+   "n": "Mantle of Doan",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 34
+  },
+  "274293": {
+   "n": "Spellsever Crossbow",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Crossbow",
+   "cl": "Weapon",
+   "rl": 34
+  },
+  "252845": {
+   "n": "Pattern: Warden's Leather Shoes",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252846": {
+   "n": "Pattern: Skycaller's Leather Shoes",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252847": {
+   "n": "Pattern: Mender's Leather Shoes",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252899": {
+   "n": "Pattern: Mender's Mail Boots",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "7717": {
+   "n": "Ravager",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 37
+  },
+  "10330": {
+   "n": "Scarlet Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 39
+  },
+  "7719": {
+   "n": "Raging Berserker's Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "7718": {
+   "n": "Herod's Shoulder",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "7726": {
+   "n": "Aegis of the Scarlet Commander",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 39
+  },
+  "7722": {
+   "n": "Triune Amulet",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 39
+  },
+  "7720": {
+   "n": "Whitemane's Chapeau",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 39
+  },
+  "7721": {
+   "n": "Hand of Righteousness",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 39
+  },
+  "7724": {
+   "n": "Gauntlets of Divinity",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 39
+  },
+  "19508": {
+   "n": "Branded Leather Bracers",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "19507": {
+   "n": "Inquisitor's Shawl",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "19509": {
+   "n": "Dusty Mail Boots",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "10776": {
+   "n": "Silky Spider Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "10775": {
+   "n": "Carapace of Tuten'kash",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Plate",
+   "cl": "Armor",
+   "rl": 40
+  },
+  "10777": {
+   "n": "Arachnid Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "10771": {
+   "n": "Deathmage Sash",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 36
+  },
+  "10770": {
+   "n": "Mordresh's Lifeless Skull",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 36
+  },
+  "10769": {
+   "n": "Glowing Eye of Mordresh",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 36
+  },
+  "10772": {
+   "n": "Glutton's Cleaver",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Axe",
+   "cl": "Weapon",
+   "rl": 37
+  },
+  "10774": {
+   "n": "Fleshhide Shoulders",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "10762": {
+   "n": "Robes of the Lich",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 38
+  },
+  "10763": {
+   "n": "Icemetal Barbute",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Plate",
+   "cl": "Armor",
+   "rl": 40
+  },
+  "9398": {
+   "n": "Worn Running Boots",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9403": {
+   "n": "Battered Viking Shield",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9400": {
+   "n": "Baelog's Shortbow",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Bow",
+   "cl": "Weapon",
+   "rl": 38
+  },
+  "9404": {
+   "n": "Olaf's All Purpose Shield",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9401": {
+   "n": "Nordic Longshank",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 38
+  },
+  "9394": {
+   "n": "Horned Viking Helmet",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Plate",
+   "cl": "Armor",
+   "rl": 40
+  },
+  "7741": {
+   "n": "The Shaft of Tsol",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "9390": {
+   "n": "Revelosh's Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9387": {
+   "n": "Revelosh's Boots",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Plate",
+   "cl": "Armor",
+   "rl": 40
+  },
+  "9389": {
+   "n": "Revelosh's Spaulders",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9388": {
+   "n": "Revelosh's Armguards",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9408": {
+   "n": "Ironshod Bludgeon",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 37
+  },
+  "9407": {
+   "n": "Stoneweaver Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9409": {
+   "n": "Ironaya's Bracers",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 37
+  },
+  "9411": {
+   "n": "Rockshard Pauldrons",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 41
+  },
+  "9410": {
+   "n": "Cragfists",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Plate",
+   "cl": "Armor",
+   "rl": 41
+  },
+  "11311": {
+   "n": "Emberscale Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 42
+  },
+  "9419": {
+   "n": "Galgann's Firehammer",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 42
+  },
+  "9412": {
+   "n": "Galgann's Fireblaster",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Gun",
+   "cl": "Weapon",
+   "rl": 42
+  },
+  "11310": {
+   "n": "Flameseer Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 42
+  },
+  "9415": {
+   "n": "Grimlok's Tribal Vestments",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 42
+  },
+  "9414": {
+   "n": "Oilskin Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 42
+  },
+  "9416": {
+   "n": "Grimlok's Charge",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Polearm",
+   "cl": "Weapon",
+   "rl": 42
+  },
+  "11118": {
+   "n": "Archaedic Stone",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 42
+  },
+  "10660": {
+   "n": "First Mosh'aru Tablet",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "9471": {
+   "n": "Nekrum's Medallion",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "8548": {
+   "n": "Divino-matic Rod",
+   "src": "wowhead",
+   "cl": "Consumable",
+   "sc": "Consumable"
+  },
+  "9234": {
+   "n": "Tiara of the Deep",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "10661": {
+   "n": "Second Mosh'aru Tablet",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "8707": {
+   "n": "Gahz'rilla's Electrified Scale",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "17702": {
+   "n": "Celebrian Rod",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6212": {
+   "n": "Head of Jammal'an",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "20019": {
+   "n": "Tooth of Morphaz",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "10663": {
+   "n": "Essence of Hakkar",
+   "src": "wowhead",
+   "cl": "Consumable",
+   "sc": "Consumable"
+  },
+  "13172": {
+   "n": "Grimm's Premium Tobacco",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
   }
  }
 }
