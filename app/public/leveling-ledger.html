@@ -431,6 +431,19 @@ table.rep td { padding: 2px 8px 2px 0; border-bottom: 1px solid var(--line); }
 table.rep td.num, table.rep th.num { text-align: right; white-space: nowrap; }
 .rep-big { font-size: 1.15rem; }
 .rep-up { color: var(--good); } .rep-down { color: var(--bad); }
+.dg-map > summary { cursor: pointer; font-weight: 600; margin-top: 6px; }
+.dgm-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.dgm-floors { display: flex; gap: 4px; flex-wrap: wrap; margin-right: 8px; }
+.dgm-floors .pill { cursor: pointer; }
+.dgm-wrap { position: relative; width: 100%; max-width: 900px; aspect-ratio: 3 / 2; background: var(--panel-2, #1a1410); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.dgm-wrap.editing { cursor: crosshair; outline: 2px solid var(--brass); }
+.dgm-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dgm-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.dgm-line { fill: none; stroke: #4dd2ff; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-dasharray: 6 3; }
+.dgm-pins { position: absolute; inset: 0; pointer-events: none; }
+.dgm-pin { position: absolute; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: #c0392b; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.dgm-notes { margin-top: 8px; }
+tr.dgm-elite td:first-child { color: var(--brass); font-weight: 600; }
 .ql-q { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .ql-ob { font-size: .85rem; margin-left: 14px; }
 .ql-ob.done { color: var(--good); }
@@ -3424,12 +3437,88 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       body.append(o);
     }
     if (d.gone) body.append(el("p", "hint", `${d.gone} classic item${d.gone > 1 ? "s" : ""} from here no longer exist in Forever and are hidden. Forever's replacements aren't published yet.`));
+    body.append(dgMapBlock(d));
     if (qi.qs.length) {
       const qd = el("details"); qd.append(el("summary", null, `Quests (${qi.qs.length})`));
       const w = el("div", "qblocks"); for (const { q } of qi.qs) w.append(questRow(q, false)); qd.append(w); body.append(qd);
     }
     blk.append(body);
     return blk;
+  }
+  // ---------- dungeon maps, your route, tank notes ----------
+  // Maps: Wowhead's floor images. Creatures: QuestieDB (no positions inside instances, so the route is yours to
+  // draw: click the map to add numbered pulls; saved in shared/dungeonroutes for every character and device).
+  const DM = { data: null, loading: false, waiting: [] };
+  function loadDM(cb) {
+    if (DM.data) return cb();
+    DM.waiting.push(cb); if (DM.loading) return; DM.loading = true;
+    fetch("dungeon-maps-forever.json").then((r) => r.json()).then((d) => { DM.data = d; for (const f of DM.waiting.splice(0)) f(); }).catch(() => {});
+  }
+  let routeT = null;
+  function saveRoutes() { if (!db || !S.canWrite) return; clearTimeout(routeT); routeT = setTimeout(() => write(() => db.doc("shared/dungeonroutes").set({ byKey: S.routes.byKey, updatedAt: Date.now() })), 800); }
+  function dgMapBlock(d) {
+    const blk = el("details", "dg-map"); blk.append(el("summary", null, "Map, route and tank notes"));
+    const body = el("div"); blk.append(body);
+    blk.addEventListener("toggle", () => { if (blk.open && !body.childNodes.length) loadDM(() => drawDgMap(d, body)); });
+    return blk;
+  }
+  function drawDgMap(d, body) {
+    const m = DM.data.dungeons[d.key]; body.replaceChildren();
+    if (!m) { body.append(el("p", "muted", "No map for this one.")); return; }
+    S.routes = S.routes || { byKey: {} };
+    const floors = m.floors.length ? m.floors : [null];
+    let floor = floors[0], editing = false;
+    const url = (f) => f == null ? `https://wow.zamimg.com/images/wow/classic/maps/enus/original/${m.zid}.jpg` : `https://wow.zamimg.com/images/wow/maps/enus/original/${m.zid}-${f}.jpg`;
+    const bar = el("div", "row dgm-bar");
+    const tabs = el("span", "dgm-floors");
+    const edit = el("button", "ghost", "Draw route"); edit.type = "button";
+    const undo = el("button", "ghost", "Undo"); undo.type = "button";
+    const label = el("button", "ghost", "Note on last pull"); label.type = "button";
+    const clear = el("button", "ghost", "Clear this floor"); clear.type = "button";
+    bar.append(tabs, edit, undo, label, clear);
+    const wrap = el("div", "dgm-wrap"); const img = el("img"); img.alt = `${d.n} map`; img.referrerPolicy = "no-referrer";
+    const NS = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
+    const pins = el("div", "dgm-pins"); wrap.append(img, svg, pins);
+    const hint = el("p", "hint", "");
+    const route = () => { const r = (S.routes.byKey[d.key] = S.routes.byKey[d.key] || {}); return (r[floor == null ? "0" : String(floor)] = r[floor == null ? "0" : String(floor)] || []); };
+    function draw() {
+      tabs.replaceChildren(...(floors.length > 1 ? floors.map((f, i) => { const b = el("button", f === floor ? "pill go" : "pill", `Floor ${i + 1}`); b.type = "button"; b.onclick = () => { floor = f; draw(); }; return b; }) : []));
+      if (img.dataset.src !== url(floor)) { img.dataset.src = url(floor); img.hidden = false; img.src = url(floor); }
+      const pts = route();
+      svg.replaceChildren();
+      if (pts.length > 1) { const pl = document.createElementNS(NS, "polyline"); pl.setAttribute("points", pts.map((p) => p[0] + "," + p[1]).join(" ")); pl.setAttribute("class", "dgm-line"); svg.append(pl); }
+      pins.replaceChildren(...pts.map((p, i) => { const b = el("div", "dgm-pin", String(i + 1)); b.style.left = p[0] + "%"; b.style.top = p[1] + "%"; if (p[2]) b.title = p[2]; return b; }));
+      edit.textContent = editing ? "Done drawing" : "Draw route"; wrap.classList.toggle("editing", editing);
+      for (const b of [undo, label, clear]) b.disabled = !editing || (b !== clear && !pts.length);
+      const notes = pts.map((p, i) => p[2] ? `${i + 1}: ${p[2]}` : "").filter(Boolean);
+      hint.textContent = (editing ? "Click the map to add your next pull. " : pts.length ? "" : "No route on this floor yet: press Draw route and click the map in the order you pull. ") + (notes.length ? "Notes: " + notes.join(" · ") : "");
+    }
+    img.onload = () => { wrap.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; };
+    img.onerror = () => { img.hidden = true; };
+    wrap.onclick = (e) => {
+      if (!editing || !S.canWrite) return;
+      const r = wrap.getBoundingClientRect();
+      route().push([Math.round((e.clientX - r.left) / r.width * 1000) / 10, Math.round((e.clientY - r.top) / r.height * 1000) / 10]);
+      draw(); saveRoutes();
+    };
+    edit.onclick = () => { editing = !editing; draw(); };
+    undo.onclick = () => { route().pop(); draw(); saveRoutes(); };
+    clear.onclick = () => { if (confirm("Clear the route on this floor?")) { route().length = 0; draw(); saveRoutes(); } };
+    label.onclick = () => { const pts = route(); const last = pts[pts.length - 1]; if (!last) return; const t = prompt("Note for pull " + pts.length + " (e.g. 2 elites, kill the caster first):", last[2] || ""); if (t != null) { last[2] = t.slice(0, 120); draw(); saveRoutes(); } };
+    if (!S.canWrite) edit.disabled = true;
+    // tank notes: your level against the dungeon, bosses in order, and the trash by level
+    const notes = el("div", "dgm-notes"); const lv = (S.char && S.char.level) || 0;
+    const lo = Math.min(...m.mobs.map((x) => x.lv[0])), hi = Math.max(...m.mobs.map((x) => x.lv[1]));
+    if (lv && isFinite(lo)) notes.append(el("p", lv < lo - 2 ? "bud-warn" : "muted", `Creatures here are level ${lo}–${hi}; you're ${lv}.${lv < lo - 2 ? " Expect a hard time tanking anything that's 3 or more levels above you." : ""}`));
+    const bossNames = new Set(d.bosses.map((b) => b.n));
+    const bt = el("ol", "pp-list"); for (const b of d.bosses) bt.append(el("li", null, `${b.n} · level ${b.lv}${b.r ? " · " + b.r.toLowerCase() : ""}${b.rare ? " (doesn't always spawn)" : ""}`));
+    notes.append(el("h3", null, "Bosses, in the usual order"), bt);
+    const trash = m.mobs.filter((x) => !bossNames.has(x.n));
+    const t = el("table", "rep"); const hr = el("tr"); hr.append(el("th", null, "Trash"), el("th", "num", "level"), el("th", null, "rank")); t.append(hr);
+    for (const x of trash) { const tr = el("tr", x.r !== "normal" ? "dgm-elite" : null); tr.append(el("td", null, x.n), el("td", "num", x.lv[0] === x.lv[1] ? String(x.lv[0]) : `${x.lv[0]}–${x.lv[1]}`), el("td", null, x.r)); t.append(tr); }
+    notes.append(el("h3", null, `Trash (${trash.length} kinds; elites in gold)`), t);
+    body.append(bar, wrap, hint, notes, el("p", "hint", "Maps: Wowhead. Creatures, levels and ranks: QuestieDB's Forever data, which has no positions inside dungeons, so the route is yours."));
+    draw();
   }
   function renderDungeons() {
     if (!DG.data) return;
@@ -3955,6 +4044,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("shared/dungeonroutes").onSnapshot((s) => { if (s.metadata && s.metadata.hasPendingWrites) return; S.routes = s.exists ? { byKey: s.data().byKey || {} } : { byKey: {} }; }, () => {});
     db.doc("shared/recipeneeds").onSnapshot((s) => { S.recipeNeeds = s.exists ? s.data() : null; }, () => {});
     db.doc("state/profprefs").onSnapshot((s) => { S.profPrefs = s.exists ? s.data() : null; try { renderProfPlan(); } catch {} }, () => {});
     db.doc("state/gathers").onSnapshot((s) => { S.gathers = s.exists ? s.data() : null; try { renderGather(); } catch {} }, () => {});
