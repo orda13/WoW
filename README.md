@@ -37,3 +37,15 @@ This repository is public, so keep it that way.
 ## Roadmap
 
 Planned changes are tracked in the Leveling Ledger Roadmap doc.
+
+## License and credits
+
+Leveling Ledger is free software under the [GNU General Public License v3.0](LICENSE.md).
+
+The game data in `app/public/` comes from several places:
+
+- **QuestieDB and Questie** ([QuestieDB](https://github.com/Questie/QuestieDB), [Questie](https://github.com/Questie/Questie)): quest start and end NPCs and coordinates, objectives and chains, creature and object locations (including herb and ore nodes), drops, vendors and dungeon loot for WoW Forever. The Questie team allows copying under GPLv3 terms; its own license notes that not every historic contributor's consent could be confirmed, so their content is used here in that spirit, with this credit. "Questie" is their name and isn't used for this project.
+- **Blizzard**: the Game Data API (`static-forever-us`, `profile-forever-us`) for quests, items, professions and your characters, and the game's own tables (via [wago.tools](https://wago.tools)) for abilities, levels, icons and gathering skill requirements. World of Warcraft and its data are © Blizzard Entertainment.
+- **Wowhead**: ability details and drop chances from its Forever tooltips. The page also shows Wowhead's item, spell and zone map images straight from its image server; they aren't copied into this repository.
+
+The add-on works alongside Questie (planned quests, quest progress) without including any of its code.
