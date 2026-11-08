@@ -22,7 +22,7 @@ name = lines[0].strip()
 lv = None
 m = re.search(r'Level\s+(\d+)\s*[–-]\s*(\d+)', '\n'.join(lines[:6]))
 if m: lv = [int(m.group(1)), int(m.group(2))]
-clean = lambda b: re.sub(r'\s*\(Rare\)$', '', b).strip()
+clean = lambda b: re.sub(r'\s*\(Rare\)$', '', b).replace('\u2019', "'").strip()
 
 # bosses in order, from the Bosses list
 bosses, rare, i = [], set(), 0
@@ -66,12 +66,20 @@ while k < len(lines):
     elif who: other.append([iid, who])
     k += 2
 
+# a new dungeon's level range when the page has no "Level a-b" line: lowest required item level to highest quest level
+if not lv:
+    rls = [e['rl'] for e in items.values() if e.get('rl')]
+    qls = [int(x) for x in re.findall(r'/quest=\d+[^)]*\)Level (\d+)', '\n'.join(lines))]
+    if rls or qls: lv = [min(rls or qls), max(qls + rls)]
+LOC = {'Ruins of Lordaeron': 'Tirisfal Glades', 'Excavation Site: Wetlands': 'Wetlands', 'City of Dalaran': 'Alterac Mountains',
+       'The Hall of Thanes': 'Ironforge'}
+
 key = re.sub(r'[^A-Z0-9]+', '_', name.upper()).strip('_')
 known = json.load(open(os.path.join(PUB, 'dungeons-forever.json')))['dungeons']
 have = next((d for d in known if d['n'].lower() == name.lower()), None)
 if have: key = have['key']
 entry = {'key': key, 'n': name, 'kind': have['kind'] if have else 'Dungeon', 'size': have.get('size', 5) if have else 5,
-         'loc': have['loc'] if have else '', 'lv': have['lv'] if have else (lv or [0, 0]),
+         'loc': have['loc'] if have else LOC.get(name, ''), 'lv': have['lv'] if have else (lv or [0, 0]),
          'bosses': [{'n': b, 'loot': loot.get(b, []), **({'wh': url} if url else {}), **({'rare': 1} if b in rare else {})} for b, url in bosses],
          'other': other, 'qz': have['qz'] if have else [name], 'curated': "Wowhead's dungeon journal, pasted 2026-11-08"}
 

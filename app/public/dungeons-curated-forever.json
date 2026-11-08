@@ -331,6 +331,1004 @@
     "The Deadmines"
    ],
    "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "RUINS_OF_LORDAERON",
+   "n": "Ruins of Lordaeron",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Tirisfal Glades",
+   "lv": [
+    15,
+    22
+   ],
+   "bosses": [
+    {
+     "n": "Witherfang",
+     "loot": [
+      275443,
+      271203,
+      271202,
+      271201
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/witherfang"
+    },
+    {
+     "n": "The Baron",
+     "loot": [
+      280438,
+      268518,
+      271206,
+      271204,
+      271205
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/the-baron"
+    },
+    {
+     "n": "Viktor The Vile",
+     "loot": [
+      271211,
+      271212,
+      271218
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/viktor-the-vile"
+    },
+    {
+     "n": "The Abandoned",
+     "loot": [
+      271207,
+      271216,
+      271208
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/the-abandoned"
+    },
+    {
+     "n": "Bjork",
+     "loot": [
+      271210,
+      271217,
+      271209
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/bjork"
+    },
+    {
+     "n": "Rath'Mael",
+     "loot": [
+      271213,
+      271215,
+      271214,
+      273085,
+      273103
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ruins-of-lordaeron/rathmael"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Ruins of Lordaeron"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "EXCAVATION_SITE_WETLANDS",
+   "n": "Excavation Site: Wetlands",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Wetlands",
+   "lv": [
+    26,
+    31
+   ],
+   "bosses": [
+    {
+     "n": "Saltspine",
+     "loot": [
+      273022,
+      273023,
+      273024
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/excavation-site-wetlands/saltspine"
+    },
+    {
+     "n": "Shadetooth",
+     "loot": [
+      273027,
+      273026,
+      273025,
+      273106
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/excavation-site-wetlands/shadetooth"
+    },
+    {
+     "n": "Relic Guardian",
+     "loot": [
+      270866,
+      270865,
+      273028,
+      273029,
+      273030,
+      273097
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/excavation-site-wetlands/relic-guardian"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Excavation Site: Wetlands"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "CITY_OF_DALARAN",
+   "n": "City of Dalaran",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Alterac Mountains",
+   "lv": [
+    25,
+    33
+   ],
+   "bosses": [
+    {
+     "n": "Atrexis the Grave Knight",
+     "loot": [
+      273036,
+      273032,
+      273033
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/atrexis-the-grave-knight"
+    },
+    {
+     "n": "Arcane Anomaly",
+     "loot": [
+      273031,
+      273034,
+      273035
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/arcane-anomaly"
+    },
+    {
+     "n": "Arcanic Enigma",
+     "loot": [
+      273045,
+      273043,
+      273044
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/arcanic-enigma"
+    },
+    {
+     "n": "Unstable Sentinel",
+     "loot": [
+      273046,
+      273047,
+      273048,
+      273099
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/unstable-sentinel"
+    },
+    {
+     "n": "Mana Devourer",
+     "loot": [
+      273041,
+      273042,
+      273040
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/mana-devourer"
+    },
+    {
+     "n": "Fel Ancient",
+     "loot": [
+      273038,
+      273039,
+      273037
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/fel-ancient"
+    },
+    {
+     "n": "Lyn the Ignored",
+     "loot": [
+      273054,
+      273055,
+      273053
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/lyn-the-ignored"
+    },
+    {
+     "n": "Shade of the Archmage",
+     "loot": [
+      251961,
+      273051,
+      273052,
+      273049,
+      273103
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/city-of-dalaran/shade-of-the-archmage"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "City of Dalaran"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "RAGEFIRE_CHASM",
+   "n": "Ragefire Chasm",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Orgrimmar",
+   "lv": [
+    13,
+    18
+   ],
+   "bosses": [
+    {
+     "n": "Oggleflint",
+     "loot": [
+      272996,
+      272999,
+      272998
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ragefire-chasm/oggleflint"
+    },
+    {
+     "n": "Taragaman the Hungerer",
+     "loot": [
+      14540,
+      14148,
+      14149,
+      14145,
+      252779,
+      15508
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ragefire-chasm/taragaman-the-hungerer"
+    },
+    {
+     "n": "Jergosh the Invoker",
+     "loot": [
+      14150,
+      14147,
+      14151
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ragefire-chasm/jergosh-the-invoker"
+    },
+    {
+     "n": "Bazzalan",
+     "loot": [
+      273005,
+      273003,
+      273007
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/ragefire-chasm/bazzalan"
+    }
+   ],
+   "other": [
+    [
+     251360,
+     [
+      "Oggleflint",
+      "Jergosh the Invoker"
+     ]
+    ],
+    [
+     252777,
+     [
+      "Oggleflint",
+      "Jergosh the Invoker"
+     ]
+    ],
+    [
+     251361,
+     [
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker"
+     ]
+    ],
+    [
+     251364,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker"
+     ]
+    ],
+    [
+     251362,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Bazzalan"
+     ]
+    ],
+    [
+     252780,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253906,
+     [
+      "Oggleflint",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253904,
+     [
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     252778,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     252781,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     252782,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253912,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     251341,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     251363,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253902,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253908,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ],
+    [
+     253910,
+     [
+      "Oggleflint",
+      "Taragaman the Hungerer",
+      "Jergosh the Invoker",
+      "Bazzalan"
+     ]
+    ]
+   ],
+   "qz": [
+    "Ragefire Chasm"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "WAILING_CAVERNS",
+   "n": "Wailing Caverns",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "The Barrens",
+   "lv": [
+    17,
+    24
+   ],
+   "bosses": [
+    {
+     "n": "Kresh",
+     "loot": [
+      6447,
+      13245,
+      273084
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/kresh"
+    },
+    {
+     "n": "Lady Anacondra",
+     "loot": [
+      9739,
+      5404,
+      10412,
+      273088
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/lady-anacondra"
+    },
+    {
+     "n": "Lord Cobrahn",
+     "loot": [
+      9738,
+      6465,
+      6460,
+      10410
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/lord-cobrahn"
+    },
+    {
+     "n": "Lord Pythas",
+     "loot": [
+      9740,
+      6473,
+      6472,
+      273089
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/deviate-faerie-dragon"
+    },
+    {
+     "n": "Skum",
+     "loot": [
+      6449,
+      6448,
+      273137
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/skum"
+    },
+    {
+     "n": "Lord Serpentis",
+     "loot": [
+      9741,
+      6459,
+      10411,
+      5970,
+      6469
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/lord-serpentis"
+    },
+    {
+     "n": "Verdan the Everliving",
+     "loot": [
+      6630,
+      6631,
+      6629
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/verdan-the-everliving"
+    },
+    {
+     "n": "Mutanus the Devourer",
+     "loot": [
+      10441,
+      6461,
+      6463,
+      6627
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/wailing-caverns/mutanus-the-devourer"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Wailing Caverns"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "SHADOWFANG_KEEP",
+   "n": "Shadowfang Keep",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Silverpine Forest",
+   "lv": [
+    22,
+    30
+   ],
+   "bosses": [
+    {
+     "n": "Rethilgore",
+     "loot": [
+      5254,
+      273457,
+      273456
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/rethilgore"
+    },
+    {
+     "n": "Fel Steeds / Shadow Charger",
+     "loot": [
+      932
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/fel-steeds-shadow-charger"
+    },
+    {
+     "n": "Razorclaw the Butcher",
+     "loot": [
+      1292,
+      6633,
+      6226
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/razorclaw-the-butcher"
+    },
+    {
+     "n": "Baron Silverlaine",
+     "loot": [
+      273637,
+      6323,
+      6321
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/baron-silverlaine"
+    },
+    {
+     "n": "Commander Springvale",
+     "loot": [
+      3191,
+      6320,
+      273643
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/commander-springvale"
+    },
+    {
+     "n": "Odo the Blindwatcher",
+     "loot": [
+      6319,
+      6318,
+      273645
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/odo-the-blindwatcher"
+    },
+    {
+     "n": "Fenrus the Devourer",
+     "loot": [
+      6340,
+      3230,
+      273646
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/fenrus-the-devourer"
+    },
+    {
+     "n": "Wolf Master Nandos",
+     "loot": [
+      3748,
+      6314,
+      273647
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/wolf-master-nandos"
+    },
+    {
+     "n": "Archmage Arugal",
+     "loot": [
+      5442,
+      6392,
+      6324,
+      6220
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/archmage-arugal"
+    },
+    {
+     "n": "Deathsworn Captain",
+     "loot": [
+      6641,
+      6642
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/shadowfang-keep/deathsworn-captain-rare",
+     "rare": 1
+    }
+   ],
+   "other": [
+    [
+     6341,
+     [
+      "Fel Steeds / Shadow Charger",
+      "Commander Springvale"
+     ]
+    ]
+   ],
+   "qz": [
+    "Shadowfang Keep"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "BLACKFATHOM_DEEPS",
+   "n": "Blackfathom Deeps",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Ashenvale",
+   "lv": [
+    24,
+    32
+   ],
+   "bosses": [
+    {
+     "n": "Ghamoo-Ra",
+     "loot": [
+      6908,
+      6907,
+      273839,
+      252801
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/ghamoo-ra"
+    },
+    {
+     "n": "Lady Sarevess",
+     "loot": [
+      11121,
+      888,
+      3078,
+      253948,
+      252802,
+      252799
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/lady-sarevess"
+    },
+    {
+     "n": "Gelihast",
+     "loot": [
+      273840
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/gelihast"
+    },
+    {
+     "n": "Twilight Lord Kelris",
+     "loot": [
+      5881,
+      1155,
+      6903,
+      273846
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/twilight-lord-kelris"
+    },
+    {
+     "n": "Fire of Aku'Mai Event",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/fire-of-akumai-event"
+    },
+    {
+     "n": "Old Serra'kis",
+     "loot": [
+      6901,
+      6902,
+      6904
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/old-serrakis"
+    },
+    {
+     "n": "Aku'mai",
+     "loot": [
+      6910,
+      6911,
+      6909
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackfathom-deeps/akumai"
+    }
+   ],
+   "other": [
+    [
+     251382,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253940,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     251384,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     252798,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253946,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     251381,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     252800,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     251380,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     252803,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253938,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253942,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253944,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     251383,
+     [
+      "Ghamoo-Ra",
+      "Lady Sarevess"
+     ]
+    ],
+    [
+     253978,
+     [
+      "Gelihast",
+      "Old Serra'kis"
+     ]
+    ],
+    [
+     252513,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris"
+     ]
+    ],
+    [
+     253984,
+     [
+      "Twilight Lord Kelris",
+      "Aku'mai"
+     ]
+    ],
+    [
+     253980,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252825,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis"
+     ]
+    ],
+    [
+     253976,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis"
+     ]
+    ],
+    [
+     252514,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252512,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252820,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     253982,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     251375,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     251376,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252821,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252456,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     251377,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     251378,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     251379,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252455,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252515,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252822,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252823,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     252824,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ],
+    [
+     253986,
+     [
+      "Gelihast",
+      "Twilight Lord Kelris",
+      "Old Serra'kis",
+      "Aku'mai"
+     ]
+    ]
+   ],
+   "qz": [
+    "Blackfathom Deeps"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
   }
  ],
  "items": {
@@ -846,6 +1844,1376 @@
    "src": "wowhead",
    "cl": "Recipe",
    "sc": "Blacksmithing Plans"
+  },
+  "275443": {
+   "n": "Highly Toxic Strain",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "271203": {
+   "n": "Segmented Spider Leg",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 15
+  },
+  "271202": {
+   "n": "Witherbite Bracers",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 15
+  },
+  "271201": {
+   "n": "Atrophic Girdle",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 15
+  },
+  "280438": {
+   "n": "Abominable Head",
+   "src": "wowhead",
+   "cl": "Miscellaneous Item",
+   "sc": "Miscellaneous Item",
+   "rl": 15
+  },
+  "268518": {
+   "n": "Head of the Baron",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "271206": {
+   "n": "Leftover Abomination Skin",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 15
+  },
+  "271204": {
+   "n": "Meathook Slicer",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 15
+  },
+  "271205": {
+   "n": "Abomination Bones",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 15
+  },
+  "271211": {
+   "n": "Vilewalkers",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "271212": {
+   "n": "Bloodied Chestwraps",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "271218": {
+   "n": "Vileblood Scimitar",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "271207": {
+   "n": "Rotmender's Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "271216": {
+   "n": "Scepter of the Abandoned",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "271208": {
+   "n": "Grip of Fear",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "271210": {
+   "n": "Tuskwrap Belt",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "271217": {
+   "n": "Corpse Chopper",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "271209": {
+   "n": "Bonerust Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "271213": {
+   "n": "Mirror of Rath'mael",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "271215": {
+   "n": "Coldspire Staff",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 19
+  },
+  "271214": {
+   "n": "Rotmender's Treads",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "273085": {
+   "n": "Blueprint: Fermenter",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Alchemy Recipe"
+  },
+  "273103": {
+   "n": "Blueprint: Arcane Salvager",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Enchanting Formula"
+  },
+  "273022": {
+   "n": "Supple Bellyskin Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273023": {
+   "n": "Saltscale Girdle",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273024": {
+   "n": "Glinteye Slippers",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273027": {
+   "n": "Raptor's Gaze",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273026": {
+   "n": "Garb of Florid Feathers",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273025": {
+   "n": "Raptorclaw Greaves",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273106": {
+   "n": "Blueprint: Greenhouse",
+   "src": "wowhead",
+   "cl": "Book",
+   "sc": "Book"
+  },
+  "270866": {
+   "n": "Titan Relic",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "270865": {
+   "n": "Titan Relic",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "273028": {
+   "n": "Reliquary Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273029": {
+   "n": "Golemsight Long Gun",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Gun",
+   "cl": "Weapon",
+   "rl": 28
+  },
+  "273030": {
+   "n": "Ring of Power Regulation",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273097": {
+   "n": "Blueprint: Rock Garden",
+   "src": "wowhead",
+   "cl": "Book",
+   "sc": "Book"
+  },
+  "273036": {
+   "n": "Graveweave Bindings",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 26
+  },
+  "273032": {
+   "n": "Bonebinder's Signet",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "273033": {
+   "n": "Gravespike Repeater",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Crossbow",
+   "cl": "Weapon",
+   "rl": 26
+  },
+  "273031": {
+   "n": "Runemender's Seal",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "273034": {
+   "n": "Ephemeral Grips",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "273035": {
+   "n": "Mana-Warped Chain Shirt",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "273045": {
+   "n": "Drape of Shifting Energy",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "273043": {
+   "n": "Wand of Mana Concentration",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Wand",
+   "cl": "Weapon",
+   "rl": 27
+  },
+  "273044": {
+   "n": "Violet Sorcerer's Robes",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 27
+  },
+  "273046": {
+   "n": "Guardian's Dualblade",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 28
+  },
+  "273047": {
+   "n": "Unstable Crystalline Shoulderpads",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273048": {
+   "n": "Refractory Scaleguards",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273099": {
+   "n": "Blueprint: Spinning Wheel",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "273041": {
+   "n": "Slitherwrap Girdle",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273042": {
+   "n": "Manascale Treads",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273040": {
+   "n": "Spine of the Devourer",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 28
+  },
+  "273038": {
+   "n": "Garb of Fallen Felbark",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "273039": {
+   "n": "Blightleaf Rope",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 29
+  },
+  "273037": {
+   "n": "Felbough Arm",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Polearm",
+   "cl": "Weapon",
+   "rl": 29
+  },
+  "273054": {
+   "n": "Cartilage Shapers",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273055": {
+   "n": "Bonepile Gaze",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 28
+  },
+  "273053": {
+   "n": "Tendonscraper Dagger",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 28
+  },
+  "251961": {
+   "n": "Arcane Mote",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "273051": {
+   "n": "Violet Sorcerer's Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "273052": {
+   "n": "Ponderous Orb",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "273049": {
+   "n": "Archmagister's Faceted Pendant",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 30
+  },
+  "272996": {
+   "n": "Trogg Scepter",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "272999": {
+   "n": "Barbaric Crossbow",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Crossbow",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "272998": {
+   "n": "Bone Knuckles",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Fist Weapon",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "14540": {
+   "n": "Taragaman the Hungerer's Heart",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "14148": {
+   "n": "Crystalline Cuffs",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "14149": {
+   "n": "Subterranean Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "14145": {
+   "n": "Cursed Felblade",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "15508": {
+   "n": "Grunt's Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 14
+  },
+  "14150": {
+   "n": "Robe of Evocation",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "14147": {
+   "n": "Cavedweller Bracers",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "14151": {
+   "n": "Chanting Blade",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "273005": {
+   "n": "Satyrskin Cloak",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "273003": {
+   "n": "Searing Dagger",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 13
+  },
+  "273007": {
+   "n": "Chasm Walkers",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 13
+  },
+  "6447": {
+   "n": "Worn Turtle Shell Shield",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "13245": {
+   "n": "Kresh's Back",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "273084": {
+   "n": "Cloak of Hermitic Bliss",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "9739": {
+   "n": "Gem of Anacondra",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "5404": {
+   "n": "Serpent's Shoulders",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "10412": {
+   "n": "Belt of the Fang",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 16
+  },
+  "273088": {
+   "n": "Snake Eye Kaleidoscope",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "9738": {
+   "n": "Gem of Cobrahn",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6465": {
+   "n": "Robe of the Moccasin",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "6460": {
+   "n": "Cobrahn's Grasp",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "10410": {
+   "n": "Leggings of the Fang",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "9740": {
+   "n": "Gem of Pythas",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6473": {
+   "n": "Armor of the Fang",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "6472": {
+   "n": "Stinging Viper",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 19
+  },
+  "273089": {
+   "n": "Slither Cord",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "6449": {
+   "n": "Glowing Lizardscale Cloak",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "6448": {
+   "n": "Tail Spike",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 16
+  },
+  "273137": {
+   "n": "Skum's Bucket",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "9741": {
+   "n": "Gem of Serpentis",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6459": {
+   "n": "Savage Trodders",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "10411": {
+   "n": "Footpads of the Fang",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "5970": {
+   "n": "Serpent Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "6469": {
+   "n": "Venomstrike",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Bow",
+   "cl": "Weapon",
+   "rl": 19
+  },
+  "6630": {
+   "n": "Seedcloud Buckler",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "6631": {
+   "n": "Living Root",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "6629": {
+   "n": "Sporid Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "10441": {
+   "n": "Glowing Shard",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest",
+   "rl": 15
+  },
+  "6461": {
+   "n": "Slime-encrusted Pads",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 20
+  },
+  "6463": {
+   "n": "Deep Fathom Ring",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "6627": {
+   "n": "Mutant Scale Breastplate",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 18
+  },
+  "5254": {
+   "n": "Rugged Spaulders",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "273457": {
+   "n": "Sorcerer Collar",
+   "src": "wowhead",
+   "sl": "Neck",
+   "sc": "Amulet",
+   "cl": "Armor",
+   "rl": 17
+  },
+  "273456": {
+   "n": "Cell Keeper's Claws",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "Fist Weapon",
+   "cl": "Weapon",
+   "rl": 17
+  },
+  "932": {
+   "n": "Fel Steed Saddlebags",
+   "src": "wowhead",
+   "cl": "BagBag",
+   "sc": "BagBag"
+  },
+  "1292": {
+   "n": "Butcher's Cleaver",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Axe",
+   "cl": "Weapon",
+   "rl": 20
+  },
+  "6633": {
+   "n": "Butcher's Slicer",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 18
+  },
+  "6226": {
+   "n": "Bloody Apron",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "273637": {
+   "n": "Blade of Silverlaine",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 21
+  },
+  "6323": {
+   "n": "Baron's Scepter",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Mace",
+   "cl": "Weapon",
+   "rl": 21
+  },
+  "6321": {
+   "n": "Silverlaine's Family Seal",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "3191": {
+   "n": "Arced War Axe",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Axe",
+   "cl": "Weapon",
+   "rl": 21
+  },
+  "6320": {
+   "n": "Commander's Crest",
+   "src": "wowhead",
+   "sl": "Shield",
+   "sc": "Shield",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "273643": {
+   "n": "Worgenbane Talisman",
+   "src": "wowhead",
+   "sl": "Trinket",
+   "sc": "Trinket",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "6319": {
+   "n": "Girdle of the Blindwatcher",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "6318": {
+   "n": "Odo's Ley Staff",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 21
+  },
+  "273645": {
+   "n": "Blindwatcher's Sight",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "6340": {
+   "n": "Fenrus' Hide",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "3230": {
+   "n": "Black Wolf Bracers",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "273646": {
+   "n": "Half-Eaten Boots",
+   "src": "wowhead",
+   "sl": "Feet",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "3748": {
+   "n": "Feline Mantle",
+   "src": "wowhead",
+   "sl": "Shoulder",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "6314": {
+   "n": "Wolfmaster Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "273647": {
+   "n": "Worgpelt Leggings",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 21
+  },
+  "5442": {
+   "n": "Head of Arugal",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "6392": {
+   "n": "Belt of Arugal",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "6324": {
+   "n": "Robes of Arugal",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "6220": {
+   "n": "Meteor Shard",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 23
+  },
+  "6641": {
+   "n": "Haunting Blade",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Sword",
+   "cl": "Weapon",
+   "rl": 22
+  },
+  "6642": {
+   "n": "Phantom Armor",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "6341": {
+   "n": "Eerie Stable Lantern",
+   "src": "wowhead",
+   "sl": "Held In Off-hand",
+   "sc": "Off-hand Frill",
+   "cl": "Armor",
+   "rl": 19
+  },
+  "6908": {
+   "n": "Ghamoo-ra's Bind",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "6907": {
+   "n": "Tortoise Armor",
+   "src": "wowhead",
+   "sl": "Chest",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "273839": {
+   "n": "Spiked Shell Band",
+   "src": "wowhead",
+   "sl": "Finger",
+   "sc": "Ring",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "11121": {
+   "n": "Darkwater Talwar",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "sc": "One-Handed Sword",
+   "cl": "Weapon",
+   "rl": 22
+  },
+  "888": {
+   "n": "Naga Battle Gloves",
+   "src": "wowhead",
+   "sl": "Hands",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "3078": {
+   "n": "Naga Heartpiercer",
+   "src": "wowhead",
+   "sl": "Ranged",
+   "sc": "Bow",
+   "cl": "Weapon",
+   "rl": 22
+  },
+  "253948": {
+   "n": "Pattern: Filigreed Shining Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "273840": {
+   "n": "Cursed Murloc Eye",
+   "src": "wowhead",
+   "sl": "Trinket",
+   "sc": "Trinket",
+   "cl": "Armor",
+   "rl": 24
+  },
+  "5881": {
+   "n": "Head of Kelris",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "1155": {
+   "n": "Rod of the Sleepwalker",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Staff",
+   "cl": "Weapon",
+   "rl": 24
+  },
+  "6903": {
+   "n": "Gaze Dreamer Pants",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 23
+  },
+  "273846": {
+   "n": "Twilight Lord Girdle",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Mail",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "6901": {
+   "n": "Glowing Thresher Cape",
+   "src": "wowhead",
+   "sl": "Back",
+   "sc": "Cloak",
+   "cl": "Armor",
+   "rl": 24
+  },
+  "6902": {
+   "n": "Bands of Serra'kis",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 22
+  },
+  "6904": {
+   "n": "Bite of Serra'kis",
+   "src": "wowhead",
+   "sl": "One-Hand",
+   "sc": "Dagger",
+   "cl": "Weapon",
+   "rl": 23
+  },
+  "6910": {
+   "n": "Leech Pants",
+   "src": "wowhead",
+   "sl": "Legs",
+   "sc": "Cloth",
+   "cl": "Armor",
+   "rl": 24
+  },
+  "6911": {
+   "n": "Moss Cinch",
+   "src": "wowhead",
+   "sl": "Waist",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "6909": {
+   "n": "Strike of the Hydra",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "sc": "Two-Handed Sword",
+   "cl": "Weapon",
+   "rl": 26
+  },
+  "253940": {
+   "n": "Pattern: Filigreed Silky Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "251384": {
+   "n": "Plans: Crusader's Silvered Chain Helm",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "253946": {
+   "n": "Pattern: Filigreed Pearly Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "251381": {
+   "n": "Plans: Guard's Silvered Chain Helm",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "253942": {
+   "n": "Pattern: Filigreed Flame Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "253944": {
+   "n": "Pattern: Filigreed Shadow Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "253978": {
+   "n": "Pattern: Filigreed Silky Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252513": {
+   "n": "Trapper's Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "253984": {
+   "n": "Pattern: Filigreed Pearly Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "253980": {
+   "n": "Pattern: Filigreed Flame Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252825": {
+   "n": "Pattern: Wisdom's Leather Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253976": {
+   "n": "Pattern: Filigreed Pristine Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "252514": {
+   "n": "Stormrider's Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "252512": {
+   "n": "Brawler's Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "252820": {
+   "n": "Pattern: Brawler's Leather Legguards",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253982": {
+   "n": "Pattern: Filigreed Shadow Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
+  },
+  "251375": {
+   "n": "Plans: Veteran's Silvered Chain Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251376": {
+   "n": "Plans: Guard's Silvered Chain Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "252821": {
+   "n": "Pattern: Trapper's Leather Legguards",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252456": {
+   "n": "Totemic Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "251377": {
+   "n": "Plans: Protector's Silvered Chain Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251378": {
+   "n": "Plans: Acolyte's Silvered Chain Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "251379": {
+   "n": "Plans: Crusader's Silvered Chain Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Blacksmithing Plans"
+  },
+  "252455": {
+   "n": "Defender's Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "252515": {
+   "n": "Wisdom's Leather Helm",
+   "src": "wowhead",
+   "sl": "Head",
+   "sc": "Leather",
+   "cl": "Armor",
+   "rl": 25
+  },
+  "252822": {
+   "n": "Pattern: Defender's Leather Kilt",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252823": {
+   "n": "Pattern: Totemic Leather Leggings",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "252824": {
+   "n": "Pattern: Stormrider's Leather Kilt",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Leatherworking Pattern"
+  },
+  "253986": {
+   "n": "Pattern: Filigreed Shining Circlet",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Tailoring Pattern"
   }
  }
 }
