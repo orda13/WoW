@@ -414,7 +414,15 @@ table.gbest { border-collapse: collapse; width: 100%; font-size: .86rem; }
 table.gbest td { padding: 2px 6px 2px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 table.gbest tr.on td { font-weight: 700; }
 .g-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1px solid #000; margin-right: 4px; vertical-align: middle; }
-.pp-prof { margin-bottom: 12px; }
+.pp-prof { margin-bottom: 14px; }
+.pp-stages { margin: 4px 0 6px 20px; padding: 0; }
+.pp-stages li { margin: 6px 0; }
+.pp-stages li.now > b { color: var(--brass); }
+.pp-stages li.now::marker { color: var(--brass); }
+.pp-stages li.pp-more { display: none; } .pp-stages.all li.pp-more { display: list-item; }
+.pp-stages li.pp-mile { list-style: none; margin-left: -18px; color: var(--rested); font-weight: 600; }
+.pp-mats { font-size: .86rem; }
+.pp-stages button.ghost { margin-left: 6px; font-size: .78rem; padding: 1px 8px; }
 .pp-list { margin: 4px 0 6px 18px; padding: 0; }
 .rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 8px; }
 table.rep { border-collapse: collapse; width: 100%; font-size: .88rem; }
@@ -876,8 +884,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   </section>
 
   <section class="panel" id="profPlanPanel" data-view="skills">
-    <h2>Profession plan</h2>
-    <p class="hint">For each of this character's professions: the cheapest recipes for the next skill-ups (orange always gives a point, yellow sometimes), what to buy, and which of your other characters hold materials to send over. Prices are ones you've seen at vendors or the auction house (the add-on records them), else the published vendor price.</p>
+    <h2>Profession guide</h2>
+    <p class="hint">The most effective way from your skill to 300 for each of this character's professions, worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: the cheapest recipe for each point (orange always gives one, yellow sometimes), using materials on any of your characters first; Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way. Prices are ones you've seen at vendors or the auction house, else the published vendor price.</p>
     <div id="profPlan"><p class="empty">Loading recipes…</p></div>
   </section>
 
@@ -2810,72 +2818,137 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     // the published price only counts when a vendor actually sells it (gathered items carry a price too)
     return m.price && ((m.v && m.v.length) || m.vn) ? { p: m.price, from: "vendor list" } : null;
   }
+  // The whole path from your skill to 300 for a crafting profession, one point at a time: the cheapest recipe that
+  // can still give a point (known, learnable at a trainer now, or a recipe item a vendor sells for gold), using
+  // materials on any character first. Consecutive points on one recipe make a stage.
+  const RANKS = [[50, 75, "Journeyman", 10], [125, 150, "Expert", 20], [200, 225, "Artisan", 35]];
+  function craftPath(prof, k, skip) {
+    const recipes = RC.data.recipes.filter((e) => e.p === prof && e.su && e.rg && e.rg.length && !skip[e.n]);
+    const mine = new Map(), alts = new Map();
+    for (const n of new Set(recipes.flatMap((e) => e.rg.map(([x]) => x.toLowerCase())))) for (const h of heldBy(n)) { const m = isMe(h.c) ? mine : alts; m.set(n, (m.get(n) || 0) + h.bags + h.bank); }
+    const have = (key) => (mine.get(key) || 0) + (alts.get(key) || 0);
+    const learned = new Set(), stages = [];
+    let skill = k.skill, cur = null, max = k.max || 75, stop = null;
+    while (skill < 300) {
+      // trainer ranks: train the next one when you reach its skill (the path assumes you do)
+      for (const [at, cap, rank, lvl] of RANKS) if (skill >= at && max <= cap) { stages.push({ milestone: `Train ${rank} ${prof} (needs skill ${at} and level ${lvl}) to go past ${cap}.`, at: skill }); max = cap + 75; cur = null; }
+      let best = null;
+      for (const e of recipes) {
+        const isK = k.set.has(e.n.toLowerCase()) || learned.has(e.n);
+        let learnCost = 0, how = null;
+        if (!isK) {
+          if (!e.learn) { const tp = trainerPrice(e.n); if (tp && tp.skr ? tp.skr > skill : learnAt(e) > skill) continue; learnCost = tp ? tp.cost : 0; how = { kind: "trainer", cost: tp ? tp.cost : null }; }
+          else {
+            if (learnAt(e) > skill) continue;
+            const l = e.learn.find((x) => x.v && x.price && x.v.some((v) => !FAVOR.ids.has(v.id))); if (!l) continue;
+            learnCost = l.price; how = { kind: "vendor", cost: l.price, item: l.n };
+          }
+        }
+        const c = upColor(e, skill, true); if (c !== "orange" && c !== "yellow") continue;
+        const chance = c === "orange" ? 1 : Math.max(0.1, (e.su[2] - skill) / (e.su[2] - e.su[0]));
+        let cost = 0, unknown = false;
+        for (const [n, q] of e.rg) { const short = Math.max(0, q - have(n.toLowerCase())); if (short) { const pr = matPrice(n); if (!pr) unknown = true; else cost += short * pr.p; } }
+        const per = cost / chance + (unknown ? 1e7 : 0) + learnCost;
+        if (!best || per < best.per) best = { e, per, chance, how };
+      }
+      if (!best) { stop = skill; break; }
+      const e = best.e, crafts = Math.ceil(1 / best.chance);
+      if (!cur || cur.e !== e) { cur = { e, from: skill, to: skill, crafts: 0, buy: new Map(), alts: new Map(), how: learned.has(e.n) ? null : best.how }; stages.push(cur); }
+      if (best.how) learned.add(e.n);
+      cur.crafts += crafts; cur.to = skill + 1;
+      for (const [n, q] of e.rg) {
+        const key = n.toLowerCase(); let left = q * crafts;
+        const a = Math.min(left, mine.get(key) || 0); mine.set(key, (mine.get(key) || 0) - a); left -= a;
+        const b = Math.min(left, alts.get(key) || 0); alts.set(key, (alts.get(key) || 0) - b); left -= b;
+        if (b > 0) cur.alts.set(n, (cur.alts.get(n) || 0) + b);
+        if (left > 0) cur.buy.set(n, (cur.buy.get(n) || 0) + left);
+      }
+      skill++;
+    }
+    return { stages, stop };
+  }
+  // Gathering, mining or skinning: the best zone every 5 points from your skill to 300, runs of one zone as a stage
+  function gatherPath(prof, skill, max) {
+    const stages = [];
+    for (let s = Math.max(1, skill); s < 300; s += 5) {
+      for (const [at, cap, rank, lvl] of RANKS) if (s >= at && (max || 75) <= cap) { stages.push({ milestone: `Train ${rank} ${prof} (needs skill ${at} and level ${lvl}) to go past ${cap}.` }); max = cap + 75; }
+      const r = zoneRank(prof, s, false).filter((x) => x.score > 0);
+      if (!r.length) continue;
+      const top = r[0], last = stages[stages.length - 1];
+      if (last && !last.milestone && last.zid === top.zid) { last.to = Math.min(300, s + 5); for (const n of top.names) last.names.add(n); continue; }
+      stages.push({ zid: top.zid, zn: top.zn, from: s, to: Math.min(300, s + 5), names: new Set(top.names), alt: r.slice(1, 3).map((x) => x.zn), lv: top.lv });
+    }
+    return stages;
+  }
+  function showOnMap(prof, zid) {
+    $("gProf").value = prof; GA.zone = zid; renderGather();
+    $("gatherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function profSkip() { return (S.profPrefs && S.profPrefs.skip) || {}; }
+  function setSkip(name, on) {
+    const skip = { ...profSkip() }; if (on) skip[name] = 1; else delete skip[name];
+    S.profPrefs = { skip, updatedAt: Date.now() }; renderProfPlan();
+    if (db) write(() => db.doc("state/profprefs").set(S.profPrefs));
+  }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
-    const kn = knownRecipes(), out = [];
+    if (!GA.data) loadGather();
+    const kn = knownRecipes(), out = [], skip = profSkip();
     for (const [prof, k] of kn) {
-      if (k.skill == null || (k.max && k.skill >= k.max)) continue;
-      const recipes = RC.data.recipes.filter((e) => e.p === prof && e.su && e.rg && e.rg.length);
-      if (!recipes.length) continue; // gathering professions have nothing to craft
-      // materials on every character: mine first, then the others'
-      const mine = new Map(), alts = new Map();
-      const need = new Set(recipes.flatMap((e) => e.rg.map(([n]) => n.toLowerCase())));
-      for (const n of need) for (const h of heldBy(n)) { const m = isMe(h.c) ? mine : alts; m.set(n, (m.get(n) || 0) + h.bags + h.bank); }
-      const have = (key) => (mine.get(key) || 0) + (alts.get(key) || 0);
-      // one point at a time, up to 10 points: the cheapest recipe that can still give a point
-      let skill = k.skill; const steps = new Map(), buy = new Map(), fromAlts = new Map(), learn = new Map();
-      const known = (e) => k.set.has(e.n.toLowerCase());
-      for (let i = 0; i < 10 && (!k.max || skill < k.max); i++) {
-        let best = null;
-        for (const e of recipes) {
-          const isK = known(e), tp = !isK && !e.learn ? trainerPrice(e.n) : null;
-          // known, or learnable at a trainer now (the skill the trainer asks for, when the add-on recorded it)
-          if (!isK && (e.learn || (tp && tp.skr ? tp.skr > skill : learnAt(e) > skill))) continue;
-          const c = upColor(e, skill, isK); if (c !== "orange" && c !== "yellow") continue;
-          const chance = c === "orange" ? 1 : Math.max(0.1, (e.su[2] - skill) / (e.su[2] - e.su[0]));
-          let cost = 0, unknown = false;
-          for (const [n, q] of e.rg) { const short = Math.max(0, q - have(n.toLowerCase())); if (short) { const pr = matPrice(n); if (!pr) unknown = true; else cost += short * pr.p; } }
-          const per = cost / chance + (unknown ? 1e7 : 0) + (!isK && !learn.has(e.n) && tp ? tp.cost : 0);
-          if (!best || per < best.per) best = { e, per, chance, isK, tp };
-        }
-        if (!best) break;
-        const e = best.e;
-        if (!best.isK && !learn.has(e.n)) learn.set(e.n, best.tp ? best.tp.cost : null);
-        const crafts = Math.ceil(1 / best.chance);
-        steps.set(e.n, (steps.get(e.n) || 0) + crafts);
-        for (const [n, q] of e.rg) {
-          const key = n.toLowerCase(); let left = q * crafts;
-          const a = Math.min(left, mine.get(key) || 0); mine.set(key, (mine.get(key) || 0) - a); left -= a;
-          const b = Math.min(left, alts.get(key) || 0); alts.set(key, (alts.get(key) || 0) - b); left -= b;
-          if (b > 0) fromAlts.set(n, (fromAlts.get(n) || 0) + b);
-          if (left > 0) buy.set(n, (buy.get(n) || 0) + left);
-        }
-        skill++;
-      }
+      if (k.skill == null || k.skill >= 300) continue;
       const sec = el("div", "pp-prof");
       sec.append(el("h3", null, `${prof} ${k.skill}${k.max ? "/" + k.max : ""}`));
-      if (!steps.size) { sec.append(el("p", "muted", "No orange or yellow recipe you know or can learn at a trainer. Look for new recipes below.")); out.push(sec); continue; }
-      sec.append(el("p", null, `Next ${skill - k.skill} skill-up${skill - k.skill === 1 ? "" : "s"} (to about ${skill}):`));
-      const ul = el("ul", "pp-list");
-      for (const [n, c] of steps) { const li = el("li"); li.append(el("b", null, `${c}× ${n}`)); if (learn.has(n)) { li.append(el("span", "muted", " · learn at your trainer" + (learn.get(n) != null ? " for " : ""))); if (learn.get(n) != null) li.append(moneyEl(learn.get(n))); } ul.append(li); }
-      sec.append(ul);
-      if (buy.size) {
-        let total = 0, unknown = 0; const p = el("p"); p.append(el("span", "label", "Buy "));
-        [...buy].forEach(([n, q], i) => { const pr = matPrice(n); if (i) p.append(document.createTextNode(", ")); p.append(document.createTextNode(`${q} ${n}`)); if (pr) { total += q * pr.p; p.append(el("span", "muted", ` (${money(pr.p)} each, ${pr.from})`)); } else { unknown++; p.append(el("span", "muted", " (price unknown)")); } });
-        p.append(document.createTextNode(" · about "), moneyEl(total), el("span", "muted", unknown ? ` plus ${unknown} without a price` : ""));
-        sec.append(p);
-      } else sec.append(el("p", "bud-ok", "You have every material for these."));
-      // ask your other characters: who holds what
-      if (fromAlts.size) {
-        const byHolder = new Map();
-        for (const [n] of fromAlts) for (const h of heldBy(n)) if (!isMe(h.c) && h.bags + h.bank > 0) { if (!byHolder.has(h.c.name)) byHolder.set(h.c.name, []); byHolder.get(h.c.name).push(`${h.bags + h.bank} ${n}` + (h.bags ? "" : " (bank)")); }
-        const p = el("p"); p.append(el("span", "label", "Send from your other characters "));
-        [...byHolder].forEach(([who, items], i) => { if (i) p.append(document.createTextNode(" · ")); p.append(el("b", null, who + ": "), document.createTextNode(items.join(", "))); });
-        sec.append(p);
+      const isGather = ["Herbalism", "Mining", "Skinning"].includes(prof);
+      const hasRecipes = RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length);
+      if (isGather) {
+        if (!GA.data) { sec.append(el("p", "muted", "Loading node data…")); out.push(sec); continue; }
+        const st = gatherPath(prof, k.skill, k.max);
+        if (!st.length) { sec.append(el("p", "muted", "No zone data for this skill range.")); out.push(sec); continue; }
+        const ol = el("ol", "pp-stages");
+        let firstZone = true, zoneN = 0;
+        st.forEach((g) => {
+          if (g.milestone) { ol.append(el("li", "pp-mile", g.milestone)); return; }
+          const li = el("li", firstZone ? "now" : null); firstZone = false; li.value = ++zoneN;
+          li.append(el("b", null, `${g.from}–${g.to}: ${g.zn}`), el("span", "muted", ` · ${[...g.names].slice(0, 4).join(", ")}${g.alt.length ? ` · or ${g.alt.join(", ")}` : ""}`));
+          const b = el("button", "ghost", "Map"); b.type = "button"; b.onclick = () => showOnMap(prof, g.zid); li.append(document.createTextNode(" "), b);
+          ol.append(li);
+        });
+        sec.append(el("p", "hint", "The best zone for each part of the way, by skill-up spots at that skill. Go where you like: this follows your skill as it changes."), ol);
+        out.push(sec); continue;
       }
+      if (!hasRecipes) continue;
+      const { stages, stop } = craftPath(prof, k, skip);
+      const ol = el("ol", "pp-stages"); let total = 0, shown = 0, crafted = 0;
+      for (const g of stages) {
+        if (g.milestone) { ol.append(el("li", "pp-mile", g.milestone)); continue; }
+        const li = el("li", crafted === 0 ? "now" : null); crafted++; li.value = crafted;
+        li.append(el("b", null, `${g.from}–${g.to}: ${g.crafts}× ${g.e.n}`));
+        if (g.how) { li.append(el("span", "muted", g.how.kind === "trainer" ? " · learn at your trainer" : ` · buy ${g.how.item || "the recipe"} from a vendor`)); if (g.how.cost != null) { li.append(document.createTextNode(" ")); li.append(moneyEl(g.how.cost)); total += g.how.cost; } }
+        // what you can buy (a price is known) and what you gather or loot yourself
+        let cost = 0; const buy = [], get = [];
+        for (const [n, q] of g.buy) { const pr = matPrice(n); if (pr) { cost += q * pr.p; buy.push(`${q} ${n}`); } else get.push(`${q} ${n}`); }
+        total += cost;
+        const d = el("div", "pp-mats");
+        if (buy.length) d.append(el("span", "label", "Buy "), document.createTextNode(buy.join(", ") + " · about "), moneyEl(cost));
+        if (get.length) d.append(document.createTextNode(buy.length ? " · " : ""), el("span", "label", "Gather or loot "), document.createTextNode(get.join(", ")));
+        if (!buy.length && !get.length) d.append(el("span", "bud-ok", "You have the materials."));
+        if (g.alts.size) d.append(el("span", "muted", ` · from your other characters: ${[...g.alts].map(([n, q]) => `${q} ${n}`).join(", ")}`));
+        li.append(d);
+        const sb = el("button", "ghost", "Skip"); sb.type = "button"; sb.title = "Leave this recipe out; the plan works around it"; sb.onclick = () => setSkip(g.e.n, true);
+        li.append(sb);
+        if (++shown > 6) li.classList.add("pp-more");
+        ol.append(li);
+      }
+      if (shown > 6) { const more = el("button", "linkish", `Show all ${shown} stages`); more.type = "button"; more.onclick = () => { ol.classList.add("all"); more.remove(); }; sec.append(ol, more); } else sec.append(ol);
+      const foot = el("p", "muted");
+      if (stop != null) foot.append(document.createTextNode(`No recipe you know or can learn from a trainer or a vendor takes you past ${stop}. Look below for recipes from drops, quests or Merchant's Favor. `));
+      if (total) { foot.append(document.createTextNode(`Whole path about `), moneyEl(total), document.createTextNode(" in materials and recipes, at prices you've seen. ")); }
+      const sk = Object.keys(skip).filter((n) => RC.data.recipes.some((e) => e.n === n && e.p === prof));
+      if (sk.length) { foot.append(document.createTextNode("Skipped: " + sk.join(", ") + " ")); const u = el("button", "linkish", "undo"); u.type = "button"; u.onclick = () => { for (const n of sk) setSkip(n, false); }; foot.append(u); }
+      sec.append(foot);
       out.push(sec);
     }
-    box.replaceChildren(...(out.length ? out : [el("p", "empty", "No professions to level on this character (or they're all at their cap).")]));
+    box.replaceChildren(...(out.length ? out : [el("p", "empty", "No professions to level on this character (or they're all at 300).")]));
   }
   // ---------- gathering map: node spawns coloured for your skill, best zones, a loop route, your own gathers ----------
   const GA = { data: null, loading: false, zone: null };
@@ -2889,6 +2962,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       GA.data = d;
       const ps = profs().map((p) => p.name); const first = ["Herbalism", "Mining", "Skinning"].find((n) => ps.includes(n)); if (first) $("gProf").value = first;
       renderGather();
+      try { renderProfPlan(); } catch (e) { console.error(e); }
     }).catch(() => { $("gInfo").textContent = "Couldn't load the gathering data."; });
   }
   // a loop through the points: nearest neighbour, then 2-opt passes that remove crossings (map is 3:2 wide)
@@ -2907,6 +2981,19 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     return out;
   }
+  // zones ranked by how many skill-up spawns they have at a skill (orange counts most), for the map and the guide
+  function zoneRank(prof, skill, green) {
+    const nodes = GA.data.nodes.filter((n) => n.kind === prof);
+    const want = new Set(["orange", "yellow", ...(green ? ["green"] : [])]);
+    const rank = [];
+    for (const [zid, zn] of Object.entries(GA.data.zones)) {
+      const c = { orange: 0, yellow: 0, green: 0 }, names = new Set(); let lo = Infinity, hi = 0;
+      for (const n of nodes) { const pts = n.spawns[zid]; if (!pts) continue; const col = gColor(n.sk, skill); if (c[col] != null) { c[col] += pts.length; if (want.has(col)) { names.add(n.n); if (n.lv) { lo = Math.min(lo, n.lv[0]); hi = Math.max(hi, n.lv[1]); } } } }
+      const score = c.orange + c.yellow * 0.7 + (green ? c.green * 0.3 : 0);
+      if (score > 0 || nodes.some((n) => n.spawns[zid])) rank.push({ zid, zn, c, score, names: [...names], lv: hi ? [lo, hi] : null });
+    }
+    return rank.sort((a, b) => b.score - a.score || a.zn.localeCompare(b.zn));
+  }
   function renderGather() {
     const svg = $("gSvg"); if (!svg) return;
     if (!GA.data) { loadGather(); return; }
@@ -2914,15 +3001,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const skill = ((profs().find((p) => p.name === prof)) || {}).skill ?? null;
     const nodes = GA.data.nodes.filter((n) => n.kind === prof);
     const want = new Set(["orange", "yellow", ...($("gGreen").checked ? ["green"] : [])]);
-    // zones ranked by how many skill-up spawns they have for you
-    const rank = [];
-    for (const [zid, zn] of Object.entries(GA.data.zones)) {
-      const c = { orange: 0, yellow: 0, green: 0 }, names = new Set();
-      for (const n of nodes) { const pts = n.spawns[zid]; if (!pts) continue; const col = gColor(n.sk, skill); if (c[col] != null) { c[col] += pts.length; if (want.has(col)) names.add(n.n); } }
-      const score = c.orange + c.yellow * 0.7 + ($("gGreen").checked ? c.green * 0.3 : 0);
-      if (score > 0 || nodes.some((n) => n.spawns[zid])) rank.push({ zid, zn, c, score, names: [...names] });
-    }
-    rank.sort((a, b) => b.score - a.score || a.zn.localeCompare(b.zn));
+    const rank = zoneRank(prof, skill, $("gGreen").checked);
     const sel = $("gZoneSel"); const cur = GA.zone || (rank[0] && rank[0].zid);
     sel.replaceChildren(...rank.map((r) => { const o = el("option", null, `${r.zn}${r.score ? ` (${r.c.orange + r.c.yellow} skill-up spots)` : ""}`); o.value = r.zid; return o; }));
     if (cur) sel.value = cur; GA.zone = sel.value;
@@ -3802,6 +3881,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/profprefs").onSnapshot((s) => { S.profPrefs = s.exists ? s.data() : null; try { renderProfPlan(); } catch {} }, () => {});
     db.doc("state/gathers").onSnapshot((s) => { S.gathers = s.exists ? s.data() : null; try { renderGather(); } catch {} }, () => {});
     db.doc("shared/ahprices").onSnapshot((s) => { S.ah = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); }, () => {});
     db.doc("shared/questplan").onSnapshot((s) => { S.plan = s.exists ? s.data() : null; renderQuests(); renderQuestLog(); }, () => {});
