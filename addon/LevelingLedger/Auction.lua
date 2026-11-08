@@ -70,14 +70,111 @@ local function items(itemKey)
   flush()
 end
 
+-- ---------- full scan: the "Scan all prices" button on the auction house window ----------
+-- Newer clients: C_AuctionHouse.ReplicateItems (every listing, read by index from 0). Classic: QueryAuctionItems with
+-- getAll. The game allows one about every 15 minutes, started by a click. Results are read a chunk at a time.
+local COOLDOWN, CHUNK = 15 * 60, 1500
+local scanning, btn, status
+local function setStatus(t) if status then status:SetText(t or "") end end
+local function canScanIn()
+  local db = ns.db and ns.db(); local last = db and db.ahScanAt or 0
+  return math.max(0, COOLDOWN - (now() - last))
+end
+-- read n results with get(i) -> itemID, buyout, count, a chunk per frame, then save
+local reader = CreateFrame("Frame")
+local function readAll(n, first, get)
+  local i, last = first, first + n - 1
+  setStatus("Reading 0 / " .. n .. "...")
+  reader:SetScript("OnUpdate", function(self)
+    local stop = math.min(last, i + CHUNK - 1)
+    for k = i, stop do
+      local id, buyout, count = get(k)
+      if id and buyout and buyout > 0 and (count or 0) > 0 then note(id, buyout / count, count) end
+    end
+    i = stop + 1
+    setStatus("Reading " .. (i - first) .. " / " .. n .. "...")
+    if i > last then
+      self:SetScript("OnUpdate", nil)
+      local items = 0; for _ in pairs(seen) do items = items + 1 end
+      flush(); scanning = nil
+      setStatus("Done: prices for " .. items .. " items. Press Save (or /reload) to send them to the ledger.")
+    end
+  end)
+end
+local function startScan()
+  if scanning then return end
+  local wait = canScanIn()
+  if wait > 0 then setStatus("The game allows a full scan again in " .. math.ceil(wait / 60) .. " min."); return end
+  local db = ns.db and ns.db()
+  if AH and type(AH.ReplicateItems) == "function" then
+    scanning = "replicate"
+  elseif QueryAuctionItems and CanSendAuctionQuery and select(2, call(CanSendAuctionQuery)) then
+    scanning = "classic"
+  else
+    setStatus(QueryAuctionItems and "The auction house isn't ready for a full scan yet; try again in a moment." or "This client has no full-scan request; prices still come from what you browse.")
+    return
+  end
+  if db then db.ahScanAt = now() end
+  seen = {}
+  setStatus("Asking the auction house for every listing...")
+  local ok
+  if scanning == "replicate" then ok = pcall(AH.ReplicateItems)
+  else ok = pcall(QueryAuctionItems, "", nil, nil, 0, false, nil, true) end
+  if not ok then scanning = nil; setStatus("The game didn't accept the scan request."); return end
+  -- no results within 90 seconds: give up, so the button works again
+  local mode = scanning
+  if C_Timer and C_Timer.After then C_Timer.After(90, function()
+    if scanning == mode then scanning = nil; setStatus("The auction house didn't send the full list. Prices still come from what you browse.") end
+  end) end
+end
+local function onReplicate()
+  if scanning ~= "replicate" then return end
+  scanning = "reading"
+  local n = call(AH.GetNumReplicateItems) or 0
+  readAll(n, 0, function(k)
+    local r = { pcall(AH.GetReplicateItemInfo, k) }
+    if r[1] then return r[18], r[11], r[4] end -- itemID, buyout, count
+  end)
+end
+local function onClassicAll()
+  scanning = "reading"
+  local n = call(GetNumAuctionItems, "list") or 0
+  readAll(n, 1, function(k)
+    local r = { pcall(GetAuctionItemInfo, "list", k) }
+    if r[1] then return r[18], r[11], r[4] end
+  end)
+end
+-- The button, on whichever auction window this client has (created once, when it first opens)
+local function makeButton()
+  if btn then return end
+  local parent = rawget(_G, "AuctionHouseFrame") or rawget(_G, "AuctionFrame")
+  if not parent then return end
+  btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  btn:SetSize(130, 22); btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -70, -1); btn:SetText("Scan all prices")
+  btn:SetScript("OnClick", function() ns.safe(startScan) end)
+  btn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Leveling Ledger: scan all prices")
+    local w = canScanIn()
+    GameTooltip:AddLine(w > 0 and ("Next scan allowed in " .. math.ceil(w / 60) .. " min.") or "Reads every listing (allowed about every 15 minutes).", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  btn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  status = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  status:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", 0, -2); status:SetJustifyH("RIGHT")
+end
+ns.ahScan = startScan
+
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "AUCTION_ITEM_LIST_UPDATE", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
+for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "REPLICATE_ITEM_LIST_UPDATE", "AUCTION_ITEM_LIST_UPDATE", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
   "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
   if ns.listen then ns.listen(f, e) else pcall(f.RegisterEvent, f, e) end
 end
 f:SetScript("OnEvent", function(_, event, a1)
   local safe = ns.safe or pcall
-  if event == "AUCTION_ITEM_LIST_UPDATE" then safe(classicList)
+  if event == "AUCTION_HOUSE_SHOW" then safe(makeButton)
+  elseif event == "REPLICATE_ITEM_LIST_UPDATE" then safe(onReplicate)
+  elseif event == "AUCTION_ITEM_LIST_UPDATE" then if scanning == "classic" then safe(onClassicAll) elseif not scanning then safe(classicList) end
   elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then safe(browse)
   elseif event == "COMMODITY_SEARCH_RESULTS_UPDATED" then safe(commodity, a1)
   elseif event == "ITEM_SEARCH_RESULTS_UPDATED" then safe(items, a1) end

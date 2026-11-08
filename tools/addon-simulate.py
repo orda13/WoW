@@ -169,11 +169,19 @@ AHLIST = { { "Peacebloom", 5, 600, 2447 }, { "Peacebloom", 20, 2000, 2447 }, { "
 function GetNumAuctionItems() return #AHLIST end
 function GetAuctionItemInfo(kind, i) local a = AHLIST[i]; return a[1], 0, a[2], 1, true, 1, "", 100, 10, a[3], 0, false, nil, "x", nil, 0, a[4], true end
 C_AuctionHouse = { GetBrowseResults = function() return { { itemKey = { itemID = 765 }, minPrice = 35, totalQuantity = 40 } } end }
+-- full scan, newer style: 3,200 listings of 2 items (read in chunks), indexes from 0
+C_AuctionHouse.ReplicateItems = function() FRAME_FIRE("REPLICATE_ITEM_LIST_UPDATE") end
+C_AuctionHouse.GetNumReplicateItems = function() return 3200 end
+C_AuctionHouse.GetReplicateItemInfo = function(k) local id = (k % 2 == 0) and 2449 or 2450; return "x", 0, 4, 1, true, 1, "", 1, 1, 400 + k, 0, false, nil, "x", nil, 0, id, true end
+-- full scan, classic style
+function CanSendAuctionQuery() return true, true end
+function QueryAuctionItems(text, a, b, page, u, q, getAll) if getAll then FRAME_FIRE("AUCTION_ITEM_LIST_UPDATE") end end
 -- water break window
 function InCombatLockdown() return COMBAT or false end
 function ReloadUI() RELOADED = true end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
+L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
 for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
@@ -275,6 +283,15 @@ L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the figh
 L.execute('LevelingLedgerWater.later.scripts.OnClick()'); print('after Later:', water()[:7]); slash('water')
 L.execute('T = T + 900'); tick(); print('15 min later:', water())
 L.execute('LevelingLedgerWater.ok.scripts.OnClick()'); print('reloaded:', L.globals().RELOADED)
+# full auction scan: the button appears on the auction window; newer style first, then classic; 15-minute limit
+L.execute('CreateFrame("Frame", "AuctionHouseFrame")'); fire('AUCTION_HOUSE_SHOW')
+L.execute('LL_NS.ahScan()')
+for _ in range(4): tick()
+ah = L.globals().LevelingLedgerDB.ah
+print('full scan (newer):', {k: dict(ah[k]) for k in (2449, 2450)})
+L.execute('LL_NS.ahScan()')   # too soon
+L.execute('LevelingLedgerDB.ahScanAt = 0; C_AuctionHouse.ReplicateItems = nil; AHLIST = { { "Earthroot", 10, 900, 2449 } }; LL_NS.ahScan()'); tick()
+print('full scan (classic):', dict(L.globals().LevelingLedgerDB.ah[2449]))
 slash('water 45'); slash('water off'); L.execute('LevelingLedgerWater:Hide(); T = T + 9000'); tick(); print('with reminders off:', water()[:7]); slash('water on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
