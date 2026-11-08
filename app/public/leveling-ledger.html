@@ -3311,7 +3311,15 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function loadDungeons() {
     if (DG.data || DG.loading) { renderDungeons(); return; }
     DG.loading = true;
-    fetch("dungeons-forever.json").then((r) => r.json()).then((d) => { DG.data = d; renderDungeons(); })
+    // plus hand-entered dungeons the other sources don't have yet (dungeons-curated-forever.json)
+    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), fetch("dungeons-curated-forever.json").then((r) => r.ok ? r.json() : null).catch(() => null)]).then(([d, c]) => {
+      if (c) {
+        for (const x of c.dungeons || []) if (!d.dungeons.some((y) => y.key === x.key)) { d.dungeons.push(x); d.forever = (d.forever || []).filter((a) => a.n !== x.n); }
+        for (const [id, it] of Object.entries(c.items || {})) if (!d.items[id]) d.items[id] = it;
+        d.dungeons.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "Raid" ? 1 : -1) || a.lv[0] - b.lv[0]);
+      }
+      DG.data = d; renderDungeons();
+    })
       .catch(() => { $("dgList").replaceChildren(el("p", "empty", "Couldn't load the dungeon list. Reload the page to try again.")); });
   }
   function dgItemLine(id, chance) {
@@ -3423,7 +3431,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     for (const b of d.bosses) {
       const c = el("div", "dg-boss");
       const h = el("div", "dg-bh");
-      h.append(b.id ? whA("npc", b.id, b.n, "who") : whA("search", b.n, b.n, "who"));
+      if (b.id) h.append(whA("npc", b.id, b.n, "who"));
+      else if (b.wh) { const a = el("a", "who", b.n); a.href = b.wh; a.target = "_blank"; a.rel = "noopener"; h.append(a); }
+      else h.append(whA("search", b.n, b.n, "who"));
       const meta = [b.lv != null ? "level " + (Array.isArray(b.lv) ? b.lv.join("–") : b.lv) : "", b.r || ""].filter(Boolean).join(" · ");
       if (meta) h.append(el("span", "muted", " " + meta));
       if (b.rare) h.append(el("span", "pill wait", "Rare spawn"));
@@ -3473,6 +3483,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (sorted.length > 40) o.append(el("p", "hint", `and ${sorted.length - 40} more`));
       body.append(o);
     }
+    if (d.curated) body.append(el("p", "hint", `Bosses and loot from ${d.curated}; item stats aren't known yet, so each item links to Wowhead.`));
     if (d.gone) body.append(el("p", "hint", `${d.gone} classic item${d.gone > 1 ? "s" : ""} from here no longer exist in Forever and are hidden. Forever's replacements aren't published yet.`));
     body.append(dgMapBlock(d));
     if (qi.qs.length) {

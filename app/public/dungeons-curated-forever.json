@@ -1,0 +1,163 @@
+{
+ "source": "Hand-entered dungeons for WoW Forever that the other sources don't have yet. The Hall of Thanes: bosses and loot from Wowhead's Forever pages (dungeon journal), pasted by the owner on 2026-11-08; quests from our quest data. Item quality and stats aren't included; each item links to Wowhead.",
+ "dungeons": [
+  {
+   "key": "THE_HALL_OF_THANES",
+   "n": "The Hall of Thanes",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Ironforge",
+   "lv": [
+    13,
+    16
+   ],
+   "bosses": [
+    {
+     "n": "Faldrim Anvilmar",
+     "loot": [
+      271097,
+      270227,
+      271096
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-hall-of-thanes/faldrim-anvilmar"
+    },
+    {
+     "n": "Magmatus",
+     "loot": [
+      270230,
+      271095,
+      270231
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-hall-of-thanes/magmatus"
+    },
+    {
+     "n": "Plunder",
+     "loot": [
+      270229,
+      270228,
+      271098
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-hall-of-thanes/plunder"
+    },
+    {
+     "n": "Durgen Dirgehammer",
+     "loot": [
+      274286,
+      270256,
+      270260,
+      270261
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/the-hall-of-thanes/durgen-dirgehammer"
+    }
+   ],
+   "qz": [
+    "The Hall of Thanes"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  }
+ ],
+ "items": {
+  "271097": {
+   "n": "Spiritwraith Drape",
+   "cl": "Armor",
+   "sc": "Cloak",
+   "src": "wowhead",
+   "sl": "Back",
+   "rl": 13
+  },
+  "270227": {
+   "n": "Ephemeral Choker",
+   "cl": "Armor",
+   "sc": "Amulet",
+   "src": "wowhead",
+   "sl": "Neck",
+   "rl": 13
+  },
+  "271096": {
+   "n": "Aetherwisp Bracers",
+   "cl": "Armor",
+   "sc": "Cloth",
+   "src": "wowhead",
+   "sl": "Wrist",
+   "rl": 13
+  },
+  "270230": {
+   "n": "Kindlegem Girdle",
+   "cl": "Armor",
+   "sc": "Mail",
+   "src": "wowhead",
+   "sl": "Waist",
+   "rl": 13
+  },
+  "271095": {
+   "n": "Fang of Magmatus",
+   "cl": "Weapon",
+   "sc": "Dagger",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "rl": 13
+  },
+  "270231": {
+   "n": "Flamefist Grips",
+   "cl": "Armor",
+   "sc": "Leather",
+   "src": "wowhead",
+   "sl": "Hands",
+   "rl": 13
+  },
+  "270229": {
+   "n": "Treads of the Protector Golem",
+   "cl": "Armor",
+   "sc": "Mail",
+   "src": "wowhead",
+   "sl": "Feet",
+   "rl": 13
+  },
+  "270228": {
+   "n": "Golemheart Stave",
+   "cl": "Weapon",
+   "sc": "Staff",
+   "src": "wowhead",
+   "sl": "Two-Hand",
+   "rl": 13
+  },
+  "271098": {
+   "n": "Golemguard Chest",
+   "cl": "Armor",
+   "sc": "Mail",
+   "src": "wowhead",
+   "sl": "Chest",
+   "rl": 13
+  },
+  "274286": {
+   "n": "Durgen Dirgehammer's Head",
+   "cl": "Quest",
+   "sc": "Quest",
+   "src": "wowhead"
+  },
+  "270256": {
+   "n": "Durgen's Crescent Axe",
+   "cl": "Weapon",
+   "sc": "One-Handed Axe",
+   "src": "wowhead",
+   "sl": "Main Hand",
+   "rl": 13
+  },
+  "270260": {
+   "n": "Direhammer Leggings",
+   "cl": "Armor",
+   "sc": "Leather",
+   "src": "wowhead",
+   "sl": "Legs",
+   "rl": 13
+  },
+  "270261": {
+   "n": "Robes of the Disgraced Thane",
+   "cl": "Armor",
+   "sc": "Cloth",
+   "src": "wowhead",
+   "sl": "Chest",
+   "rl": 13
+  }
+ }
+}
