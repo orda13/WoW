@@ -79,7 +79,8 @@ function GetMerchantItemCostItem(i, j) return 0, 120, nil, "Merchant's Favor" en
 -- loot
 function GetNumLootItems() return 2 end
 function GetLootSlotLink(s) if s == 1 then return "|cff0070dd|Hitem:273297::::::::13:::::|h[Goblin Hammer]|h|r" end return "|cff9d9d9d|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" end
-function GetLootSourceInfo(s) return "Creature-0-1-36-1-1763-0000AAAA", 1 end
+LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"
+function GetLootSourceInfo(s) return LOOTSRC, 1 end
 function GetItemInfo(link) return nil end
 C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then return 3 end return 1 end }
 SlashCmdList = {}
@@ -229,6 +230,10 @@ L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TR
 money(-380); fire('TRAINER_CLOSED')                                   # training
 L.execute('T = T + 60'); fire('MAIL_SHOW'); money(10000); money(-30); fire('MAIL_CLOSED')   # gold from an alt, postage
 L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-36-1-1763-0000AAAA"'); fire('PLAYER_TARGET_CHANGED'); fire('LOOT_OPENED')
+# gathering a Peacebloom node (object 1618) in Darkshore: recorded with its map position
+L.execute('ZONE = "Darkshore"; INSTANCE = false; LOOTSRC = "GameObject-0-1-1-1-1618-0000BBBB"'); fire('LOOT_OPENED')
+L.execute('LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"')
+print('gathers:', [dict(g) for g in L.globals().LevelingLedgerDB.chars['Talwyn-Normal'].gathers.values()])
 fire('PLAYER_DEAD')
 L.execute('ZONE = "Darkshore"; INSTANCE = false; SUBZONE = "Lor\'danel"'); fire('ZONE_CHANGED_NEW_AREA')
 L.execute('RESTING = true; SUBZONE = "Lor\'danel Inn"'); fire('PLAYER_UPDATE_RESTING')

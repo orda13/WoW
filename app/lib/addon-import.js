@@ -306,6 +306,20 @@ function importAddon(text, store, publicDir, source, hint) {
     }
   }
 
+  // 8. Where you gathered (herbs, ore and other objects, with map position), merged across devices
+  if (Array.isArray(arr(ch.gathers)) && arr(ch.gathers).length) {
+    const prev = (store.get("state/gathers") || {}).list || [];
+    const seen = new Set(prev.map((g) => `${g.o}|${g.at}|${g.x}|${g.y}`));
+    let added = 0; const list = prev.slice();
+    for (const g of arr(ch.gathers)) {
+      if (!g || !g.o || g.x == null || g.y == null) continue;
+      const e = { o: g.o, z: String(g.z || ""), x: +g.x, y: +g.y, at: (g.at || 0) * 1000 };
+      const k = `${e.o}|${e.at}|${e.x}|${e.y}`; if (seen.has(k)) continue;
+      seen.add(k); list.push(e); added++;
+    }
+    if (added) { list.sort((a, b) => a.at - b.at); store.set("state/gathers", { list: list.slice(-5000), updatedAt: Date.now() }); done.push(`${added} gathering spot${added === 1 ? "" : "s"}`); }
+  }
+
   const message = `Imported for ${ch.name || "your character"}: ` + done.join(", ") + ".";
   // the add-on logs its own Lua errors (db.errors: {at, err}); show the latest few on the page
   const errors = arr(data.errors).filter((e) => e && e.err).slice(-10).map((e) => ({ at: e.at || 0, err: String(e.err).slice(0, 300) }));

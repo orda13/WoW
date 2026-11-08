@@ -400,6 +400,20 @@ div.qc-red { border: 0; }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
 .tags .planned { color: var(--rested); font-weight: 600; }
 .ql-plan { margin-top: 10px; }
+.g-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 6px 0; }
+.g-wrap { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 760px) { .g-wrap { grid-template-columns: 1fr; } }
+.gmap { position: relative; width: 100%; aspect-ratio: 3 / 2; background: var(--panel-2, #1a1410); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.gmap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; opacity: .9; }
+.gmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.gmap .gn { stroke: #000; stroke-width: .12; }
+.gmap .gn.orange { fill: #ff8040; } .gmap .gn.yellow { fill: #ffff00; } .gmap .gn.green { fill: #40c040; } .gmap .gn.grey { fill: #9d9d9d; } .gmap .gn.red { fill: #ff2020; } .gmap .gn.unknown { fill: #ffffff; }
+.gmap .groute { fill: none; stroke: #4dd2ff; stroke-width: .35; stroke-dasharray: 1.2 .6; opacity: .9; }
+.gmap .gmine { fill: none; stroke: #fff; stroke-width: .25; }
+table.gbest { border-collapse: collapse; width: 100%; font-size: .86rem; }
+table.gbest td { padding: 2px 6px 2px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+table.gbest tr.on td { font-weight: 700; }
+.g-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1px solid #000; margin-right: 4px; vertical-align: middle; }
 .pp-prof { margin-bottom: 12px; }
 .pp-list { margin: 4px 0 6px 18px; padding: 0; }
 .rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 8px; }
@@ -865,6 +879,21 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <h2>Profession plan</h2>
     <p class="hint">For each of this character's professions: the cheapest recipes for the next skill-ups (orange always gives a point, yellow sometimes), what to buy, and which of your other characters hold materials to send over. Prices are ones you've seen at vendors or the auction house (the add-on records them), else the published vendor price.</p>
     <div id="profPlan"><p class="empty">Loading recipes…</p></div>
+  </section>
+
+  <section class="panel" id="gatherPanel" data-view="skills">
+    <h2>Gathering</h2>
+    <p class="hint">Where herbs and ore spawn (QuestieDB's Forever data), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Map images: Wowhead.</p>
+    <div class="row g-controls">
+      <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option></select></label>
+      <label>Zone <select id="gZoneSel"></select></label>
+      <label><input type="checkbox" id="gGreen"> include green</label>
+      <label><input type="checkbox" id="gGrey"> show grey</label>
+      <label><input type="checkbox" id="gMine" checked> my gathers</label>
+    </div>
+    <div id="gInfo" class="hint"></div>
+    <div class="g-wrap"><div class="gmap" id="gMap"><img id="gImg" alt="" referrerpolicy="no-referrer"><svg id="gSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
+    <div class="g-side"><h3>Best zones for you</h3><div id="gBest"></div><div id="gLegend"></div></div></div>
   </section>
 
   <section class="panel" id="recipePanel" data-view="skills">
@@ -2848,8 +2877,100 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     box.replaceChildren(...(out.length ? out : [el("p", "empty", "No professions to level on this character (or they're all at their cap).")]));
   }
+  // ---------- gathering map: node spawns coloured for your skill, best zones, a loop route, your own gathers ----------
+  const GA = { data: null, loading: false, zone: null };
+  const GCOL = { orange: "#ff8040", yellow: "#ffff00", green: "#40c040", grey: "#9d9d9d", red: "#ff2020", unknown: "#ffffff" };
+  // gathering colours: orange until 25 points past the requirement, yellow until 50, green until 100, then grey
+  const gColor = (sk, skill) => sk == null || skill == null ? "unknown" : skill < sk ? "red" : skill < sk + 25 ? "orange" : skill < sk + 50 ? "yellow" : skill < sk + 100 ? "green" : "grey";
+  function loadGather() {
+    if (GA.data || GA.loading) return;
+    GA.loading = true;
+    fetch("gathering-forever.json").then((r) => r.json()).then((d) => {
+      GA.data = d;
+      const ps = profs().map((p) => p.name); if (!ps.includes("Herbalism") && ps.includes("Mining")) $("gProf").value = "Mining";
+      renderGather();
+    }).catch(() => { $("gInfo").textContent = "Couldn't load the gathering data."; });
+  }
+  // a loop through the points: nearest neighbour, then 2-opt passes that remove crossings (map is 3:2 wide)
+  function routeLoop(pts) {
+    const d = (a, b) => Math.hypot((a[0] - b[0]) * 1.5, a[1] - b[1]);
+    if (pts.length < 3) return pts.slice();
+    const left = pts.slice(), out = [left.splice(0, 1)[0]];
+    while (left.length) { const last = out[out.length - 1]; let bi = 0, bd = Infinity; for (let i = 0; i < left.length; i++) { const v = d(last, left[i]); if (v < bd) { bd = v; bi = i; } } out.push(left.splice(bi, 1)[0]); }
+    const n = out.length, t0 = Date.now();
+    for (let improved = true; improved && Date.now() - t0 < 400;) {
+      improved = false;
+      for (let i = 0; i < n - 1; i++) for (let j = i + 2; j < n; j++) {
+        const a = out[i], b = out[i + 1], c = out[j], e = out[(j + 1) % n];
+        if (d(a, c) + d(b, e) < d(a, b) + d(c, e) - 1e-9) { let x = i + 1, y = j; while (x < y) { [out[x], out[y]] = [out[y], out[x]]; x++; y--; } improved = true; }
+      }
+    }
+    return out;
+  }
+  function renderGather() {
+    const svg = $("gSvg"); if (!svg) return;
+    if (!GA.data) { loadGather(); return; }
+    const prof = $("gProf").value;
+    const skill = ((profs().find((p) => p.name === prof)) || {}).skill ?? null;
+    const nodes = GA.data.nodes.filter((n) => n.kind === prof);
+    const want = new Set(["orange", "yellow", ...($("gGreen").checked ? ["green"] : [])]);
+    // zones ranked by how many skill-up spawns they have for you
+    const rank = [];
+    for (const [zid, zn] of Object.entries(GA.data.zones)) {
+      const c = { orange: 0, yellow: 0, green: 0 }, names = new Set();
+      for (const n of nodes) { const pts = n.spawns[zid]; if (!pts) continue; const col = gColor(n.sk, skill); if (c[col] != null) { c[col] += pts.length; if (want.has(col)) names.add(n.n); } }
+      const score = c.orange + c.yellow * 0.7 + ($("gGreen").checked ? c.green * 0.3 : 0);
+      if (score > 0 || nodes.some((n) => n.spawns[zid])) rank.push({ zid, zn, c, score, names: [...names] });
+    }
+    rank.sort((a, b) => b.score - a.score || a.zn.localeCompare(b.zn));
+    const sel = $("gZoneSel"); const cur = GA.zone || (rank[0] && rank[0].zid);
+    sel.replaceChildren(...rank.map((r) => { const o = el("option", null, `${r.zn}${r.score ? ` (${r.c.orange + r.c.yellow} skill-up spots)` : ""}`); o.value = r.zid; return o; }));
+    if (cur) sel.value = cur; GA.zone = sel.value;
+    const best = $("gBest"); const t = el("table", "gbest");
+    for (const r of rank.filter((x) => x.score > 0).slice(0, 8)) {
+      const tr = el("tr", r.zid === GA.zone ? "on" : null); tr.onclick = () => { GA.zone = r.zid; renderGather(); };
+      const c1 = el("td"); c1.append(document.createTextNode(r.zn)); const c2 = el("td", "muted", r.names.slice(0, 3).join(", "));
+      const c3 = el("td", "num"); for (const k of ["orange", "yellow"]) if (r.c[k]) { const dot = el("span", "g-dot"); dot.style.background = GCOL[k]; c3.append(dot, document.createTextNode(r.c[k] + " ")); }
+      tr.append(c1, c3, c2); t.append(tr);
+    }
+    best.replaceChildren(t.childNodes.length ? t : el("p", "muted", skill == null ? `This character has no ${prof} yet.` : "No skill-up nodes anywhere at your skill."));
+    // the map
+    const zid = GA.zone; const img = $("gImg");
+    img.onerror = () => { img.hidden = true; }; img.onload = () => { img.hidden = false; };
+    img.src = `https://wow.zamimg.com/images/wow/classic/maps/enus/original/${zid}.jpg`;
+    const NS = "http://www.w3.org/2000/svg", mk = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+    svg.replaceChildren();
+    const routePts = [], legend = new Map();
+    for (const n of nodes) {
+      const pts = n.spawns[zid]; if (!pts) continue;
+      const col = gColor(n.sk, skill);
+      if (col === "grey" && !$("gGrey").checked) continue;
+      legend.set(n.n, { col, sk: n.sk, count: (legend.get(n.n)?.count || 0) + pts.length });
+      for (const [x, y] of pts) {
+        const r = want.has(col) ? 0.55 : 0.38; // the map is 3:2, so a round dot is 1.5 times taller in these units
+        const c = mk("ellipse", { cx: x, cy: y, rx: r, ry: r * 1.5, class: "gn " + col }); const tt = mk("title", {}); tt.textContent = `${n.n}${n.sk != null ? ` (needs ${n.sk})` : ""}`; c.append(tt); svg.append(c);
+        if (want.has(col)) routePts.push([x, y]);
+      }
+    }
+    // your own gathers in this zone (the add-on saves the zone by name)
+    const zn = GA.data.zones[zid];
+    const mine = $("gMine").checked ? ((S.gathers && S.gathers.list) || []).filter((g) => g.z === zn && nodes.some((n) => n.id === g.o)) : [];
+    for (const g of mine) svg.append(mk("ellipse", { cx: g.x, cy: g.y, rx: 0.9, ry: 1.35, class: "gmine" }));
+    // the loop (thinned to one point per 2% square when there are many)
+    let pts = routePts;
+    if (pts.length > 220) { const seen = new Map(); for (const p of pts) { const k = Math.round(p[0] / 2) + "," + Math.round(p[1] / 2); if (!seen.has(k)) seen.set(k, p); } pts = [...seen.values()]; }
+    const loop = routeLoop(pts);
+    if (loop.length > 2) svg.append(mk("polyline", { points: [...loop, loop[0]].map((p) => p.join(",")).join(" "), class: "groute" }));
+    const lg = $("gLegend"); lg.replaceChildren(el("h3", null, zn || "Zone"));
+    for (const [nm, v] of [...legend].sort((a, b) => (a[1].sk ?? 999) - (b[1].sk ?? 999))) { const p = el("div"); const dot = el("span", "g-dot"); dot.style.background = GCOL[v.col]; p.append(dot, document.createTextNode(`${nm} `), el("span", "muted", `${v.sk != null ? "needs " + v.sk + " · " : ""}${v.count} spots`)); lg.append(p); }
+    const myHere = mine.length, myAll = ((S.gathers && S.gathers.list) || []).length;
+    $("gInfo").textContent = (skill == null ? `This character has no ${prof}. ` : `${prof} ${skill}. `) + (loop.length > 2 ? `The dashed loop runs through ${pts.length} skill-up spot${pts.length === 1 ? "" : "s"}${pts.length < routePts.length ? ` (${routePts.length} in all)` : ""}.` : "Not enough skill-up spots here for a route.") + (myAll ? ` You've gathered ${myHere} here (${myAll} recorded in all).` : "");
+  }
+  for (const id of ["gProf", "gGreen", "gGrey", "gMine"]) $(id).onchange = () => renderGather();
+  $("gZoneSel").onchange = () => { GA.zone = $("gZoneSel").value; renderGather(); };
   function renderRecipes() {
     try { renderProfPlan(); } catch (e) { console.error(e); }
+    try { renderGather(); } catch (e) { console.error(e); }
     if (!RC.data) return;
     const kn = knownRecipes(), pf = profFilter();
     const cat = $("rCat").value, src = $("rSrc").value, show = $("rShow").value, skillMode = $("rSkill").value;
@@ -3680,6 +3801,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/gathers").onSnapshot((s) => { S.gathers = s.exists ? s.data() : null; try { renderGather(); } catch {} }, () => {});
     db.doc("shared/ahprices").onSnapshot((s) => { S.ah = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); }, () => {});
     db.doc("shared/questplan").onSnapshot((s) => { S.plan = s.exists ? s.data() : null; renderQuests(); renderQuestLog(); }, () => {});
     db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});

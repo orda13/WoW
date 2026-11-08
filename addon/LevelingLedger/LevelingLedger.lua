@@ -557,7 +557,21 @@ local function onLoot()
           local e = char.loot[npc] or { opens = 0, items = {} }
           e.zone, e.instance = z, inInstance and true or nil
           if npc > 0 and not e.name and UnitExists("target") and UnitGUID("target") == guid then e.name = UnitName("target") end
-          if not lootSeen[guid] then lootSeen[guid] = true; e.opens = e.opens + 1 end
+          if not lootSeen[guid] then
+            lootSeen[guid] = true; e.opens = e.opens + 1
+            -- an object (herb, ore, chest): where you gathered it, for the page's gathering map
+            if npc < 0 and not inInstance then safe(function()
+              local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+              local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+              local x, y = nil, nil
+              if pos and pos.GetXY then x, y = pos:GetXY() end
+              if x and y and x > 0 and y > 0 then
+                char.gathers = char.gathers or {}
+                table.insert(char.gathers, { o = -npc, z = z, x = math.floor(x * 1000 + 0.5) / 10, y = math.floor(y * 1000 + 0.5) / 10, at = now() })
+                trim(char.gathers, 3000)
+              end
+            end) end
+          end
           local it = e.items[id] or { n = nameFromLink(link), q = qualityFromLink(link), c = 0 }
           it.c = it.c + 1
           e.items[id] = it
