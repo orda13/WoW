@@ -400,6 +400,7 @@ div.qc-red { border: 0; }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
 .ab-cost { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .bud-head { margin-bottom: 4px; }
+.rest-hi { color: var(--rested, #4a90e2); font-weight: 600; }
 table.bud { border-collapse: collapse; width: 100%; max-width: 640px; font-size: .9rem; }
 table.bud td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
 table.bud td.num { text-align: right; white-space: nowrap; }
@@ -778,7 +779,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   <section class="panel" id="invPanel" data-view="ledger">
     <div class="tal-head"><h2>Your characters</h2><span class="hint" id="invNote"></span></div>
     <p class="muted">Every character the add-on has seen, on all your WoW accounts, with gold, bags and bank. Bags update whenever you play a character; the bank updates when you open it.</p>
-    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th></tr></thead><tbody id="invRows"></tbody></table></div>
+    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Rested</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th></tr></thead><tbody id="invRows"></tbody></table></div>
     <label class="field"><span class="label">Find an item across your characters</span><input id="invSearch" placeholder="Linen Cloth" autocomplete="off"></label>
     <div id="invResults" class="inv-results"></div>
   </section>
@@ -1943,11 +1944,31 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const h = heldBy(name); if (!h.length) return "";
     return h.sort((a, b) => (b.bags + b.bank) - (a.bags + a.bank)).map((x) => `${isMe(x.c) ? "you" : x.c.name} ${x.bags + x.bank}`).join(" · ");
   }
+  // Rested XP now, estimated from when the character was last seen: 5% of the level's XP bar per 8 hours in an inn or
+  // city, a quarter of that elsewhere, up to one and a half bars. null when there's not enough to go on.
+  function restedNow(c) {
+    if (!c || !c.xpMax || !c.at || (c.level || 0) >= 60) return null;
+    const hours = Math.max(0, (Date.now() - c.at) / 3600000);
+    const cap = Math.round(c.xpMax * 1.5);
+    const gained = c.xpMax * 0.05 * (hours / 8) * (c.resting ? 1 : 0.25);
+    const now = Math.min(cap, Math.round((c.rested || 0) + gained));
+    const perHour = c.xpMax * 0.05 / 8 * (c.resting ? 1 : 0.25);
+    return { now, cap, pct: now / c.xpMax, full: now >= cap, hoursToFull: now >= cap ? 0 : (cap - now) / perHour };
+  }
+  function restedText(r) {
+    if (!r) return "–";
+    const bars = Math.round(r.pct * 100) + "% of a level";
+    if (r.full) return bars + " (full)";
+    const h = r.hoursToFull; return bars + ` · full in ${h < 24 ? Math.ceil(h) + " h" : Math.round(h / 24) + " days"}`;
+  }
   const lastPlayed = (t) => { if (!t) return "–"; const d = (Date.now() - t) / 86400000; return d < 1 ? "today" : d < 2 ? "yesterday" : `${Math.floor(d)} days ago`; };
   function renderInv() {
     const rows = $("invRows"); if (!rows) return;
     const list = invChars();
     $("invNote").replaceChildren(...(list.length ? [document.createTextNode(`${list.length} character${list.length === 1 ? "" : "s"} · `), moneyEl(list.reduce((a, c) => a + (c.money || 0), 0)), document.createTextNode(" in all")] : []));
+    // who's worth playing next: the most rested (as a share of their level) among the others
+    const best = list.filter((c) => !isMe(c)).map((c) => ({ c, r: restedNow(c) })).filter((x) => x.r && x.r.pct >= 0.25).sort((a, b) => b.r.pct - a.r.pct)[0];
+    if (best) $("invNote").append(el("span", "rest-hi", ` · Best to play next: ${best.c.name} (${Math.round(best.r.pct * 100)}% of a level rested${best.r.full ? ", full" : ""})`));
     rows.replaceChildren(...(list.length ? list.map((c) => {
       const tr = el("tr", isMe(c) ? "me" : null);
       const count = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
@@ -1956,13 +1977,15 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (classKey(c.cls)) nameTd.append(iconImg("classicon_" + classKey(c.cls)));
       nameTd.append(document.createTextNode(c.name), el("span", "muted", isMe(c) ? " (this ledger)" : ""));
       const goldTd = el("td"); if (c.money != null) goldTd.append(moneyEl(c.money)); else goldTd.textContent = "–";
-      tr.append(nameTd, el("td", null, c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–"), goldTd);
+      const r = restedNow(c), restTd = el("td", r && r.pct >= 1 ? "rest-hi" : null, restedText(r));
+      if (r) restTd.title = `About ${fmt(r.now)} rested XP now (estimate; ${c.resting ? "logged out in an inn or city" : "logged out in the open, so it builds 4 times slower"})`;
+      tr.append(nameTd, el("td", null, c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–"), goldTd, restTd);
       for (const v of [
         c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at),
         c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–", c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${lastPlayed(c.bankAt)}` : "open the bank once"]) tr.append(el("td", null, v));
       tr.title = c.account ? "WoW account " + c.account : "";
       return tr;
-    }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 7; tr.append(td); return tr; })()]));
+    }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 8; tr.append(td); return tr; })()]));
     renderInvSearch();
   }
   function renderInvSearch() {

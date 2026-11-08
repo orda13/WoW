@@ -28,6 +28,8 @@ function mergeInventories(store, data, file) {
       name: c.name, key, account, level: c.level || null, cls: c.class || "", faction: c.faction || "",
       money: c.money != null ? c.money : (prev && prev.money) ?? null,
       rested: c.rested || 0, zone: c.zone || "", subzone: c.subzone || "", at,
+      // for the rested estimate: resting (inn or city) when last seen, and the size of this level's XP bar
+      resting: !!c.resting, xp: c.lastXP ?? null, xpMax: (c.xpMax && c.level && c.xpMax[c.level]) || null,
       bags: c.bags ? toCounts(c.bags) : (prev && prev.bags) || {}, bagsAt: (c.bagsAt || 0) * 1000 || (prev && prev.bagsAt) || 0,
       bank: c.bank ? toCounts(c.bank) : (prev && prev.bank) || {}, bankAt: (c.bankAt || 0) * 1000 || (prev && prev.bankAt) || 0,
       professions: Object.fromEntries(Object.entries(c.skills || {}).map(([n, v]) => [n, v.rank || 0])),
