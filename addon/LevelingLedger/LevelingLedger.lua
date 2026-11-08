@@ -236,7 +236,7 @@ end
 
 -- ---------- quests ----------
 local function onQuestTurnedIn(questID, xp, money)
-  table.insert(char.quests, { id = questID, at = now(), xp = xp, money = money, zone = zone() })
+  table.insert(char.quests, { id = questID, at = now(), xp = xp, money = money, zone = zone(), took = ns.questTook and ns.questTook(questID) or nil })
   trim(char.quests, MAX_QUESTS)
   if session then
     session.quests = session.quests + 1

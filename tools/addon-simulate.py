@@ -142,13 +142,23 @@ COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
 PLAYERGUID = "Player-1-0000ABCD"; PETGUID = "Creature-0-1-0-1-0000-PET0001"
 local origGUID = UnitGUID
 function UnitGUID(u) if u == "player" then return PLAYERGUID elseif u == "pet" then return PETGUID end return origGUID(u) end
+-- quest log (this client's C_QuestLog), and Questie's official API
+QLOG = { { questID = 486, title = "Ursal the Mauler", level = 12, have = 3 }, }
+C_QuestLog = {
+  GetNumQuestLogEntries = function() return #QLOG + 1 end,
+  GetInfo = function(i) if i == 1 then return { isHeader = true, title = "Teldrassil" } end local q = QLOG[i - 1]; return q and { questID = q.questID, title = q.title, level = q.level, isHeader = false } end,
+  IsComplete = function(id) return false end,
+  GetQuestObjectives = function(id) for _, q in ipairs(QLOG) do if q.questID == id then return { { text = "Thistle Bear slain: " .. q.have .. "/8", numFulfilled = q.have, numRequired = 8, finished = false }, { text = "Ursal the Mauler slain: 0/1", numFulfilled = 0, numRequired = 1, finished = false } } end end return {} end,
+}
+QUESTIE_CB = nil
+Questie = { API = { RegisterOnReady = function(cb) cb() end, RegisterForQuestUpdates = function(cb) QUESTIE_CB = cb end } }
 -- water break window
 function InCombatLockdown() return COMBAT or false end
 function ReloadUI() RELOADED = true end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -169,7 +179,11 @@ L.execute('T = T + 900; state.level = 14; state.xp = 2000'); fire('PLAYER_LEVEL_
 def money(d, *after):
     L.execute(f'state.money = state.money + ({d})'); fire('PLAYER_MONEY')
 L.execute('T = T + 5'); money(125)                                   # loot
+# an objective moves: Questie tells us, and the log is read again
+L.execute('QLOG[1].have = 6; QUESTIE_CB(486, 1, 2)')
+print('quest log:', L.eval('function() local q = LevelingLedgerDB.chars["Talwyn-Normal"].questLog[486]; return q.t .. " | " .. q.ob[1].text .. " | " .. q.ob[2].text end')())
 L.execute('T = T + 60'); fire('QUEST_TURNED_IN', 486, 1150, 1000); money(1000)   # quest gold after the event
+print('quest 486 took:', L.eval('function() for _, q in ipairs(LevelingLedgerDB.chars["Talwyn-Normal"].quests) do if q.id == 486 then return q.took end end end')(), 'seconds')
 L.execute('T = T + 60'); money(250); fire('QUEST_TURNED_IN', 487, 300, 250)      # quest gold before the event
 L.execute('T = T + 60'); money(40)                                    # loot
 L.execute('SKILLS[3][3] = 125'); fire('CHAT_MSG_SKILL', 'Your skill in Herbalism has increased to 125.')

@@ -398,6 +398,12 @@ div.qc-red { border: 0; }
 .ab-t { font-size: .8rem; }
 .ab-d { font-size: .82rem; color: var(--muted); }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
+.ql-q { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ql-ob { font-size: .85rem; margin-left: 14px; }
+.ql-ob.done { color: var(--good); }
+.ql-ready { color: var(--good); font-weight: 600; }
+table.ql-took { border-collapse: collapse; font-size: .88rem; margin-top: 6px; }
+table.ql-took td { padding: 2px 12px 2px 0; }
 .ab-cost { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .bud-head { margin-bottom: 4px; }
 .rest-hi { color: var(--rested, #4a90e2); font-weight: 600; }
@@ -873,6 +879,13 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <p class="hint">Gathering nodes, vendors, drops and containers come from QuestieDB's Forever data, and recipe uses from Blizzard. Skinning levels are from the original game, since neither source lists skinning loot. Zones listed for a node are where it spawns most.</p>
   </section>
 
+
+  <section class="panel" id="qlogPanel" data-view="quests">
+    <h2>In progress</h2>
+    <p class="hint">Your quest log, from the add-on: each objective's progress, and how long you've had the quest. With Questie installed, progress is saved the moment it changes; it reaches this page when you /reload or log out.</p>
+    <div id="qlogList"><p class="empty">Nothing yet. Update the add-on, then /reload with your quest log open or not.</p></div>
+    <div id="qlogTook"></div>
+  </section>
 
   <section class="panel" id="questPanel" data-view="quests">
     <div class="tal-head">
@@ -1418,6 +1431,38 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const missing = (q.p || []).filter((p) => !QD.done.has(p) && !QD.marks.done[p]);
     if (missing.length) return { cls: "wait", label: "Later in chain" };
     return { cls: "go", label: "Available" };
+  }
+  // ---------- quests in progress (the add-on reads the quest log) ----------
+  function renderQuestLog() {
+    const box = $("qlogList"); if (!box) return;
+    const L = S.qlog; const qs = (L && L.quests) || [];
+    const link = (id, t) => {
+      const z = QD.zoneOf && QD.zoneOf.get(id);
+      if (!z) return el("b", null, t || QD.titles.get(id) || "Quest " + id);
+      const a = el("button", "linkish", t || QD.titles.get(id)); a.type = "button"; a.onclick = () => openQuest(z.z, id); return a;
+    };
+    if (!qs.length) { box.replaceChildren(el("p", "empty", L ? "Your quest log is empty." : "Nothing yet. Update the add-on, then /reload.")); }
+    else box.replaceChildren(...qs.slice().sort((a, b) => (b.done - a.done) || a.at - b.at).map((q) => {
+      const d = el("div", "ql-q");
+      const h = el("div"); h.append(link(q.id, q.t), el("span", "muted", (q.lv ? ` · level ${q.lv}` : "") + (q.at ? ` · accepted ${dur(Date.now() - q.at)} ago` : "")));
+      if (q.done) h.append(el("span", "ql-ready", " · ready to turn in"));
+      d.append(h);
+      for (const o of q.ob || []) d.append(el("div", "ql-ob" + (o.done ? " done" : ""), (o.done ? "✓ " : "• ") + (o.text || "")));
+      return d;
+    }));
+    // how long recent quests took, with XP per hour of that time
+    const took = Object.entries((L && L.took) || {}).map(([id, v]) => ({ id: +id, ...v })).sort((a, b) => b.at - a.at).slice(0, 10);
+    const tb = $("qlogTook"); tb.replaceChildren();
+    if (took.length) {
+      tb.append(el("h3", null, "Recently turned in"));
+      const t = el("table", "ql-took");
+      for (const q of took) {
+        const tr = el("tr"); const c = el("td"); c.append(link(q.id));
+        tr.append(c, el("td", "muted", "took " + dur(q.s * 1000)), el("td", "muted", q.xp ? `${fmt(q.xp)} XP` : ""), el("td", "muted", q.xp && q.s > 60 ? `${fmt(Math.round(q.xp / q.s * 3600))} XP/h` : ""));
+        t.append(tr);
+      }
+      tb.append(t);
+    }
   }
   function openQuest(zoneName, qid) {
     QD.zone = zoneName; QD.focus = qid; try { localStorage.setItem("ledger.qzone", zoneName); } catch {}
@@ -2323,6 +2368,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   Promise.all([fetch("quests-forever.json").then((r) => r.json()), fetch("items-forever.json").then((r) => r.json())]).then(([d, items]) => {
     QD.data = d; QD.items = items.items; QD.itemSrc = new Map(); QD.zoneOf = new Map();
     for (const z of d.zones) for (const q of z.q) QD.zoneOf.set(q.i, z);
+    setTimeout(renderQuestLog, 0);
     for (const z of d.zones) for (const q of z.q) {
       QD.titles.set(q.i, q.t);
       for (const id of q.ic || []) { if (!QD.itemSrc.has(id)) QD.itemSrc.set(id, []); QD.itemSrc.get(id).push({ q, zone: z, choice: true }); }
@@ -3436,6 +3482,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});
     db.doc("state/talents").onSnapshot((s) => { if (TAL.dirty || s.metadata.hasPendingWrites) return; TAL.ranks = { ...((s.exists && s.data().ranks) || {}) }; renderTalents(); }, () => {});

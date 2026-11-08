@@ -263,6 +263,21 @@ function importAddon(text, store, publicDir, source, hint) {
   if (n) store.set("state/questmarks", { done: md, hidden: { ...(marks.hidden || {}) }, updatedAt: Date.now() });
   done.push(`${n} newly turned-in quest${n === 1 ? "" : "s"}`);
 
+  // 7. Quests in progress (from the quest log), and how long recent turn-ins took. The newest log of any device wins.
+  if (ch.questLog && typeof ch.questLog === "object") {
+    const at = (ch.questLogAt || 0) * 1000, prev = store.get("state/questlog") || {};
+    if (at >= (prev.at || 0)) {
+      const quests = Object.entries(ch.questLog).filter(([id, q]) => /^\d+$/.test(id) && q).map(([id, q]) => ({
+        id: +id, t: q.t || "", lv: q.lv || null, at: (q.at || 0) * 1000, done: !!q.done,
+        ob: arr(q.ob).map((o) => ({ text: o.text || "", have: o.have ?? null, need: o.need ?? null, done: !!o.done })),
+      }));
+      const took = { ...(prev.took || {}) };
+      for (const q of arr(ch.quests)) if (q.id && q.took > 0) took[q.id] = { s: q.took, at: (q.at || 0) * 1000, xp: q.xp || 0 };
+      store.set("state/questlog", { quests, took, at, updatedAt: Date.now() });
+      done.push(`${quests.length} quest${quests.length === 1 ? "" : "s"} in progress`);
+    }
+  }
+
   const message = `Imported for ${ch.name || "your character"}: ` + done.join(", ") + ".";
   // the add-on logs its own Lua errors (db.errors: {at, err}); show the latest few on the page
   const errors = arr(data.errors).filter((e) => e && e.err).slice(-10).map((e) => ({ at: e.at || 0, err: String(e.err).slice(0, 300) }));
