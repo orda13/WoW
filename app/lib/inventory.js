@@ -37,6 +37,17 @@ function mergeInventories(store, data, file) {
     if (JSON.stringify(prev) !== JSON.stringify(chars[id])) changed = true;
   }
   if (changed) store.set("shared/inventories", { chars, updatedAt: Date.now() });
+  // auction prices (whole account): the newest price seen per item wins, across every account and device
+  if (data.ah && typeof data.ah === "object") {
+    const cur = store.get("shared/ahprices") || {}; const items = { ...(cur.items || {}) }; let n = 0;
+    for (const [id, v] of Object.entries(data.ah)) {
+      if (!/^\d{1,9}$/.test(id) || !v || !(v.p > 0)) continue;
+      const at = (v.at || 0) * 1000;
+      if (items[id] && items[id].at >= at) continue;
+      items[id] = { p: Math.round(v.p), n: v.n || 0, at }; n++;
+    }
+    if (n) store.set("shared/ahprices", { items, updatedAt: Date.now() });
+  }
   // item names and qualities the add-on has seen
   if (data.items) {
     const items = { ...((store.get("shared/items") || {}).items || {}) };

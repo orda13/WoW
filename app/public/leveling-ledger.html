@@ -2736,6 +2736,20 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         const ht = holdText(n); if (ht) r.append(el("span", "inv-have", ` (${ht})`));
       });
       card.append(r);
+      // what one craft costs in materials, and what it sells for at the auction house
+      let cost = 0, missing = 0;
+      for (const [n, c] of e.rg) { const pr = matPrice(n); if (pr) cost += c * pr.p; else missing++; }
+      const sell = e.ci ? ahPrice(e.ci) : null;
+      if (cost > 0 || sell) {
+        const d = el("div", "rs");
+        if (cost > 0) d.append(el("span", "label", "Costs "), moneyEl(cost), el("span", "muted", missing ? ` to make (plus ${missing} material${missing === 1 ? "" : "s"} without a price)` : " to make"));
+        if (sell) {
+          const value = sell.p * (e.qty || 1);
+          d.append(document.createTextNode(cost > 0 ? " · " : ""), el("span", "label", "Sells "), moneyEl(value), el("span", "muted", ` at the auction house${e.qty > 1 ? ` (${e.qty} × ${money(sell.p)})` : ""}`));
+          if (cost > 0 && !missing) { const diff = value - cost; d.append(document.createTextNode(" · "), el("span", diff >= 0 ? "rep-up" : "rep-down", (diff >= 0 ? "profit " : "loss ")), moneyEl(Math.abs(diff))); }
+        }
+        card.append(d);
+      }
       if (S.inv) {
         const k = craftable(e);
         if (k.all > 0) {
@@ -2758,11 +2772,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
   // ---------- profession plan: next skill-ups, shopping list, materials to send from other characters ----------
   // A material's price per item: seen at a vendor (newest), the auction house, or the published vendor price
+  // Lowest auction price seen for an item (shared/ahprices, from the add-on), per single item
+  function ahPrice(id) { const a = S.ah && S.ah.items && S.ah.items[id]; return a && a.p > 0 ? a : null; }
   function matPrice(name) {
     const m = MAT.byName && MAT.byName.get(String(name).toLowerCase()); if (!m) return null;
     const sg = seenGold((m.v || []).map((x) => x.id), m.id); if (sg) return { p: sg.p, from: "vendor" };
     const ah = typeof ahPrice === "function" ? ahPrice(m.id) : null; if (ah) return { p: ah.p, from: "auction" };
-    return m.price ? { p: m.price, from: "vendor list" } : null;
+    // the published price only counts when a vendor actually sells it (gathered items carry a price too)
+    return m.price && ((m.v && m.v.length) || m.vn) ? { p: m.price, from: "vendor list" } : null;
   }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
@@ -2914,6 +2931,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         if (vs.length > (opts.compact ? 2 : 4)) box.append(el("div", "rs muted", `and ${vs.length - (opts.compact ? 2 : 4)} more vendors`));
       } else box.append(el("div", "rs muted", "Only sold by vendors of the other faction"));
     }
+    const ah = ahPrice(m.id);
+    if (ah) line(["Auction", "go"], moneyEl(ah.p), el("span", "muted", ` each · ${fmt(ah.n || 0)} listed · seen ${new Date(ah.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`));
     if (m.cb) {
       const r = line(["Crafted"]);
       m.cb.forEach(([p, n], i) => { if (i) r.append(document.createTextNode(", ")); r.append(el("span", "who", n), el("span", "muted", ` (${p})`)); });
@@ -3661,6 +3680,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("shared/ahprices").onSnapshot((s) => { S.ah = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); }, () => {});
     db.doc("shared/questplan").onSnapshot((s) => { S.plan = s.exists ? s.data() : null; renderQuests(); renderQuestLog(); }, () => {});
     db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});

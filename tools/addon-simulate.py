@@ -164,13 +164,18 @@ C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 end
 C_QuestLog.GetLogIndexForQuestID = function(id) for i, q in ipairs(QLOG) do if q.questID == id then return i + 1 end end end
 C_QuestLog.GetQuestWatchType = function(id) return WATCHED[id] end
 C_QuestLog.AddQuestWatch = function(id) WATCHED[id] = 0 end
+-- auction house: classic result pages and the newer C_AuctionHouse browse results
+AHLIST = { { "Peacebloom", 5, 600, 2447 }, { "Peacebloom", 20, 2000, 2447 }, { "Empty Vial", 1, 0, 3371 }, { "Empty Vial", 10, 300, 3371 } }
+function GetNumAuctionItems() return #AHLIST end
+function GetAuctionItemInfo(kind, i) local a = AHLIST[i]; return a[1], 0, a[2], 1, true, 1, "", 100, 10, a[3], 0, false, nil, "x", nil, 0, a[4], true end
+C_AuctionHouse = { GetBrowseResults = function() return { { itemKey = { itemID = 765 }, minPrice = 35, totalQuantity = 40 } } end }
 -- water break window
 function InCombatLockdown() return COMBAT or false end
 function ReloadUI() RELOADED = true end
 function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -243,6 +248,8 @@ L.execute('LevelingLedgerAltsSearch.text = "linen"; function LevelingLedgerAltsS
 print('-- search "linen":', [t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t])
 
 # the in-game panel, before logging out
+fire('AUCTION_ITEM_LIST_UPDATE'); fire('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')
+print('auction prices:', {k: dict(v) for k, v in L.globals().LevelingLedgerDB.ah.items()})
 # Bob logged out at an inn two days ago: 30% of a level rested by now, so he's the best alt
 L.execute('for k, c in pairs(LevelingLedgerDB.chars) do if c.name == "Bob" then c.level = 10; c.xpMax = { [10] = 8000 }; c.rested = 0; c.resting = true; c.stateAt = T - 48 * 3600 end end')
 show = L.eval('function() local p = LevelingLedgerPanel; p.scripts.OnUpdate(p, 1.5); local t = {} for _, f in ipairs(p.fonts) do t[#t + 1] = f.text or "" end return table.concat(t, "\\n") end')
