@@ -1,0 +1,3 @@
+<Bindings>
+	<Binding name="LEVELINGLEDGER_SAVE" header="LEVELINGLEDGER" category="ADDONS">LevelingLedger_Save()</Binding>
+</Bindings>

@@ -256,6 +256,9 @@ L.execute('LevelingLedgerPanel.point = { "CENTER", UIParent, "CENTER", 120, -40 
 print('saved spot after drag:', dict(L.globals().LevelingLedgerDB.panel))
 slash('reset'); print('after reset:', dict(L.globals().LevelingLedgerDB.panel), [p.point[k] for k in (1, 3, 4, 5)])
 L.eval('SlashCmdList.LEVELINGLEDGER')('')
+# Save: reloads out of combat, refuses in a fight
+L.execute('RELOADED = nil; COMBAT = true'); slash('save'); print('save in a fight reloaded:', L.globals().RELOADED)
+L.execute('COMBAT = false'); slash('save'); print('save reloaded:', L.globals().RELOADED, '| binding:', L.globals().BINDING_NAME_LEVELINGLEDGER_SAVE); L.execute('RELOADED = nil')
 # water breaks: due an hour after login, held back during a fight, "Later" asks again in 15 minutes
 tick = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.scripts.OnUpdate and fr ~= LevelingLedgerPanel then fr.scripts.OnUpdate(fr, 20) end end end')
 water = lambda: L.eval('function() local w = rawget(_G, "LevelingLedgerWater") if not w then return "none" end return (w.shown and "shown: " or "hidden: ") .. (w.text.text or "") end')()

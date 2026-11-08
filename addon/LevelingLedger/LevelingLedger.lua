@@ -693,6 +693,11 @@ local function createPanel()
   local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   title:SetPoint("TOPLEFT", 9, -8)
   title:SetText("|TInterface\\Icons\\INV_Misc_Book_09:14:14|t Leveling Ledger")
+  local save = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+  save:SetSize(52, 18); save:SetPoint("TOPRIGHT", -6, -5); save:SetText("Save")
+  save:SetScript("OnClick", function() LevelingLedger_Save() end)
+  save:SetScript("OnEnter", function(self) if GameTooltip then GameTooltip:SetOwner(self, "ANCHOR_LEFT"); GameTooltip:SetText("Save to the ledger"); GameTooltip:AddLine("Reloads the interface so the page updates in a few seconds.", 1, 1, 1, true); GameTooltip:Show() end end)
+  save:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
   lines = {}
   for i = 1, 6 do
     local fs = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -820,6 +825,18 @@ ns.styleFrame = styleFrame
 ns.coins = coins
 ns.BACKDROP_TEMPLATE = BACKDROP_TEMPLATE
 
+-- ---------- Save: reload the interface, which makes the game write the add-on's file; the app imports it in seconds ----------
+-- Key binding (Options, Keybindings, AddOns: Leveling Ledger), /ledger save and the panel's Save button.
+BINDING_HEADER_LEVELINGLEDGER = "Leveling Ledger"
+BINDING_NAME_LEVELINGLEDGER_SAVE = "Save to the ledger (reload)"
+function LevelingLedger_Save()
+  if InCombatLockdown and InCombatLockdown() then
+    print("|cffd9aa5aLeveling Ledger|r: can't save during a fight; try again once it's over.")
+    return
+  end
+  if ReloadUI then ReloadUI() end
+end
+
 -- ---------- /ledger ----------
 SLASH_LEVELINGLEDGER1 = "/ledger"
 local TAG = "|cffd9aa5aLeveling Ledger|r: "
@@ -837,6 +854,7 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   local cmd = strtrim and strtrim((msg or ""):lower()) or (msg or ""):lower():match("^%s*(.-)%s*$")
   if cmd == "alts" then if ns.toggleAlts then ns.toggleAlts() end return end
   if cmd == "plan" then if ns.planCommand then ns.planCommand() end return end
+  if cmd == "save" then LevelingLedger_Save() return end
   local w = cmd:match("^water%s*(.*)$")
   if w and ns.waterCommand then ns.waterCommand(w) return end
   if cmd ~= "" and panelCommand(cmd) then return end
@@ -851,5 +869,5 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
   local ver = meta and meta(ADDON, "Version")
   print("|cffd9aa5aLeveling Ledger|r" .. (ver and " " .. ver or "") .. ": type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
-  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water. Planned quests: /ledger plan")
+  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water. Planned quests: /ledger plan. Save now: /ledger save (or bind a key: Options, Keybindings, AddOns)")
 end
