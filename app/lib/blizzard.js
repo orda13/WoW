@@ -143,4 +143,4 @@ function syncBlizzard(store, cfg, log) {
 // after new API keys are saved
 function resetToken() { token = null; tokenExp = 0; }
 
-module.exports = { syncBlizzard, build, summarize, resetToken };
+module.exports = { syncBlizzard, build, summarize, resetToken, getToken };

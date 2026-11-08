@@ -5,6 +5,7 @@ const path = require("path");
 const { Store } = require("./lib/store");
 const { startWatcher } = require("./lib/watcher");
 const { syncBlizzard, resetToken } = require("./lib/blizzard");
+const { checkJournal } = require("./lib/journal");
 const { checkRequest, viaCloudflare } = require("./lib/access");
 const { publicView, applyUpdate, saveConfig, newAlts } = require("./lib/settings");
 const { importAddon } = require("./lib/addon-import");
@@ -266,6 +267,7 @@ const server = http.createServer(async (req, res) => {
       log("Settings saved: " + changed.join(", ") + (req.userEmail ? " (by " + req.userEmail + ")" : ""));
       return send(res, 200, { ok: true, changed, settings: publicView(config, isLocal) });
     }
+    if (p === "/api/journal/check" && req.method === "POST") { checkJournal(store, bcfg, log); return send(res, 200, { ok: true }); }
     if (p === "/api/sync" && req.method === "POST") {
       const c = findChar(url.searchParams.get("char"));
       if (!c) return send(res, 404, { error: "unknown character" });

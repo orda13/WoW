@@ -431,6 +431,8 @@ table.rep td { padding: 2px 8px 2px 0; border-bottom: 1px solid var(--line); }
 table.rep td.num, table.rep th.num { text-align: right; white-space: nowrap; }
 .rep-big { font-size: 1.15rem; }
 .rep-up { color: var(--good); } .rep-down { color: var(--bad); }
+.jr-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 4px 0 8px; }
+.dg-journal { margin: 4px 0; padding-left: 8px; border-left: 2px solid var(--rested); }
 .dg-map > summary { cursor: pointer; font-weight: 600; margin-top: 6px; }
 .dgm-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
 .dgm-floors { display: flex; gap: 4px; flex-wrap: wrap; margin-right: 8px; }
@@ -1012,6 +1014,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 
   <section class="panel" id="dgPanel" data-view="dungeons">
     <div class="tal-head"><h2>Dungeons and raids</h2><span class="num muted" id="dgCount"></span></div>
+    <div class="row jr-bar"><button class="ghost" id="jrCheck" type="button">Check Blizzard's dungeon journal</button><span class="hint" id="jrStatus"></span></div>
     <div class="gfilters">
       <label class="field gwide"><span class="label">Search</span><input id="dgText" placeholder="dungeon, boss, item, zone…" aria-label="Search dungeons, bosses and loot"></label>
       <label class="field"><span class="label">Type</span><select id="dgKind"><option value="">Dungeons and raids</option><option value="Dungeon">Dungeons</option><option value="Raid">Raids</option></select></label>
@@ -3380,6 +3383,24 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const qs = zs.flatMap((z) => z.q.filter((q) => questFits(q)).map((q) => ({ q, z })));
     return { qs, done: qs.filter(({ q }) => isDone(q)).length };
   }
+  // Blizzard's dungeon journal (shared/journal, from the hub's check): loot the game lists for each boss
+  const jnorm = (t) => String(t || "").toLowerCase().replace(/^the /, "").replace(/[^a-z0-9]/g, "");
+  function journalFor(d) {
+    const ins = S.journal && S.journal.instances; if (!ins) return null;
+    const key = jnorm(d.n);
+    for (const [name, v] of Object.entries(ins)) if (jnorm(name) === key || jnorm(name).includes(key) || key.includes(jnorm(name))) return v;
+    return null;
+  }
+  function journalLoot(j, boss) { if (!j) return null; const k = jnorm(boss.n); const e = j.encounters.find((x) => jnorm(x.n) === k) || j.encounters.find((x) => jnorm(x.n).includes(k) || k.includes(jnorm(x.n))); return e && e.items.length ? e : null; }
+  function renderJournalStatus() {
+    const st = $("jrStatus"); if (!st) return;
+    const j = S.journal; $("jrCheck").disabled = !S.canWrite || !!(j && j.pending);
+    st.textContent = !j ? "Blizzard's own loot tables, if WoW Forever's data has them." : `${j.pending ? "Checking… " : ""}${j.message || ""}${j.checkedAt && !j.pending ? ` (${fmtWhen(j.checkedAt)})` : ""}`;
+  }
+  $("jrCheck").onclick = async () => {
+    try { const r = await fetch("/api/journal/check", { method: "POST", headers: { "X-Ledger": "1" } }); if (!r.ok) toast("Couldn't start the check."); }
+    catch { toast("Couldn't reach the Leveling Ledger service."); }
+  };
   function dgBlock(d) {
     const blk = el("details", "qchain dg"); blk.dataset.key = d.key;
     if (DG.open.has(d.key)) blk.open = true;
@@ -3398,6 +3419,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     blk.append(sum);
     const body = el("div", "qchain-body dg-body");
     const bl = el("div", "dg-bosses");
+    const jr = journalFor(d), seenJ = new Set();
     for (const b of d.bosses) {
       const c = el("div", "dg-boss");
       const h = el("div", "dg-bh");
@@ -3408,8 +3430,16 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       c.append(h);
       const yd = b.id ? yourDrops(b.id) : null;
       const mine = yd && yd.items ? Object.entries(yd.items).sort((x, y) => (y[1][1] - x[1][1]) || (y[1][2] - x[1][2])) : [];
-      if (b.loot && b.loot.length) for (const id of b.loot) c.append(dgItemLine(id, b.chance ? b.chance[id] : null));
-      else if (!mine.length) { const n = el("div", "muted dg-none"); n.append(document.createTextNode("No verified Forever loot yet. "), b.id ? whA("npc", b.id, "See its loot on Wowhead") : whA("search", b.n, "Search Wowhead")); c.append(n); }
+      const je = journalLoot(jr, b); if (je) seenJ.add(je.id);
+      if (je) {
+        // the journal's list for this boss; items we already show are marked as confirmed
+        const known = new Set(b.loot || []);
+        const w = el("div", "dg-journal"); w.append(el("div", "label", `Blizzard's journal · ${je.items.length} item${je.items.length === 1 ? "" : "s"}`));
+        for (const [id, n] of je.items) { const r = (DG.data.items[id] || (QD.items && QD.items[id])) ? dgItemLine(id) : (() => { const x = el("div", "dg-item"); x.append(whA("item", id, n || "Item " + id)); return x; })(); if (known.has(id)) r.append(el("span", "pill go", "also in QuestieDB")); w.append(r); }
+        c.append(w);
+      }
+      if (b.loot && b.loot.length) { if (!je) for (const id of b.loot) c.append(dgItemLine(id, b.chance ? b.chance[id] : null)); else { const extra = b.loot.filter((id) => !je.items.some(([x]) => x === id)); for (const id of extra) c.append(dgItemLine(id, b.chance ? b.chance[id] : null)); } }
+      else if (!mine.length && !je) { const n = el("div", "muted dg-none"); n.append(document.createTextNode("No verified Forever loot yet. "), b.id ? whA("npc", b.id, "See its loot on Wowhead") : whA("search", b.n, "Search Wowhead")); c.append(n); }
       if (mine.length) {
         const w = el("div", "dg-yours");
         w.append(el("div", "label", (b.loot && b.loot.length ? "Your drops" : "From your runs") + ` · looted ${yd.o || 0} time${yd.o === 1 ? "" : "s"}`));
@@ -3419,6 +3449,13 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       bl.append(c);
     }
     body.append(bl);
+    // journal bosses we have no entry for (Forever's own, or renamed)
+    const jOther = jr ? jr.encounters.filter((e) => !seenJ.has(e.id) && e.items.length) : [];
+    if (jOther.length) {
+      const o = el("details", "dg-journal"); o.open = true; o.append(el("summary", null, `More bosses in Blizzard's journal (${jOther.length})`));
+      for (const e of jOther) { o.append(el("div", "dg-bh", e.n)); for (const [id, n] of e.items) { const x = el("div", "dg-item"); x.append(whA("item", id, n || "Item " + id)); o.append(x); } }
+      body.append(o);
+    }
     if (d.other && d.other.length) {
       const o = el("details"); o.append(el("summary", null, `Other drops in this ${d.kind.toLowerCase()} (${d.other.length})`));
       for (const [id, from] of d.other) { const r = dgItemLine(id); r.append(el("div", "fxl muted", "From " + from.join(", "))); o.append(r); }
@@ -4044,6 +4081,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("shared/journal").onSnapshot((s) => { S.journal = s.exists ? s.data() : null; renderJournalStatus(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/dungeonroutes").onSnapshot((s) => { if (s.metadata && s.metadata.hasPendingWrites) return; S.routes = s.exists ? { byKey: s.data().byKey || {} } : { byKey: {} }; }, () => {});
     db.doc("shared/recipeneeds").onSnapshot((s) => { S.recipeNeeds = s.exists ? s.data() : null; }, () => {});
     db.doc("state/profprefs").onSnapshot((s) => { S.profPrefs = s.exists ? s.data() : null; try { renderProfPlan(); } catch {} }, () => {});
