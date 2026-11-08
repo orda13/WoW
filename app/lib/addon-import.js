@@ -188,7 +188,9 @@ function importAddon(text, store, publicDir, source, hint) {
       if (a) {
         const f = fromAddon[a.id];
         if (f && (f.at || 0) > at) { older++; continue; } // another device saw this trainer more recently
-        if (costs[a.id] !== t.cost || !f || (!f.lv && t.lv)) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "", lv: t.lv || 0 }; nA++; } else same++;
+        // lv: the rank's own level (marks a placed match); state: available / unavailable / used at that visit
+        const state = t.state === "available" || t.state === "unavailable" || t.state === "used" ? t.state : "";
+        if (costs[a.id] !== t.cost || !f || !f.lv || (state && f.state !== state)) { costs[a.id] = t.cost; fromAddon[a.id] = { at, npc: t.npc || null, by: t.npcName || "", lv: a.lv, state }; nA++; } else same++;
       } else {
         const k = t.n.toLowerCase() + (t.r ? "|" + String(t.r).toLowerCase() : "");
         const cur = recipes[k];

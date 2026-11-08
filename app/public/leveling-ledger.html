@@ -399,9 +399,16 @@ div.qc-red { border: 0; }
 .ab-d { font-size: .82rem; color: var(--muted); }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
 .ab-cost { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.bud-head { margin-bottom: 4px; }
+table.bud { border-collapse: collapse; width: 100%; max-width: 640px; font-size: .9rem; }
+table.bud td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+table.bud td.num { text-align: right; white-space: nowrap; }
+table.bud tr.short td:first-child b { color: var(--bad, #d9534f); }
+.bud-warn { color: var(--bad, #d9534f); margin: 6px 0 0; }
+.bud-ok { color: var(--good, #5cb85c); margin: 6px 0 0; }
 .ab-cost input { width: 8rem; padding: 3px 8px; font-size: .84rem; font-family: var(--mono); }
 .ab-cost .label { font-size: .64rem; }
-.ab-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; font-size: .92rem; }
+.ab-sum { font-size: .92rem; margin-bottom: 10px; }
 .ab-sum .cost { font-family: var(--mono); color: var(--brass); }
 
 /* Dungeons */
@@ -931,7 +938,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 
   <section class="panel" id="abPanel" data-view="talents">
     <div class="tal-head"><h2 id="abTitle">Abilities by level</h2><button class="ghost" id="abMore" type="button">Show all levels</button></div>
-    <p class="hint">Spells and ranks your class learns at each level, from Forever's game files. Cost, cast time, range and cooldown come from Wowhead's Forever tooltips. Training costs aren't published anywhere I can reach, so type them in when you visit your trainer; the page adds them up.</p>
+    <p class="hint">Spells and ranks your class learns at each level, from Forever's game files. Cast time, range and cooldown come from Wowhead's Forever tooltips. Training costs come from the add-on when you open your class trainer (shown locked, "From the trainer"); you can type any it hasn't seen. The budget adds them up against the gold you carry.</p>
     <div class="ab-sum" id="abSum"></div>
     <div class="ab-list" id="abList"><p class="empty">Loading abilities…</p></div>
   </section>
@@ -1831,16 +1838,41 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     $("abMore").textContent = AB.all ? "Show levels near me" : "Show all levels";
     renderAbilitySum();
   }
+  // Training budget: what training costs now and at each coming level (costs the add-on read at the trainer, or ones
+  // you typed), against the gold this character carries.
   function renderAbilitySum() {
     if (!AB.data) return;
     const cls = ((S.char && S.char.cls) || "Druid").split(/[ (]/)[0];
     const lv = (S.char && S.char.level) || 1;
-    const next = (AB.data.classes[cls] || []).filter((e) => !e.auto && e.lv > lv && e.lv <= lv + 10);
-    const known = next.filter((e) => AB.costs[e.id] != null), total = known.reduce((a, e) => a + AB.costs[e.id], 0);
+    const all = (AB.data.classes[cls] || []).filter((e) => !e.auto);
+    const st = (e) => (AB.fromAddon[e.id] || {}).state;
+    const me = invChars().find(isMe); const gold = me && me.money != null ? me.money : null;
+    // now: what the trainer offered you at your level; then each level up to 10 ahead
+    const now = all.filter((e) => e.lv <= lv && st(e) === "available");
+    const visits = [];
+    if (now.length) visits.push({ lv, label: "Now", es: now });
+    for (let L = lv + 1; L <= Math.min(60, lv + 10); L++) { const es = all.filter((e) => e.lv === L); if (es.length) visits.push({ lv: L, label: `Level ${L}`, es }); }
     const box = $("abSum"); box.replaceChildren();
-    box.append(el("span", "label", `Levels ${lv + 1}–${lv + 10}`), el("span", null, ` ${next.length} abilities to train · `),
-      el("b", "cost", known.length ? money(total) || "0c" : "no costs entered yet"),
-      el("span", "muted", known.length < next.length ? ` (${next.length - known.length} without a cost yet)` : " (all entered)"));
+    const head = el("div", "bud-head"); head.append(el("span", "label", "Training budget"));
+    if (gold != null) head.append(el("span", "muted", " · you carry "), moneyEl(gold));
+    box.append(head);
+    if (!visits.length) { box.append(el("p", "muted", "Nothing to train in the next 10 levels.")); return; }
+    const t = el("table", "bud"); let run = 0, short = null;
+    for (const v of visits) {
+      const known = v.es.filter((e) => AB.costs[e.id] != null), sum = known.reduce((a, e) => a + AB.costs[e.id], 0);
+      run += sum;
+      const tr = el("tr", gold != null && run > gold ? "short" : null);
+      const what = el("td"); what.append(el("b", null, v.label), el("span", "muted", ` · ${v.es.length} ${v.es.length === 1 ? "ability" : "abilities"}` + (known.length < v.es.length ? ` (${v.es.length - known.length} without a cost yet)` : "")));
+      const c1 = el("td", "num"); c1.append(known.length ? moneyEl(sum) : el("span", "muted", "?"));
+      const c2 = el("td", "num muted"); c2.append(document.createTextNode("total "), moneyEl(run));
+      tr.title = v.es.map((e) => `${e.n}${e.r ? " " + e.r : ""}${AB.costs[e.id] != null ? ": " + money(AB.costs[e.id]) : ""}`).join("\n");
+      tr.append(what, c1, c2); t.append(tr);
+      if (gold != null && short == null && run > gold) short = { v, need: run - gold };
+    }
+    box.append(t);
+    if (gold == null) box.append(el("p", "muted", "Log in with this character once with the add-on to compare with your gold."));
+    else if (short) { const p = el("p", "bud-warn"); p.append(document.createTextNode(`You're short `), moneyEl(short.need), document.createTextNode(` for ${short.v.label === "Now" ? "what you can train now" : "training at " + short.v.label.toLowerCase()}.`)); box.append(p); }
+    else box.append(el("p", "bud-ok", `Your gold covers training for the next ${visits[visits.length - 1].lv - lv || 1} level${visits[visits.length - 1].lv - lv === 1 ? "" : "s"}.`));
   }
 
   // ---------- add-on status (the service imports the file itself) ----------
@@ -3387,7 +3419,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
-    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
+    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); }, () => {});
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
