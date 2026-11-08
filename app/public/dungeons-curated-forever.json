@@ -2630,6 +2630,557 @@
    "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
   },
   {
+   "key": "BLACKROCK_DEPTHS",
+   "n": "Blackrock Depths",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Blackrock Mountain",
+   "lv": [
+    52,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "High Interrogator Gerstahn",
+     "loot": [
+      11140
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/high-interrogator-gerstahn"
+    },
+    {
+     "n": "Lord Roccor",
+     "loot": [
+      11813
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/lord-roccor"
+    },
+    {
+     "n": "Houndmaster Grebmar",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/houndmaster-grebmar"
+    },
+    {
+     "n": "Ring of the Law",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/ring-of-the-law"
+    },
+    {
+     "n": "Fineous Darkvire",
+     "loot": [
+      10999
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/fineous-darkvire"
+    },
+    {
+     "n": "Pyromancer Loregrain",
+     "loot": [
+      11207
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/pyromancer-loregrain"
+    },
+    {
+     "n": "Bael'gar",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/baelgar"
+    },
+    {
+     "n": "Lord Incendius",
+     "loot": [
+      11126
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/lord-incendius"
+    },
+    {
+     "n": "General Angerforge",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/general-angerforge"
+    },
+    {
+     "n": "Golem Lord Argelmach",
+     "loot": [
+      11268
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/golem-lord-argelmach"
+    },
+    {
+     "n": "Phalanx",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/phalanx"
+    },
+    {
+     "n": "Hurley Blackbreath",
+     "loot": [
+      11312
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/hurley-blackbreath"
+    },
+    {
+     "n": "Ambassador Flamelash",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/ambassador-flamelash"
+    },
+    {
+     "n": "Chest of the Seven",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/chest-of-the-seven"
+    },
+    {
+     "n": "Magmus",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/magmus"
+    },
+    {
+     "n": "Emperor Dagran Thaurissan",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/emperor-dagran-thaurissan"
+    },
+    {
+     "n": "Warder Stilgiss & Verek",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/warder-stilgiss-verek",
+     "rare": 1
+    },
+    {
+     "n": "Panzor the Invincible",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/blackrock-depths/panzor-the-invincible-rare",
+     "rare": 1
+    }
+   ],
+   "other": [
+    [
+     11464,
+     [
+      "General Angerforge",
+      "Golem Lord Argelmach"
+     ]
+    ]
+   ],
+   "qz": [
+    "Blackrock Depths"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "DIRE_MAUL",
+   "n": "Dire Maul",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Feralas",
+   "lv": [
+    55,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Pusillin",
+     "loot": [
+      18267,
+      18249,
+      18261
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/pusillin",
+     "wing": "East"
+    },
+    {
+     "n": "Lethtendris",
+     "loot": [
+      18426
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/lethtendris",
+     "wing": "East"
+    },
+    {
+     "n": "Hydrospawn",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/hydrospawn",
+     "wing": "East"
+    },
+    {
+     "n": "Zevrim Thornhoof",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/zevrim-thornhoof",
+     "wing": "East"
+    },
+    {
+     "n": "Alzzin the Wildshaper",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/alzzin-the-wildshaper",
+     "wing": "East"
+    },
+    {
+     "n": "Isalien",
+     "loot": [
+      22046,
+      21984
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-east/isalien",
+     "wing": "East"
+    },
+    {
+     "n": "Tendris Warpwood",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/tendris-warpwood",
+     "wing": "West"
+    },
+    {
+     "n": "Magister Kalendris",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/magister-kalendris",
+     "wing": "West"
+    },
+    {
+     "n": "Illyanna Ravenoak",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/illyanna-ravenoak",
+     "wing": "West"
+    },
+    {
+     "n": "Immol'thar",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/immolthar",
+     "wing": "West"
+    },
+    {
+     "n": "Prince Tortheldrin",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/prince-tortheldrin",
+     "wing": "West"
+    },
+    {
+     "n": "Tzu'see",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/tzusee-rare",
+     "rare": 1,
+     "wing": "West"
+    },
+    {
+     "n": "Lord Hel'nurath",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-west/lord-helnurath",
+     "wing": "West"
+    },
+    {
+     "n": "Guard Mol'dar",
+     "loot": [
+      18268
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/guard-moldar",
+     "wing": "North"
+    },
+    {
+     "n": "Stomper Kreeg",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/stomper-kreeg",
+     "wing": "North"
+    },
+    {
+     "n": "Guard Fengus",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/guard-fengus",
+     "wing": "North"
+    },
+    {
+     "n": "Guard Slip'kik",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/guard-slipkik",
+     "wing": "North"
+    },
+    {
+     "n": "Captain Kromcrush",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/captain-kromcrush",
+     "wing": "North"
+    },
+    {
+     "n": "King Gordok & Cho'Rush the Observer",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/dire-maul-north/king-gordok-chorush-the-observer",
+     "wing": "North"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Dire Maul"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "SCHOLOMANCE",
+   "n": "Scholomance",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "Western Plaguelands",
+   "lv": [
+    58,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Blood Steward of Kirtonos",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/blood-steward-of-kirtonos"
+    },
+    {
+     "n": "Kirtonos the Herald",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/kirtonos-the-herald"
+    },
+    {
+     "n": "Jandice Barov",
+     "loot": [
+      13725
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/jandice-barov"
+    },
+    {
+     "n": "Rattlegore",
+     "loot": [
+      13873
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/rattlegore"
+    },
+    {
+     "n": "Marduk Blackpool",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/marduk-blackpool"
+    },
+    {
+     "n": "Vectus",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/vectus"
+    },
+    {
+     "n": "Ras Frostwhisper",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/ras-frostwhisper"
+    },
+    {
+     "n": "Kormok",
+     "loot": [
+      21984,
+      22046
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/kormok"
+    },
+    {
+     "n": "Instructor Malicia",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/instructor-malicia"
+    },
+    {
+     "n": "Doctor Theolen Krastinov",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/doctor-theolen-krastinov"
+    },
+    {
+     "n": "Lorekeeper Polkelt",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/lorekeeper-polkelt"
+    },
+    {
+     "n": "The Ravenian",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/the-ravenian"
+    },
+    {
+     "n": "Lord Alexei Barov",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/lord-alexei-barov"
+    },
+    {
+     "n": "Lady Illucia Barov",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/lady-illucia-barov"
+    },
+    {
+     "n": "Darkmaster Gandling",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/scholomance/darkmaster-gandling"
+    }
+   ],
+   "other": [
+    [
+     13523,
+     [
+      "Blood Steward of Kirtonos",
+      "Jandice Barov",
+      "Doctor Theolen Krastinov"
+     ]
+    ]
+   ],
+   "qz": [
+    "Scholomance"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
+   "key": "BLACKROCK_SPIRE",
+   "n": "Blackrock Spire",
+   "kind": "Dungeon",
+   "size": 10,
+   "loc": "Blackrock Mountain",
+   "lv": [
+    55,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Highlord Omokk",
+     "loot": [
+      12534,
+      12336
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/highlord-omokk",
+     "wing": "Lower"
+    },
+    {
+     "n": "Shadow Hunter Vosh'gajin",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/shadow-hunter-voshgajin",
+     "wing": "Lower"
+    },
+    {
+     "n": "War Master Voone",
+     "loot": [
+      12335
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/war-master-voone",
+     "wing": "Lower"
+    },
+    {
+     "n": "Mor Grayhoof",
+     "loot": [
+      21984,
+      22046
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/mor-grayhoof",
+     "wing": "Lower"
+    },
+    {
+     "n": "Mother Smolderweb",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/mother-smolderweb",
+     "wing": "Lower"
+    },
+    {
+     "n": "Urok Doomhowl",
+     "loot": [
+      12712
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/urok-doomhowl",
+     "wing": "Lower"
+    },
+    {
+     "n": "Quartermaster Zigris",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/quartermaster-zigris",
+     "wing": "Lower"
+    },
+    {
+     "n": "Halycon",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/halycon",
+     "wing": "Lower"
+    },
+    {
+     "n": "Gizrul the Slavener",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/gizrul-the-slavener",
+     "wing": "Lower"
+    },
+    {
+     "n": "Overlord Wyrmthalak",
+     "loot": [
+      12337,
+      12780
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/overlord-wyrmthalak",
+     "wing": "Lower"
+    },
+    {
+     "n": "Spirestone Butcher",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/spirestone-butcher-rare",
+     "rare": 1,
+     "wing": "Lower"
+    },
+    {
+     "n": "Spirestone Battle Lord",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/spirestone-battle-lord-rare",
+     "rare": 1,
+     "wing": "Lower"
+    },
+    {
+     "n": "Bannok Grimaxe",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/bannok-grimaxe-rare",
+     "rare": 1,
+     "wing": "Lower"
+    },
+    {
+     "n": "Crystal Fang",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/lower-blackrock-spire/crystal-fang-rare",
+     "rare": 1,
+     "wing": "Lower"
+    },
+    {
+     "n": "Pyroguard Emberseer",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/pyroguard-emberseer",
+     "wing": "Upper"
+    },
+    {
+     "n": "Solakar Flamewreath",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/solakar-flamewreath",
+     "wing": "Upper"
+    },
+    {
+     "n": "Goraluk Anvilcrack",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/goraluk-anvilcrack",
+     "wing": "Upper"
+    },
+    {
+     "n": "Warchief Rend Blackhand & Gyth",
+     "loot": [
+      12630
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/warchief-rend-blackhand-gyth",
+     "wing": "Upper"
+    },
+    {
+     "n": "The Beast",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/the-beast",
+     "wing": "Upper"
+    },
+    {
+     "n": "General Drakkisath",
+     "loot": [
+      16663
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/general-drakkisath",
+     "wing": "Upper"
+    },
+    {
+     "n": "Jed Runewatcher",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/upper-blackrock-spire/jed-runewatcher-rare",
+     "rare": 1,
+     "wing": "Upper"
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Blackrock Spire"
+   ],
+   "curated": "Wowhead's dungeon journal, pasted 2026-11-08"
+  },
+  {
    "key": "STRATHOLME",
    "n": "Stratholme",
    "kind": "Dungeon",
@@ -2703,6 +3254,54 @@
      "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-live/hearthsinger-forresten-rare",
      "rare": 1,
      "wing": "Live"
+    },
+    {
+     "n": "Magistrate Barthilas",
+     "loot": [
+      12382
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/magistrate-barthilas",
+     "wing": "Undead"
+    },
+    {
+     "n": "Nerub'enkan",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/nerubenkan",
+     "wing": "Undead"
+    },
+    {
+     "n": "Baroness Anastari",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/baroness-anastari",
+     "wing": "Undead"
+    },
+    {
+     "n": "Maleki the Pallid",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/maleki-the-pallid",
+     "wing": "Undead"
+    },
+    {
+     "n": "Ramstein the Gorger",
+     "loot": [
+      12735,
+      15880
+     ],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/ramstein-the-gorger",
+     "wing": "Undead"
+    },
+    {
+     "n": "Baron Rivendare",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/baron-rivendare",
+     "wing": "Undead"
+    },
+    {
+     "n": "Stonespine",
+     "loot": [],
+     "wh": "https://www.wowhead.com/forever/dungeon-journal/stratholme-undead/stonespine-rare",
+     "rare": 1,
+     "wing": "Undead"
     }
    ],
    "other": [],
@@ -5761,6 +6360,181 @@
   },
   "13172": {
    "n": "Grimm's Premium Tobacco",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "11140": {
+   "n": "Prison Cell Key",
+   "src": "wowhead",
+   "cl": "Key",
+   "sc": "Key"
+  },
+  "11813": {
+   "n": "Formula: Smoking Heart of the Mountain",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Enchanting Formula"
+  },
+  "10999": {
+   "n": "Ironfel",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "11207": {
+   "n": "Formula: Enchant Weapon - Fiery Weapon",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Enchanting Formula"
+  },
+  "11126": {
+   "n": "Tablet of Kurniya",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "11268": {
+   "n": "Head of Argelmach",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "11312": {
+   "n": "Lost Thunderbrew Recipe",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "11464": {
+   "n": "Marshal Windsor's Lost Information",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "18267": {
+   "n": "Recipe: Runn Tum Tuber Surprise",
+   "src": "wowhead",
+   "cl": "Recipe",
+   "sc": "Cooking Recipe"
+  },
+  "18249": {
+   "n": "Crescent Key",
+   "src": "wowhead",
+   "cl": "Key",
+   "sc": "Key"
+  },
+  "18261": {
+   "n": "Book of Incantations",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "18426": {
+   "n": "Lethtendris's Web",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "22046": {
+   "n": "Right Piece of Lord Valthalak's Amulet",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "21984": {
+   "n": "Left Piece of Lord Valthalak's Amulet",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "18268": {
+   "n": "Gordok Inner Door Key",
+   "src": "wowhead",
+   "cl": "Junk",
+   "sc": "Junk"
+  },
+  "13725": {
+   "n": "Krastinov's Bag of Horrors",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "13873": {
+   "n": "Viewing Room Key",
+   "src": "wowhead",
+   "cl": "Junk",
+   "sc": "Junk"
+  },
+  "13523": {
+   "n": "Blood of Innocents",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12534": {
+   "n": "Omokk's Head",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12336": {
+   "n": "Gemstone of Spirestone",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12335": {
+   "n": "Gemstone of Smolderthorn",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12712": {
+   "n": "Warosh's Mojo",
+   "src": "wowhead",
+   "cl": "Consumable",
+   "sc": "Consumable"
+  },
+  "12337": {
+   "n": "Gemstone of Bloodaxe",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12780": {
+   "n": "General Drakkisath's Command",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest",
+   "rl": 55
+  },
+  "12630": {
+   "n": "Head of Rend Blackhand",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "16663": {
+   "n": "Blood of the Black Dragon Champion",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "12382": {
+   "n": "Key to the City",
+   "src": "wowhead",
+   "cl": "Key",
+   "sc": "Key"
+  },
+  "12735": {
+   "n": "Frayed Abomination Stitching",
+   "src": "wowhead",
+   "cl": "Quest",
+   "sc": "Quest"
+  },
+  "15880": {
+   "n": "Head of Ramstein the Gorger",
    "src": "wowhead",
    "cl": "Quest",
    "sc": "Quest"

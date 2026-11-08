@@ -22,7 +22,7 @@ name = lines[0].strip()
 lv = None
 m = re.search(r'Level\s+(\d+)\s*[–-]\s*(\d+)', '\n'.join(lines[:6]))
 if m: lv = [int(m.group(1)), int(m.group(2))]
-clean = lambda b: re.sub(r'\s*\(Rare\)$', '', b).replace('\u2019', "'").strip()
+clean = lambda b: re.sub(r'\s*\((Rare|Warlock Quest)\)$', '', b).replace('\u2019', "'").strip()
 
 # bosses in order, from the Bosses list
 bosses, rare, i = [], set(), 0
@@ -76,9 +76,10 @@ LOC = {'Ruins of Lordaeron': 'Tirisfal Glades', 'Excavation Site: Wetlands': 'We
 
 # a wing of a dungeon the data lists as one ("Scarlet Monastery: Library"): its bosses join that dungeon's entry
 whole, wing = name, None
-WINGS = ('Scarlet Monastery', 'Stratholme')
+WINGS = ('Scarlet Monastery', 'Stratholme', 'Dire Maul', 'Blackrock Spire')
 for w in WINGS:
     if name.startswith(w + ':') or name.startswith(w + ' '): whole, wing = w, name[len(w):].lstrip(':').strip()
+    elif name.endswith(' ' + w): whole, wing = w, name[:-len(w)].strip()   # "Lower Blackrock Spire"
 key = re.sub(r'[^A-Z0-9]+', '_', whole.upper()).strip('_')
 known = json.load(open(os.path.join(PUB, 'dungeons-forever.json')))['dungeons']
 have = next((d for d in known if d['n'].lower() == whole.lower()), None)
