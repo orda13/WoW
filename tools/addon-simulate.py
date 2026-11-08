@@ -267,6 +267,16 @@ print('\n'.join(t for t in L.eval('function() local t = {} for _, f in ipairs(Le
 L.execute('LevelingLedgerAltsSearch.text = "linen"; function LevelingLedgerAltsSearch:GetText() return self.text end; LevelingLedgerAltsSearch.scripts.OnTextChanged(LevelingLedgerAltsSearch)')
 print('-- search "linen":', [t for t in L.eval('function() local t = {} for _, f in ipairs(LevelingLedgerAlts.rows) do t[#t + 1] = f.text or "" end return t end')().values() if t])
 
+# the newer engine: no skill lines or classic trade skill functions; GetProfessions and C_TradeSkillUI instead
+L.execute('''GetNumSkillLines, GetSkillLineInfo, GetTradeSkillLine, GetNumTradeSkills = nil, nil, nil, nil
+function GetProfessions() return 1, nil, nil, 4, 5 end
+local P = { [1] = { "Herbalism", 128, 150 }, [4] = { "Cooking", 112, 150 }, [5] = { "First Aid", 75, 75 } }
+function GetProfessionInfo(i) local p = P[i]; return p[1], 0, p[2], p[3] end
+C_TradeSkillUI = { GetBaseProfessionInfo = function() return { professionName = "Cooking" } end, GetAllRecipeIDs = function() return { 1, 2, 3 } end,
+  GetRecipeInfo = function(id) return ({ { name = "Coyote Steak", learned = true }, { name = "Thistle Tea", learned = false }, { name = "Herb Baked Egg", learned = true } })[id] end }''')
+fire('SKILL_LINES_CHANGED'); fire('TRADE_SKILL_LIST_UPDATE')
+c = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']
+print('skills (newer engine):', {k: dict(v)['rank'] for k, v in c.skills.items()})
 # the in-game panel, before logging out
 fire('AUCTION_ITEM_LIST_UPDATE'); fire('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')
 print('auction prices:', {k: dict(v) for k, v in L.globals().LevelingLedgerDB.ah.items()})

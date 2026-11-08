@@ -319,28 +319,45 @@ local PROFS = {
   Leatherworking = "primary", Mining = "primary", Skinning = "primary", Tailoring = "primary", Jewelcrafting = "primary",
   Cooking = "secondary", ["First Aid"] = "secondary", Fishing = "secondary",
 }
-local function scanSkills()
-  if not GetNumSkillLines or not GetSkillLineInfo then return end
-  char.skills = char.skills or {}
-  local header
-  local primaryHeader = TRADE_SKILLS or "Professions"
-  local secondaryHeader = SECONDARY_SKILLS or "Secondary Skills"
-  for i = 1, GetNumSkillLines() do
-    local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
-    if isHeader then header = name
-    elseif name then
-      local kind = PROFS[name] or (header == primaryHeader and "primary") or (header == secondaryHeader and "secondary")
-      if kind then
-        local old = char.skills[name]
-        if session and old and rank > (old.rank or 0) then
-          session.skillups = session.skillups or {}
-          local su = session.skillups[name] or { from = old.rank }
-          su.to = rank
-          session.skillups[name] = su
-        end
-        char.skills[name] = { rank = rank, max = maxRank, kind = kind }
+-- Profession skills, as { name, rank, max, kind }: the classic skill lines, or (this client, newer engine)
+-- GetProfessions / GetProfessionInfo
+local function readSkills()
+  local out = {}
+  if GetNumSkillLines and GetSkillLineInfo then
+    local header
+    local primaryHeader = TRADE_SKILLS or "Professions"
+    local secondaryHeader = SECONDARY_SKILLS or "Secondary Skills"
+    for i = 1, GetNumSkillLines() do
+      local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
+      if isHeader then header = name
+      elseif name then
+        local kind = PROFS[name] or (header == primaryHeader and "primary") or (header == secondaryHeader and "secondary")
+        if kind then out[#out + 1] = { name = name, rank = rank, max = maxRank, kind = kind } end
       end
     end
+  elseif GetProfessions and GetProfessionInfo then
+    for _, idx in pairs({ GetProfessions() }) do
+      if idx then
+        local ok, name, _, rank, maxRank = pcall(GetProfessionInfo, idx)
+        if ok and name then out[#out + 1] = { name = name, rank = rank or 0, max = maxRank, kind = PROFS[name] or "secondary" } end
+      end
+    end
+  end
+  return out
+end
+local function scanSkills()
+  local list = readSkills()
+  if #list == 0 then return end
+  char.skills = char.skills or {}
+  for _, sk in ipairs(list) do
+    local old = char.skills[sk.name]
+    if session and old and sk.rank > (old.rank or 0) then
+      session.skillups = session.skillups or {}
+      local su = session.skillups[sk.name] or { from = old.rank }
+      su.to = sk.rank
+      session.skillups[sk.name] = su
+    end
+    char.skills[sk.name] = { rank = sk.rank, max = sk.max, kind = sk.kind }
   end
   char.skillsAt = now()
 end
@@ -358,14 +375,24 @@ local function noteRecipes(prof, names)
   char.recipesAt = now()
 end
 local function scanTradeSkills()
-  if not GetTradeSkillLine or not GetNumTradeSkills then return end
-  local prof = GetTradeSkillLine()
-  local names = {}
-  for i = 1, GetNumTradeSkills() do
-    local n, kind = GetTradeSkillInfo(i)
-    if n and kind ~= "header" then table.insert(names, n) end
+  local prof, names = nil, {}
+  if GetTradeSkillLine and GetNumTradeSkills then
+    prof = GetTradeSkillLine()
+    for i = 1, GetNumTradeSkills() do
+      local n, kind = GetTradeSkillInfo(i)
+      if n and kind ~= "header" then table.insert(names, n) end
+    end
+  elseif C_TradeSkillUI and C_TradeSkillUI.GetAllRecipeIDs and C_TradeSkillUI.GetRecipeInfo then
+    -- newer engine: the open profession, and every recipe you've learned in it
+    local info = C_TradeSkillUI.GetBaseProfessionInfo and C_TradeSkillUI.GetBaseProfessionInfo()
+    prof = info and info.professionName
+    if not prof and C_TradeSkillUI.GetTradeSkillLine then prof = select(2, C_TradeSkillUI.GetTradeSkillLine()) end
+    for _, id in ipairs(C_TradeSkillUI.GetAllRecipeIDs() or {}) do
+      local r = C_TradeSkillUI.GetRecipeInfo(id)
+      if r and r.learned and r.name then table.insert(names, r.name) end
+    end
   end
-  noteRecipes(prof, names)
+  if prof and #names > 0 then noteRecipes(prof, names) end
 end
 local function scanCrafts()
   if not GetCraftDisplaySkillLine or not GetNumCrafts then return end
