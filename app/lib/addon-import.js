@@ -72,6 +72,27 @@ function importAddon(text, store, publicDir, source, hint) {
   if (!data || !data.chars) throw new Error("That file has no Leveling Ledger data.");
   const ch = pickChar(data, store, hint);
   if (!ch) throw new Error("That file has no data for this ledger's character.");
+  // 0. A character Blizzard doesn't serve yet (under level 10, or not synced): start its ledger from the add-on,
+  //    and keep its level and XP current from the add-on whenever that's newer. A Blizzard sync later fills in the rest.
+  const nice = (t) => String(t || "").toLowerCase().replace(/(^|_)(\w)/g, (m, a, b) => (a ? " " : "") + b.toUpperCase());
+  const spaced = (t) => String(t || "").replace(/([a-z])([A-Z])/g, "$1 $2");
+  let have = store.get("state/character");
+  if (!have && ch.name) {
+    have = { name: ch.name, version: "World of Warcraft: Forever", maxLevel: 60, level: ch.level || 1, xp: ch.lastXP || 0,
+      xpMax: (ch.xpMax && ch.xpMax[ch.level]) || 0, needsXpMax: !(ch.xpMax && ch.xpMax[ch.level]), rested: ch.rested || 0, zone: ch.zone || "",
+      trackedMs: 0, faction: ch.faction || "", region: "US", race: spaced(ch.race), cls: nice(ch.class), src: "addon" };
+    store.set("state/character", have);
+    store.set("dings/start-" + have.level, { level: have.level, at: Date.now(), trackedMs: 0 });
+  } else if (have && ch.level && ch.level > (have.level || 0)) {
+    for (let lv = (have.level || 0) + 1; lv <= ch.level; lv++) {
+      const at = ch.levels && ch.levels[lv] && ch.levels[lv].at ? ch.levels[lv].at * 1000 : Date.now();
+      store.set(`dings/addon-${lv}`, { level: lv, at, trackedMs: have.trackedMs || 0 });
+    }
+    const xmax = ch.xpMax && ch.xpMax[ch.level];
+    store.update("state/character", { level: ch.level, xp: ch.lastXP || 0, xpMax: xmax || 0, needsXpMax: !xmax });
+  } else if (have && have.src === "addon" && ch.level === have.level && ch.lastXP != null && ch.lastXP !== have.xp) {
+    store.update("state/character", { xp: ch.lastXP });
+  }
   const S = {
     char: store.get("state/character") || null,
     xpt: store.get("state/xptable") || null,

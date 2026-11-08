@@ -95,7 +95,11 @@ function syncBlizzard(store, cfg, log) {
       store.set("state/syncstatus", { ...(store.get("state/syncstatus") || {}), pending: true, startedAt: now });
       const sec = await fetchAll(cfg);
       const p = sec.profile;
-      if (p.status !== 200) { status({ ok: false, changed: false, message: `Blizzard didn't return the character (HTTP ${p.status}). Try again later.`, lastLogin: null }); return; }
+      if (p.status !== 200) {
+        const low = p.status === 404 && store.get("state/character");
+        status({ ok: false, changed: false, message: low ? "Blizzard doesn't show this character yet (it lists characters from level 10, after they log out). Until then the ledger uses the add-on's data." : `Blizzard didn't return the character (HTTP ${p.status}). Try again later.`, lastLogin: null });
+        return;
+      }
       const pr = p.json;
       // a character added on the Settings tab: start its ledger from what Blizzard knows
       if (!store.get("state/character")) {
@@ -117,7 +121,7 @@ function syncBlizzard(store, cfg, log) {
       if (sec["quests/completed"].status === 200) store.set("state/quests", nw.quests);
       if (sec.equipment.status === 200) store.set("state/gear", nw.gear);
       const upd = { level: pr.level, xp: pr.experience, equippedItemLevel: pr.equipped_item_level, achievementPoints: pr.achievement_points,
-        lastLogin: pr.last_login_timestamp, syncedAt: now, race: pr.race && pr.race.name, cls: pr.character_class && pr.character_class.name };
+        lastLogin: pr.last_login_timestamp, syncedAt: now, race: pr.race && pr.race.name, cls: pr.character_class && pr.character_class.name, src: "blizzard" };
       if (c.level != null && pr.level > c.level) {
         upd.needsXpMax = true;
         const xt = (store.get("state/xptable") || {}).levels || {};
