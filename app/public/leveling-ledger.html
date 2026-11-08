@@ -3314,7 +3314,18 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     // plus hand-entered dungeons the other sources don't have yet (dungeons-curated-forever.json)
     Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), fetch("dungeons-curated-forever.json").then((r) => r.ok ? r.json() : null).catch(() => null)]).then(([d, c]) => {
       if (c) {
-        for (const x of c.dungeons || []) if (!d.dungeons.some((y) => y.key === x.key)) { d.dungeons.push(x); d.forever = (d.forever || []).filter((a) => a.n !== x.n); }
+        const bn = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const x of c.dungeons || []) {
+          const have = d.dungeons.find((y) => y.key === x.key || bn(y.n) === bn(x.n));
+          if (!have) { d.dungeons.push(x); d.forever = (d.forever || []).filter((a) => a.n !== x.n); continue; }
+          // a dungeon we already have: add the pasted loot to the same boss, and bosses we don't list
+          have.curated = x.curated;
+          for (const b of x.bosses || []) {
+            const mine = have.bosses.find((y) => bn(y.n) === bn(b.n));
+            if (mine) { mine.loot = [...new Set([...(mine.loot || []), ...(b.loot || [])])]; if (!mine.wh) mine.wh = b.wh; }
+            else have.bosses.push(b);
+          }
+        }
         for (const [id, it] of Object.entries(c.items || {})) if (!d.items[id]) d.items[id] = it;
         d.dungeons.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "Raid" ? 1 : -1) || a.lv[0] - b.lv[0]);
       }
