@@ -2890,8 +2890,35 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     S.profPrefs = { skip, updatedAt: Date.now() }; renderProfPlan();
     if (db) write(() => db.doc("state/profprefs").set(S.profPrefs));
   }
+  // Recipes worth buying for this character: sold by a vendor of your faction, not known, for a profession you have,
+  // not grey at your skill and learnable within the next 50 points. The add-on gets them through Shared.lua and
+  // highlights them at the vendor, on the vendor's tooltip and (with Questie) on the map.
+  function recipeNeeds() {
+    const kn = knownRecipes(), me = myFaction(), out = [];
+    for (const e of RC.data.recipes) {
+      const k = kn.get(e.p); if (!k || k.skill == null || !e.learn || k.set.has(e.n.toLowerCase())) continue;
+      if (upColor(e, Math.max(k.skill, learnAt(e)), true) === "grey" || learnAt(e) > k.skill + 50) continue;
+      for (const l of e.learn) {
+        const vs = (l.v || []).filter((v) => !me || !v.f || v.f.includes(me[0]));
+        if (vs.length && l.i) out.push({ e, l, vs, ready: learnAt(e) <= k.skill });
+      }
+    }
+    return out.sort((a, b) => a.e.p.localeCompare(b.e.p) || learnAt(a.e) - learnAt(b.e)).slice(0, 80);
+  }
+  let needsT = null;
+  function saveRecipeNeeds(needs) {
+    const who = planWho(); if (!who || !db || !S.canWrite) return;
+    const items = {}, npcs = {};
+    for (const x of needs) { items[x.l.i] = x.l.n; for (const v of x.vs) (npcs[v.id] = npcs[v.id] || []).includes(x.l.i) || npcs[v.id].push(x.l.i); }
+    const mine = { items, npcs };
+    const by = { ...((S.recipeNeeds && S.recipeNeeds.byChar) || {}) };
+    if (JSON.stringify(by[who] || {}) === JSON.stringify(mine)) return;
+    by[who] = mine; S.recipeNeeds = { byChar: by, updatedAt: Date.now() };
+    clearTimeout(needsT); needsT = setTimeout(() => write(() => db.doc("shared/recipeneeds").set(S.recipeNeeds)), 1500);
+  }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
+    const needs = recipeNeeds(); saveRecipeNeeds(needs);
     if (!GA.data) loadGather();
     const kn = knownRecipes(), out = [], skip = profSkip();
     for (const [prof, k] of kn) {
@@ -2946,6 +2973,19 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       const sk = Object.keys(skip).filter((n) => RC.data.recipes.some((e) => e.n === n && e.p === prof));
       if (sk.length) { foot.append(document.createTextNode("Skipped: " + sk.join(", ") + " ")); const u = el("button", "linkish", "undo"); u.type = "button"; u.onclick = () => { for (const n of sk) setSkip(n, false); }; foot.append(u); }
       sec.append(foot);
+      // recipes to buy for this profession, and where (the add-on highlights them in game)
+      const mineNeeds = needs.filter((x) => x.e.p === prof);
+      if (mineNeeds.length) {
+        const rb = el("div", "pp-buy"); rb.append(el("span", "label", "Recipes to buy "), el("span", "muted", "(highlighted at the vendor in game)"));
+        const ul = el("ul", "pp-list");
+        for (const x of mineNeeds.slice(0, 12)) {
+          const li = el("li"); li.append(whA("item", x.l.i, x.l.n, "who"), document.createTextNode(" "));
+          if (x.l.price) li.append(moneyEl(x.l.price));
+          const v = x.vs[0]; li.append(el("span", "muted", ` · ${v.n}, ${v.z}${v.xy ? ` (${v.xy[0]}, ${v.xy[1]})` : ""}${x.vs.length > 1 ? ` · and ${x.vs.length - 1} more` : ""}${x.ready ? "" : ` · from skill ${learnAt(x.e)}`}`));
+          ul.append(li);
+        }
+        rb.append(ul); sec.append(rb);
+      }
       out.push(sec);
     }
     box.replaceChildren(...(out.length ? out : [el("p", "empty", "No professions to level on this character (or they're all at 300).")]));
@@ -3881,6 +3921,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("shared/recipeneeds").onSnapshot((s) => { S.recipeNeeds = s.exists ? s.data() : null; }, () => {});
     db.doc("state/profprefs").onSnapshot((s) => { S.profPrefs = s.exists ? s.data() : null; try { renderProfPlan(); } catch {} }, () => {});
     db.doc("state/gathers").onSnapshot((s) => { S.gathers = s.exists ? s.data() : null; try { renderGather(); } catch {} }, () => {});
     db.doc("shared/ahprices").onSnapshot((s) => { S.ah = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); }, () => {});

@@ -30,7 +30,16 @@ function buildSummary(store) {
     const ids = Object.entries(q || {}).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100);
     if (ids.length) plans[String(who).toLowerCase()] = Object.fromEntries(ids.map(([id, t]) => [id, String(t || "")]));
   }
-  return { generated: Math.floor(Date.now() / 1000), chars, items, plans };
+  // recipes each character needs and the vendors (npc ids) that sell them: { who: { items: {id: name}, npcs: {npc: [ids]} } }
+  const recipes = {};
+  for (const [who, r] of Object.entries((store.get("shared/recipeneeds") || {}).byChar || {})) {
+    if (!r || typeof r !== "object") continue;
+    const items = Object.fromEntries(Object.entries(r.items || {}).filter(([id]) => /^\d{1,9}$/.test(id)).slice(0, 100).map(([id, n]) => [id, String(n || "")]));
+    const npcs = Object.fromEntries(Object.entries(r.npcs || {}).filter(([id, l]) => /^\d{1,9}$/.test(id) && Array.isArray(l)).slice(0, 400)
+      .map(([id, l]) => [id, l.filter((x) => /^\d{1,9}$/.test(String(x))).slice(0, 20).map(Number)]));
+    if (Object.keys(items).length) recipes[String(who).toLowerCase()] = { items, npcs };
+  }
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -70,9 +79,17 @@ function toLua(sum) {
     const ids = Object.entries(q).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100).map(([id, t]) => `[${id}]=${luaStr(t, 80)}`);
     if (ids.length) plans.push(`  [${luaStr(who, 40)}] = {${ids.join(",")}},`);
   }
+  const recipes = [];
+  for (const [who, r] of Object.entries((sum && sum.recipes) || {}).slice(0, MAX_CHARS)) {
+    if (!r || typeof r !== "object") continue;
+    const items = Object.entries(r.items || {}).filter(([id]) => /^\d{1,9}$/.test(id)).slice(0, 100).map(([id, n]) => `[${id}]=${luaStr(n, 80)}`);
+    const npcs = Object.entries(r.npcs || {}).filter(([id, l]) => /^\d{1,9}$/.test(id) && Array.isArray(l)).slice(0, 400)
+      .map(([id, l]) => `[${id}]={${l.map((x) => int(x, 1e9)).filter((x) => x > 0).slice(0, 20).join(",")}}`);
+    if (items.length) recipes.push(`  [${luaStr(who, 40)}] = { items = {${items.join(",")}}, npcs = {${npcs.join(",")}} },`);
+  }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

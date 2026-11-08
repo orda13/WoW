@@ -185,10 +185,12 @@ function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
+L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.recipes = { talwyn = { items = { [271900] = "Recipe: Elixir of Lesser Spirit" }, npcs = { [256729] = { 271900 } } } }')
+L.execute('CreateFrame("Button", "MerchantItem1ItemButton"); CreateFrame("Button", "MerchantItem2ItemButton")')
 L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.plans = { talwyn = { [486] = "Ursal the Mauler", [999] = "The Balance of Nature", [488] = "Zenn\'s Bidding" } }')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN')
 print('plan: tracked', dict(L.globals().WATCHED), '| pins', list(L.globals().PINS.values()), '| unhidden', list(L.globals().UNHIDDEN.values()))
@@ -226,6 +228,7 @@ L.execute('FACTIONS[5][2] = 5; FACTIONS[5][3] = 3000; FACTIONS[5][4] = 9000; FAC
 fire('CHAT_MSG_SYSTEM', 'You have learned a new spell: Moonfire (Rank 3).')   # not a recipe
 L.execute('SKILLS[2][3] = 70'); fire('SKILL_LINES_CHANGED'); fire('TRADE_SKILL_SHOW')
 L.execute('NPCGUID = "Creature-0-1-0-1-256729-000001"; NPCNAME = "Nina Surefire"; ZONE = "Redridge Mountains"'); fire('MERCHANT_SHOW')
+slash_('recipes')
 money(500); money(-20); fire('MERCHANT_CLOSED')                       # sell, then buy or repair
 L.execute('NPCGUID = "Creature-0-1-0-1-3602-000002"; NPCNAME = "Kal"'); fire('TRAINER_SHOW'); print('trainer filters afterwards:', dict(L.globals().FILTER))
 money(-380); fire('TRAINER_CLOSED')                                   # training

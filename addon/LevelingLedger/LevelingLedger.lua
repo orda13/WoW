@@ -912,6 +912,7 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   if cmd == "alts" then if ns.toggleAlts then ns.toggleAlts() end return end
   if cmd == "plan" then if ns.planCommand then ns.planCommand() end return end
   if cmd == "save" then LevelingLedger_Save() return end
+  if cmd == "recipes" then if ns.recipesCommand then ns.recipesCommand() end return end
   local w = cmd:match("^water%s*(.*)$")
   if w and ns.waterCommand then ns.waterCommand(w) return end
   if cmd ~= "" and panelCommand(cmd) then return end
@@ -926,5 +927,5 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
   local ver = meta and meta(ADDON, "Version")
   print("|cffd9aa5aLeveling Ledger|r" .. (ver and " " .. ver or "") .. ": type /reload or log out to save; the Leveling Ledger app imports it within a few seconds.")
-  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water. Planned quests: /ledger plan. Save now: /ledger save (or bind a key: Options, Keybindings, AddOns)")
+  print("|cffd9aa5aLeveling Ledger|r: panel: /ledger show, hide, lock, unlock or reset. Your characters, bags and bank: /ledger alts. Water breaks: /ledger water. Planned quests: /ledger plan. Recipes to buy: /ledger recipes. Save now: /ledger save (or bind a key: Options, Keybindings, AddOns)")
 end
