@@ -400,6 +400,13 @@ div.qc-red { border: 0; }
 .ab-meta { font-size: .78rem; font-family: var(--mono); color: var(--fg); opacity: .85; }
 .tags .planned { color: var(--rested); font-weight: 600; }
 .ql-plan { margin-top: 10px; }
+.rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 8px; }
+table.rep { border-collapse: collapse; width: 100%; font-size: .88rem; }
+table.rep th { text-align: left; font-weight: 600; color: var(--muted); padding: 2px 8px 2px 0; }
+table.rep td { padding: 2px 8px 2px 0; border-bottom: 1px solid var(--line); }
+table.rep td.num, table.rep th.num { text-align: right; white-space: nowrap; }
+.rep-big { font-size: 1.15rem; }
+.rep-up { color: var(--good); } .rep-down { color: var(--bad); }
 .ql-q { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .ql-ob { font-size: .85rem; margin-left: 14px; }
 .ql-ob.done { color: var(--good); }
@@ -799,6 +806,12 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <ul class="bk-list" id="bkList"></ul>
   </section>
 
+  <section class="panel" id="lvlReport" data-view="ledger">
+    <h2>Leveling report</h2>
+    <p class="hint">From the add-on's sessions: your pace, where you level fastest, and whether it's getting better. Zone and level figures start with add-on 1.0.26.</p>
+    <div id="repBody"><p class="empty">No sessions from the add-on yet.</p></div>
+  </section>
+
   <section class="panel" id="histPanel" data-view="ledger">
     <div class="tal-head"><h2>Session history</h2><span class="hint" id="histNote"></span></div>
     <div class="stats tiles hist-tiles" id="histTiles"></div>
@@ -1155,6 +1168,56 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       }).join(" · ") + (gains.length > 5 ? ` · and ${gains.length - 5} more` : "");
       rp.hidden = false;
     } else rp.hidden = true;
+  }
+
+  // ---------- leveling report ----------
+  function renderReport() {
+    const box = $("repBody"); if (!box) return;
+    const ss = (S.sessions || []).filter((x) => x.src === "addon" && x.durationMs > 120000).sort((a, b) => b.startedAt - a.startedAt);
+    if (!ss.length) { box.replaceChildren(el("p", "empty", "No sessions from the add-on yet.")); return; }
+    const rate = (xp, ms) => ms > 0 ? xp / ms * 3600000 : 0;
+    // pace: the last five sessions with XP, weighted by time played
+    const recent = ss.filter((x) => x.xp > 0).slice(0, 5);
+    const pace = rate(recent.reduce((a, x) => a + x.xp, 0), recent.reduce((a, x) => a + x.durationMs, 0));
+    const lvl = (S.char && S.char.level) || 1;
+    const me = invChars().find(isMe);
+    const into = me && me.level === lvl && me.xp != null ? me.xp : 0;
+    let left = 0, est = false;
+    for (let l = lvl; l < 60; l++) { const t = xpFor(l); est = est || t.est; left += t.v - (l === lvl ? into : 0); }
+    const head = el("div", "rep-big");
+    if (lvl >= 60) head.textContent = "Level 60. Nothing left to level.";
+    else if (pace > 0) {
+      const h = left / pace;
+      head.append(el("b", null, `Level 60 in about ${h < 48 ? Math.round(h) + " hours" : (h / 24).toFixed(1) + " days"} played`),
+        el("span", "muted", ` · ${fmt(Math.round(left))} XP left${est ? " (partly estimated)" : ""} at ${fmt(Math.round(pace))} XP per hour (your last ${recent.length} session${recent.length === 1 ? "" : "s"})`));
+    } else head.textContent = "Play a session with the add-on to see your pace.";
+    // by zone and by level, summed over every session that has them
+    const sum = (k) => { const m = {}; for (const x of ss) for (const [key, v] of Object.entries(x[k] || {})) { const p = m[key] || (m[key] = { xp: 0, sec: 0 }); p.xp += v.xp || 0; p.sec += v.sec || 0; } return m; };
+    const table = (title, rows, label) => {
+      const wrap = el("div"); wrap.append(el("h3", null, title));
+      if (!rows.length) { wrap.append(el("p", "muted", "Not enough data yet.")); return wrap; }
+      const t = el("table", "rep"); const hr = el("tr"); hr.append(el("th", null, label), el("th", "num", "XP/h"), el("th", "num", "time"), el("th", "num", "XP")); t.append(hr);
+      for (const r of rows) { const tr = el("tr"); tr.append(el("td", null, r.k), el("td", "num", fmt(Math.round(r.xph))), el("td", "num", dur(r.sec * 1000)), el("td", "num", fmt(r.xp))); t.append(tr); }
+      wrap.append(t); return wrap;
+    };
+    const rowsOf = (m) => Object.entries(m).filter(([, v]) => v.sec >= 300).map(([k, v]) => ({ k, xp: v.xp, sec: v.sec, xph: v.xp / v.sec * 3600 }));
+    const zones = rowsOf(sum("byZone")).sort((a, b) => b.xph - a.xph).slice(0, 10);
+    const levels = rowsOf(sum("byLevel")).sort((a, b) => (+b.k) - (+a.k)).slice(0, 12).map((r) => ({ ...r, k: "Level " + r.k }));
+    // session to session: XP per hour against the average of all of them
+    const withXp = ss.filter((x) => x.xp > 0);
+    const avg = rate(withXp.reduce((a, x) => a + x.xp, 0), withXp.reduce((a, x) => a + x.durationMs, 0));
+    const st = el("div"); st.append(el("h3", null, "Recent sessions"));
+    const t = el("table", "rep"); const hr = el("tr"); hr.append(el("th", null, "When"), el("th", "num", "played"), el("th", "num", "XP/h"), el("th", null, "vs average"), el("th", null, "zones")); t.append(hr);
+    for (const x of ss.slice(0, 8)) {
+      const r = rate(x.xp || 0, x.durationMs), diff = avg ? (r - avg) / avg : 0;
+      const tr = el("tr");
+      tr.append(el("td", null, new Date(x.startedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })), el("td", "num", dur(x.durationMs)), el("td", "num", fmt(Math.round(r))),
+        el("td", Math.abs(diff) < 0.05 ? "muted" : diff > 0 ? "rep-up" : "rep-down", Math.abs(diff) < 0.05 ? "about average" : `${diff > 0 ? "+" : ""}${Math.round(diff * 100)}%`), el("td", "muted", (x.zones || []).slice(-3).join(", ")));
+      t.append(tr);
+    }
+    st.append(t);
+    const grid = el("div", "rep-grid"); grid.append(table("XP per hour by zone", zones, "Zone"), table("By level", levels, "Level"));
+    box.replaceChildren(head, grid, st);
   }
 
   // Gold for a session: earned (looting, quests, selling) per hour, spent, net. Mail is shown apart: it's often gold moved between characters.
@@ -3521,8 +3584,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/talents").onSnapshot((s) => { if (TAL.dirty || s.metadata.hasPendingWrites) return; TAL.ranks = { ...((s.exists && s.data().ranks) || {}) }; renderTalents(); }, () => {});
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
-    db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); }, () => {});
-    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); }, () => {});
+    db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); renderReport(); }, () => {});
+    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); }, () => {});
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});
@@ -3530,7 +3593,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/vendors").onSnapshot((s) => { S.vendors = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.doc("state/loot").onSnapshot((s) => { S.loot = s.exists ? s.data() : null; if (DG.data) { for (const d of DG.data.dungeons) d._hay = null; renderDungeons(); } }, () => {});
     db.doc("state/addon").onSnapshot((s) => { S.addon = s.exists ? s.data() : null; renderAddonStatus(); renderHealth(); }, () => {});
-    db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); }, () => {});
+    db.doc("state/xptable").onSnapshot((s) => { S.xpt = s.exists ? s.data() : null; renderHistory(); renderReport(); }, () => {});
     db.collection("tasks").orderBy("createdAt", "asc").limit(300).onSnapshot((q) => { S.tasks = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderTasks(); }, () => {});
   })();
 })();

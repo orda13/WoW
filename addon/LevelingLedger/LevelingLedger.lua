@@ -126,8 +126,30 @@ local function startSession()
   char.lastXP, char.lastLevel = s.xp, s.level
 end
 
+-- XP and time per zone and per level, for the leveling report: time since the last tick goes to the zone and level
+-- you were in, then XP to where you are now.
+local tickAt, tickZone, tickLevel
+local function tick(xp)
+  if not session then return end
+  local t = now()
+  session.byZone = session.byZone or {}; session.byLevel = session.byLevel or {}
+  if tickAt and tickZone and tickZone ~= "" then
+    local z = session.byZone[tickZone] or { xp = 0, sec = 0 }; z.sec = z.sec + (t - tickAt); session.byZone[tickZone] = z
+  end
+  if tickAt and tickLevel then
+    local l = session.byLevel[tickLevel] or { xp = 0, sec = 0 }; l.sec = l.sec + (t - tickAt); session.byLevel[tickLevel] = l
+  end
+  -- XP goes where you were until now (at a level-up that's the level you just finished)
+  if xp and xp > 0 then
+    local zn, lv = tickZone or zone(), tickLevel or UnitLevel("player")
+    if zn ~= "" then local z = session.byZone[zn] or { xp = 0, sec = 0 }; z.xp = z.xp + xp; session.byZone[zn] = z end
+    local l = session.byLevel[lv] or { xp = 0, sec = 0 }; l.xp = l.xp + xp; session.byLevel[lv] = l
+  end
+  tickAt, tickZone, tickLevel = t, zone(), UnitLevel("player")
+end
 local function closeSession()
   if not session then return end
+  tick()
   local s = snapshot()
   session.stop = s.at
   session.endLevel, session.endXP, session.endXPMax, session.endMoney, session.endRested = s.level, s.xp, s.xpMax, s.money, s.rested
@@ -199,6 +221,7 @@ end
 
 local function noteZone()
   if not session then return end
+  tick()
   local z = zone()
   if z ~= "" and session.zones[#session.zones] ~= z then
     table.insert(session.zones, z)
@@ -218,6 +241,7 @@ local function onXP()
     for l = char.lastLevel + 1, lvl - 1 do gained = gained + (char.xpMax[l] or 0) end
   end
   if session and gained and gained > 0 then session.xpGained = session.xpGained + gained end
+  if session then tick(gained) end
   char.lastXP, char.lastLevel = xp, lvl
 end
 
