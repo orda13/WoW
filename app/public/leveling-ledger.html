@@ -1025,7 +1025,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <h3 class="dg-h3">New in World of Warcraft: Forever</h3>
     <p class="hint">Forever adds new instances and areas. Their bosses and loot aren't published in Blizzard's data or QuestieDB yet, so this shows their quests. Use the Wowhead link for anything else.</p>
     <div class="qblocks" id="dgForever"></div>
-    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items; for the dungeons pasted from Wowhead's Forever dungeon journal, its Drops list is added too (each boss's wing shown for Scarlet Monastery, Stratholme, Dire Maul and Blackrock Spire). Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
+    <p class="hint" id="dgSource">Boss lists are from the original game Forever is based on; Forever may add or change bosses. Creature levels, ranks and the loot shown come from QuestieDB's Forever data, checked against Blizzard's Forever item data: only items that still exist in Forever are listed, so loot is partial. Forever replaced most classic dungeon loot with new items; for the dungeons pasted from Wowhead's Forever dungeon journal, its Drops list is added too, and MSPaintWoW's guides add pull order, drop chances, best-in-slot marks and quest rewards for the dungeons they cover (each boss's wing shown for Scarlet Monastery, Stratholme, Dire Maul and Blackrock Spire). Items with a drop chance come from Wowhead's Forever tooltips, looked up for items already known from QuestieDB. Each boss links to its Wowhead Forever page for the full loot table.</p>
   </section>
 
   <section class="panel" id="abPanel" data-view="talents">
@@ -3307,12 +3307,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   $("mMore").onclick = () => { MAT.shown += 30; renderMaterials(); };
 
   // ---------- dungeons and raids ----------
-  const DG = { data: null, loading: false, open: new Set() };
+  const DG = { data: null, loading: false, open: new Set(), guide: {} };
   function loadDungeons() {
     if (DG.data || DG.loading) { renderDungeons(); return; }
     DG.loading = true;
     // plus hand-entered dungeons the other sources don't have yet (dungeons-curated-forever.json)
-    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), fetch("dungeons-curated-forever.json").then((r) => r.ok ? r.json() : null).catch(() => null)]).then(([d, c]) => {
+    // and MSPaintWoW's guides (dungeon-guides-forever.json): pull order, boss difficulty, drop chances, best-in-slot marks, quest rewards
+    const opt = (f) => fetch(f).then((r) => r.ok ? r.json() : null).catch(() => null);
+    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), opt("dungeons-curated-forever.json"), opt("dungeon-guides-forever.json")]).then(([d, c, g]) => {
       if (c) {
         const bn = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
         for (const x of c.dungeons || []) {
@@ -3347,6 +3349,29 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         for (const [id, it] of Object.entries(c.items || {})) if (!d.items[id]) d.items[id] = it;
         d.dungeons.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "Raid" ? 1 : -1) || a.lv[0] - b.lv[0]);
       }
+      if (g && g.dungeons) {
+        const bn = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const [key, gd] of Object.entries(g.dungeons)) {
+          const have = d.dungeons.find((y) => y.key === key); if (!have) continue;
+          have.guide = { url: gd.url, quests: gd.quests || [] };
+          for (const [id, it] of Object.entries(gd.items || {})) {
+            DG.guide[id] = it;
+            const [sl, sc] = String(it.sl || "").split(/,\s*/);
+            const mine = d.items[id];
+            if (!mine) d.items[id] = { n: it.n, q: it.q, rl: it.rl, ...(sl ? { sl, sc: sc || "" } : {}), src: "mspaint" };
+            else { if (mine.q == null) mine.q = it.q; if (mine.rl == null) mine.rl = it.rl; }
+          }
+          for (const gb of gd.bosses || []) {
+            const b = have.bosses.find((y) => bn(y.n) === bn(gb.n)) || have.bosses.find((y) => bn(y.n).startsWith(bn(gb.n)) || bn(gb.n).startsWith(bn(y.n)));
+            if (!b) continue;
+            b.order = gb.order; b.diff = gb.diff; b.guide = gb.url;
+            b.loot = [...new Set([...(b.loot || []), ...(gb.loot || [])])];
+            for (const id of gb.loot || []) { const ch = (gd.items[id] || {}).chance; if (ch != null) { b.chance = b.chance || {}; if (b.chance[id] == null) b.chance[id] = ch; } }
+          }
+          // their pull order first; bosses they don't list keep their place after
+          if (have.bosses.some((b) => b.order)) have.bosses = have.bosses.map((b, i) => [b, i]).sort((x, y) => ((x[0].order || 99) - (y[0].order || 99)) || x[1] - y[1]).map(([b]) => b);
+        }
+      }
       DG.data = d; renderDungeons();
     })
       .catch(() => { $("dgList").replaceChildren(el("p", "empty", "Couldn't load the dungeon list. Reload the page to try again.")); });
@@ -3363,6 +3388,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     for (const [k, v] of it.st || []) bits.push(`+${v} ${k}`);
     row.append(el("span", "muted", " · " + bits.join(", ")));
     if (chance != null) row.append(el("span", "pill kind dg-chance", `${chance}% drop`));
+    const gi = DG.guide[id];
+    if (gi) { // MSPaintWoW's best-in-slot marks, for your class
+      const cls = ((S.char && S.char.cls) || "").split(/[ (]/)[0].toLowerCase();
+      const specs = (t) => (gi[t] || []).filter((x) => x.startsWith(cls + ":")).map((x) => x.split(":")[1]);
+      const bis = specs("bis"), top = specs("top3");
+      if (bis.length) row.append(el("span", "pill go", `Best in slot: ${bis.join(", ")}`));
+      else if (top.length) row.append(el("span", "pill", `Top 3: ${top.join(", ")}`));
+    }
     const up = upgradePill(it); if (up) row.append(up);
     const sb = setBlock(id); if (sb) row.append(sb);
     if (it.src === "wowhead") row.title = "From Wowhead's Forever data";
@@ -3467,6 +3500,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (meta) h.append(el("span", "muted", " " + meta));
       if (b.wing) h.append(el("span", "pill", b.wing));
       if (b.rare) h.append(el("span", "pill wait", "Rare spawn"));
+      if (b.order) h.append(el("span", "pill kind", `Pull ${b.order}`));
+      if (b.diff) h.append(el("span", "pill " + (b.diff === "hard" ? "wait" : "kind"), { easy: "Easy", moderate: "Moderate", hard: "Challenging" }[b.diff] || b.diff));
+      if (b.guide) { const a = el("a", "dg-guide", "Tactics"); a.href = b.guide; a.target = "_blank"; a.rel = "noopener"; a.title = "MSPaintWoW's guide: abilities and tank, healer and DPS tips"; h.append(" ", a); }
       c.append(h);
       if (b.lootWith && !(b.loot || []).length) c.append(el("div", "muted", `Fought together with ${b.lootWith}: the loot is listed there.`));
       const yd = b.id ? yourDrops(b.id) : null;
@@ -3516,6 +3552,21 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     if (d.curated) body.append(el("p", "hint", `Bosses and loot from ${d.curated}; item stats aren't known yet, so each item links to Wowhead.`));
     if (d.gone) body.append(el("p", "hint", `${d.gone} classic item${d.gone > 1 ? "s" : ""} from here no longer exist in Forever and are hidden. Forever's replacements aren't published yet.`));
+    if (d.guide) {
+      const gp = el("p", "hint"); const a = el("a", null, "MSPaintWoW's guide"); a.href = d.guide.url; a.target = "_blank"; a.rel = "noopener";
+      gp.append("Pull order, difficulty, drop chances and best-in-slot marks from ", a, ", which also has the map with the route and each boss's tactics.");
+      body.append(gp);
+      const fac = myFaction(), qs = d.guide.quests.filter((q) => !q.fac || !fac || q.fac === fac);
+      if (qs.length) {
+        const qd = el("details"); qd.append(el("summary", null, `Quest rewards (${qs.length} quest${qs.length === 1 ? "" : "s"})`));
+        for (const q of qs) {
+          const w = el("div", "dg-boss"); const qh = el("div", "dg-bh"); qh.append(el("b", null, q.n), el("span", "muted", ` level ${q.lv}${q.fac ? " · " + q.fac : ""}`)); w.append(qh);
+          for (const id of q.items || []) w.append(dgItemLine(id, null));
+          qd.append(w);
+        }
+        body.append(qd);
+      }
+    }
     body.append(dgMapBlock(d));
     if (qi.qs.length) {
       const qd = el("details"); qd.append(el("summary", null, `Quests (${qi.qs.length})`));
