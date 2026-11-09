@@ -319,8 +319,14 @@ L.execute('COMBAT = true; LevelingLedgerWater.later.scripts.OnClick()'); print('
 L.execute('COMBAT = false'); fire('PLAYER_REGEN_ENABLED'); print('after the fight, window shown:', L.globals().LevelingLedgerWater.shown)
 print('Reload now is a secure /reload:', L.eval('function() return LevelingLedgerWater.ok.attrs and LevelingLedgerWater.ok.attrs.macrotext end')())
 # full auction scan: the button appears on the auction window; newer style first, then classic; 15-minute limit
-L.execute('CreateFrame("Frame", "AuctionHouseFrame")'); fire('AUCTION_HOUSE_SHOW')
-L.execute('LL_NS.ahScan()')
+# the window doesn't exist yet when the game says the auction house opened (it loads on first use): no button yet,
+# then the window's add-on finishes loading and the button is made; /ledger scan does the same as the button
+L.execute('_AH_BUTTONS = 0; local cf = CreateFrame; CreateFrame = function(kind, name, parent, ...) local f = cf(kind, name, parent, ...); if kind == "Button" and parent and parent == rawget(_G, "AuctionHouseFrame") then _AH_BUTTONS = _AH_BUTTONS + 1 end; return f end')
+slash('scan'); fire('AUCTION_HOUSE_SHOW')
+print('auction window not loaded yet, buttons:', L.eval('_AH_BUTTONS'))
+L.execute('CreateFrame("Frame", "AuctionHouseFrame")'); fire('ADDON_LOADED', 'Blizzard_AuctionHouseUI'); fire('AUCTION_HOUSE_SHOW')
+print('after the window loaded, buttons:', L.eval('_AH_BUTTONS'))
+slash('scan')
 for _ in range(4): tick()
 ah = L.globals().LevelingLedgerDB.ah
 print('full scan (newer):', {k: dict(ah[k]) for k in (2449, 2450)})

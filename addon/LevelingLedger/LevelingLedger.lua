@@ -949,6 +949,7 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   if cmd == "plan" then if ns.planCommand then ns.planCommand() end return end
   if cmd == "save" then LevelingLedger_Save() return end
   if cmd == "recipes" then if ns.recipesCommand then ns.recipesCommand() end return end
+  if cmd == "scan" then if ns.ahScanCommand then ns.ahScanCommand() end return end
   local w = cmd:match("^water%s*(.*)$")
   if w and ns.waterCommand then ns.waterCommand(w) return end
   if cmd ~= "" and panelCommand(cmd) then return end

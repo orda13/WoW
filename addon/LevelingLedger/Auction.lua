@@ -98,6 +98,7 @@ local function readAll(n, first, get)
       local items = 0; for _ in pairs(seen) do items = items + 1 end
       flush(); scanning = nil
       setStatus("Done: prices for " .. items .. " items. Press Save (or /reload) to send them to the ledger.")
+      print("|cffd9aa5aLeveling Ledger|r: auction scan done, prices for " .. items .. " items. Press Save (or /reload) to send them to the ledger.")
     end
   end)
 end
@@ -145,12 +146,16 @@ local function onClassicAll()
   end)
 end
 -- The button, on whichever auction window this client has (created once, when it first opens)
+local function ahWindow() return rawget(_G, "AuctionHouseFrame") or rawget(_G, "AuctionFrame") end
 local function makeButton()
-  if btn then return end
-  local parent = rawget(_G, "AuctionHouseFrame") or rawget(_G, "AuctionFrame")
-  if not parent then return end
+  if btn then return true end
+  local parent = ahWindow()
+  if not parent then return false end
   btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
   btn:SetSize(130, 22); btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -70, -1); btn:SetText("Scan all prices")
+  -- above the window's own title-bar art, which is drawn on child frames of its own
+  if btn.SetFrameStrata and parent.GetFrameStrata then btn:SetFrameStrata(parent:GetFrameStrata()) end
+  if btn.SetFrameLevel and parent.GetFrameLevel then btn:SetFrameLevel((parent:GetFrameLevel() or 0) + 50) end
   btn:SetScript("OnClick", function() ns.safe(startScan) end)
   btn:SetScript("OnEnter", function(self)
     if not GameTooltip then return end
@@ -162,17 +167,35 @@ local function makeButton()
   btn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
   status = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   status:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", 0, -2); status:SetJustifyH("RIGHT")
+  return true
+end
+-- The game loads the auction window the first time it opens, sometimes after this add-on hears that it opened:
+-- try again for a moment, and when the window's own add-on finishes loading.
+local function makeButtonSoon()
+  if makeButton() or not (C_Timer and C_Timer.After) then return end
+  for _, d in ipairs({ 0.1, 0.5, 1.5, 3 }) do C_Timer.After(d, function() pcall(makeButton) end) end
 end
 ns.ahScan = startScan
+-- /ledger scan: the same as the button, while the auction house is open
+function ns.ahScanCommand()
+  local w = ahWindow()
+  if not (w and w.IsShown and w:IsShown()) then print("|cffd9aa5aLeveling Ledger|r: open the auction house first, then /ledger scan."); return end
+  pcall(makeButton)
+  local wait = canScanIn()
+  if wait > 0 then print("|cffd9aa5aLeveling Ledger|r: the game allows a full scan again in " .. math.ceil(wait / 60) .. " min. Prices still come from what you browse."); return end
+  print("|cffd9aa5aLeveling Ledger|r: scanning every auction listing; this takes a few seconds.")
+  ns.safe(startScan)
+end
 
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "REPLICATE_ITEM_LIST_UPDATE", "AUCTION_ITEM_LIST_UPDATE", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
+for _, e in ipairs({ "ADDON_LOADED", "AUCTION_HOUSE_SHOW", "REPLICATE_ITEM_LIST_UPDATE", "AUCTION_ITEM_LIST_UPDATE", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED",
   "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
   if ns.listen then ns.listen(f, e) else pcall(f.RegisterEvent, f, e) end
 end
 f:SetScript("OnEvent", function(_, event, a1)
   local safe = ns.safe or pcall
-  if event == "AUCTION_HOUSE_SHOW" then safe(makeButton)
+  if event == "ADDON_LOADED" then if a1 == "Blizzard_AuctionHouseUI" or a1 == "Blizzard_AuctionUI" then safe(makeButton) end
+  elseif event == "AUCTION_HOUSE_SHOW" then safe(makeButtonSoon)
   elseif event == "REPLICATE_ITEM_LIST_UPDATE" then safe(onReplicate)
   elseif event == "AUCTION_ITEM_LIST_UPDATE" then if scanning == "classic" then safe(onClassicAll) elseif not scanning then safe(classicList) end
   elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then safe(browse)
