@@ -32,13 +32,30 @@ Copy-Item -Path (Join-Path $Src "lib\*") -Destination "$Dest\lib" -Recurse -Forc
 
 # --- settings ---
 $cfgPath = "$Dest\relay.json"
+# Service token values: only visible ASCII. A paste into a hidden prompt can add invisible characters (Ctrl+V typed as a
+# control character, a line break), which make every request fail with "invalid CF-Access-Client-Secret header".
+function Clean-Token([string]$s) { if ($null -eq $s) { return "" }; return ($s -replace '[^\x21-\x7E]', '') }
+function Read-ClientId {
+  while ($true) {
+    $v = Clean-Token (Read-Host "  Service token Client ID (ends in .access)")
+    if ($v -match '^[A-Za-z0-9]+\.access$') { return $v }
+    Write-Host "  That doesn't look like a Client ID: it's letters and digits ending in .access. Paste it again." -ForegroundColor Yellow
+  }
+}
+function Read-ClientSecret {
+  while ($true) {
+    $sec = Read-Host "  Service token Client Secret (hidden; paste with right-click)" -AsSecureString
+    $v = Clean-Token ([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)))
+    if ($v -match '^[A-Za-z0-9]{32,}$') { return $v }
+    Write-Host "  That doesn't look like a Client Secret ($($v.Length) characters; it's a long string of letters and digits). Paste it again with right-click." -ForegroundColor Yellow
+  }
+}
 if (-not (Test-Path $cfgPath)) {
   Write-Host ""
   Write-Host "Your hub's Cloudflare address, and the service token you made for this PC (README: Other PCs and the Steam Deck)."
   $hub = Read-Host "  Hub address (like https://ledger.example.com)"
-  $cid = Read-Host "  Service token Client ID"
-  $sec = Read-Host "  Service token Client Secret" -AsSecureString
-  $secPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+  $cid = Read-ClientId
+  $secPlain = Read-ClientSecret
   $dev = Read-Host "  Name for this PC [$env:COMPUTERNAME]"
   if (-not $dev) { $dev = $env:COMPUTERNAME }
   $guess = @("C:\Program Files (x86)\World of Warcraft", "C:\Program Files\World of Warcraft", "D:\World of Warcraft", "D:\Games\World of Warcraft") | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -50,6 +67,16 @@ if (-not (Test-Path $cfgPath)) {
 } else {
   $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
   Write-Host "Keeping your existing relay settings in $cfgPath"
+  # repair a token saved with invisible characters, or ask again when it can't be right
+  $fixed = $false
+  $id = Clean-Token $cfg.clientId; $sc = Clean-Token $cfg.clientSecret
+  if ($id -ne $cfg.clientId -or $sc -ne $cfg.clientSecret) { $fixed = $true; Write-Host "  Removed invisible characters from the saved service token." -ForegroundColor Yellow }
+  if ($id -notmatch '^[A-Za-z0-9]+\.access$') { Write-Host "  The saved Client ID doesn't look right; enter it again." -ForegroundColor Yellow; $id = Read-ClientId; $fixed = $true }
+  if ($sc -notmatch '^[A-Za-z0-9]{32,}$') { Write-Host "  The saved Client Secret doesn't look right; enter it again." -ForegroundColor Yellow; $sc = Read-ClientSecret; $fixed = $true }
+  if ($fixed) {
+    $cfg.clientId = $id; $cfg.clientSecret = $sc
+    [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json -Depth 3))
+  }
 }
 
 # --- permissions: the relay runs as Local Service; only you, administrators and it can read the token ---

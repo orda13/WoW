@@ -45,8 +45,11 @@ if [ ! -f "$CFG" ]; then
   echo
   echo "Your hub's Cloudflare address, and the service token you made for this device (README: Other PCs and the Steam Deck)."
   read -rp "  Hub address (like https://ledger.example.com): " HUB
-  read -rp "  Service token Client ID: " CID
-  read -rsp "  Service token Client Secret: " SEC; echo
+  # only visible ASCII: a paste can bring invisible characters that break every request
+  while :; do read -rp "  Service token Client ID (ends in .access): " CID; CID="$(printf '%s' "$CID" | LC_ALL=C tr -cd '\041-\176')"
+    [[ "$CID" =~ ^[A-Za-z0-9]+\.access$ ]] && break; echo "  That doesn't look like a Client ID: letters and digits ending in .access. Paste it again."; done
+  while :; do read -rsp "  Service token Client Secret (hidden): " SEC; echo; SEC="$(printf '%s' "$SEC" | LC_ALL=C tr -cd '\041-\176')"
+    [[ "$SEC" =~ ^[A-Za-z0-9]{32,}$ ]] && break; echo "  That doesn't look like a Client Secret (${#SEC} characters; it's a long string of letters and digits). Paste it again."; done
   DEFAULT_NAME="$(hostname)"; [ "$DEFAULT_NAME" = "steamdeck" ] && DEFAULT_NAME="Steam Deck"
   read -rp "  Name for this device [$DEFAULT_NAME]: " DEV; DEV="${DEV:-$DEFAULT_NAME}"
   read -rp "  World of Warcraft folder (leave blank to find it automatically): " WOW

@@ -70,7 +70,9 @@ function files(cfg) {
   return findFiles(cfg.wowFolder ? [].concat(cfg.wowFolder) : defaultRoots());
 }
 const accountOf = (f) => path.basename(path.dirname(path.dirname(f)));
-const headers = (cfg, extra) => ({ "X-Ledger": "1", "CF-Access-Client-Id": cfg.clientId || "", "CF-Access-Client-Secret": cfg.clientSecret || "", "User-Agent": "leveling-ledger-relay", ...extra });
+// service token values: visible ASCII only (a paste can bring invisible characters, which make every request fail)
+const tok = (v) => String(v || "").replace(/[^\x21-\x7E]/g, "");
+const headers = (cfg, extra) => ({ "X-Ledger": "1", "CF-Access-Client-Id": tok(cfg.clientId), "CF-Access-Client-Secret": tok(cfg.clientSecret), "User-Agent": "leveling-ledger-relay", ...extra });
 
 async function send(cfg, file) {
   const text = fs.readFileSync(file, "utf8");
