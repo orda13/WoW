@@ -151,11 +151,12 @@ local function makeButton()
   if btn then return true end
   local parent = ahWindow()
   if not parent then return false end
-  btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  btn:SetSize(130, 22); btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -70, -1); btn:SetText("Scan all prices")
-  -- above the window's own title-bar art, which is drawn on child frames of its own
-  if btn.SetFrameStrata and parent.GetFrameStrata then btn:SetFrameStrata(parent:GetFrameStrata()) end
+  btn = CreateFrame("Button", "LevelingLedgerScanButton", parent, "UIPanelButtonTemplate")
+  -- just outside the window's top right corner: inside it, the window's own title bar and tabs cover it on some clients
+  btn:SetSize(130, 22); btn:SetPoint("TOPLEFT", parent, "TOPRIGHT", 4, -28); btn:SetText("Scan all prices")
+  if btn.SetFrameStrata then btn:SetFrameStrata("HIGH") end
   if btn.SetFrameLevel and parent.GetFrameLevel then btn:SetFrameLevel((parent:GetFrameLevel() or 0) + 50) end
+  if btn.SetClampedToScreen then btn:SetClampedToScreen(true) end
   btn:SetScript("OnClick", function() ns.safe(startScan) end)
   btn:SetScript("OnEnter", function(self)
     if not GameTooltip then return end
@@ -165,14 +166,22 @@ local function makeButton()
     GameTooltip:Show()
   end)
   btn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-  status = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  status:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", 0, -2); status:SetJustifyH("RIGHT")
+  status = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  status:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2); status:SetWidth(220); status:SetJustifyH("LEFT")
   return true
 end
 -- The game loads the auction window the first time it opens, sometimes after this add-on hears that it opened:
 -- try again for a moment, and when the window's own add-on finishes loading.
+local told = false
+local function tell()
+  if told or not btn then return end
+  told = true
+  print("|cffd9aa5aLeveling Ledger|r: \"Scan all prices\" is just right of the auction window (or type /ledger scan).")
+end
 local function makeButtonSoon()
-  if makeButton() or not (C_Timer and C_Timer.After) then return end
+  if makeButton() then tell() return end
+  if not (C_Timer and C_Timer.After) then return end
+  if C_Timer and C_Timer.After then C_Timer.After(3.5, function() pcall(tell) end) end
   for _, d in ipairs({ 0.1, 0.5, 1.5, 3 }) do C_Timer.After(d, function() pcall(makeButton) end) end
 end
 ns.ahScan = startScan
