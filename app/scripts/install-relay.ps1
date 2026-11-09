@@ -34,20 +34,37 @@ Copy-Item -Path (Join-Path $Src "lib\*") -Destination "$Dest\lib" -Recurse -Forc
 $cfgPath = "$Dest\relay.json"
 # Service token values: only visible ASCII. A paste into a hidden prompt can add invisible characters (Ctrl+V typed as a
 # control character, a line break), which make every request fail with "invalid CF-Access-Client-Secret header".
-function Clean-Token([string]$s) { if ($null -eq $s) { return "" }; return ($s -replace '[^\x21-\x7E]', '') }
+function Clean-Token([string]$s) {
+  if ($null -eq $s) { return "" }
+  $s = $s -replace '[^\x21-\x7E]', ''
+  # a copied header line ("CF-Access-Client-Secret: ...", or a quoted value) still holds the value: keep just the value
+  $s = $s -replace '^(?i)(CF-Access-Client-(Id|Secret)|Client(Id|Secret)|Secret|Id)[:=]', ''
+  return $s.Trim('"', "'", ',', ';')
+}
+function Describe-Bad([string]$v) {
+  $odd = ($v.ToCharArray() | Where-Object { $_ -notmatch '[A-Za-z0-9.]' } | Select-Object -Unique) -join ' '
+  if ($odd) { return "$($v.Length) characters, including: $odd" } else { return "$($v.Length) characters" }
+}
 function Read-ClientId {
   while ($true) {
     $v = Clean-Token (Read-Host "  Service token Client ID (ends in .access)")
     if ($v -match '^[A-Za-z0-9]+\.access$') { return $v }
-    Write-Host "  That doesn't look like a Client ID: it's letters and digits ending in .access. Paste it again." -ForegroundColor Yellow
+    Write-Host "  That doesn't look like a Client ID ($(Describe-Bad $v)): it's letters and digits ending in .access. Paste just that." -ForegroundColor Yellow
   }
 }
 function Read-ClientSecret {
+  $tries = 0
   while ($true) {
-    $sec = Read-Host "  Service token Client Secret (hidden; paste with right-click)" -AsSecureString
-    $v = Clean-Token ([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)))
+    $tries++
+    if ($tries -le 2) {
+      $sec = Read-Host "  Service token Client Secret (hidden; paste with right-click)" -AsSecureString
+      $v = Clean-Token ([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)))
+    } else {
+      # hidden prompts don't always take a paste: let it show this time (it's your own screen)
+      $v = Clean-Token (Read-Host "  Service token Client Secret (shown as you paste it)")
+    }
     if ($v -match '^[A-Za-z0-9]{32,}$') { return $v }
-    Write-Host "  That doesn't look like a Client Secret ($($v.Length) characters; it's a long string of letters and digits). Paste it again with right-click." -ForegroundColor Yellow
+    Write-Host "  That doesn't look like a Client Secret ($(Describe-Bad $v)). It's one long string of letters and digits, about 64 characters; copy just that." -ForegroundColor Yellow
   }
 }
 if (-not (Test-Path $cfgPath)) {
