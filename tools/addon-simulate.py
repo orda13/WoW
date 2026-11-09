@@ -254,7 +254,12 @@ AskMrRobotDb5 = { char = { ["Talwyn - Normal"] = {
 C_Item = C_Item or {}
 C_Item.GetItemNameByID = function(id) return ({ [274155] = "Geomancer Headdress", [6681] = "Thornspike" })[id] end
 ''')
+# while logging out the game can report 0 gold and empty bags: the last real values are kept
+L.execute('_REAL_MONEY = state.money; state.money = 0; _REAL_BAGS = CONTAINERS; CONTAINERS = {}')
 L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
+L.execute('state.money = _REAL_MONEY; CONTAINERS = _REAL_BAGS')
+_c = L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then local n = 0; for _ in pairs(c.bags or {}) do n = n + 1 end; return c.money, n end end end')()
+print('after a logout that reported 0 gold and empty bags: money', _c[0], 'bag kinds', _c[1])
 # bags, bank, tooltip, profession window and /ledger alts
 fire('BAG_UPDATE_DELAYED'); fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
 me = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']

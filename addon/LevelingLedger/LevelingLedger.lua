@@ -157,13 +157,18 @@ local function closeSession()
 end
 
 -- What the character is on right now (the page shows rested XP and zone from this)
-local function noteState()
+-- The game sometimes reports 0 gold while you log out; then the last amount seen this session is kept.
+local seenMoney = nil
+local function noteState(loggingOut)
   if not char then return end
   char.rested = GetXPExhaustion() or 0
   char.zone = zone()
   char.subzone = GetSubZoneText and GetSubZoneText() or ""
   char.resting = (IsResting and IsResting()) and true or false
-  char.money = GetMoney()
+  local m = GetMoney and GetMoney() or 0
+  if loggingOut and m == 0 and seenMoney and seenMoney > 0 then m = seenMoney end
+  if not loggingOut then seenMoney = m end
+  char.money = m
   char.level = UnitLevel("player")
   char.stateAt = now()
 end
@@ -204,11 +209,14 @@ local function scanContainers(bags)
   return out
 end
 local bankOpen = false
-local function scanBags()
+-- While you log out the game sometimes reports empty bags: then the last bags seen are kept.
+local function scanBags(loggingOut)
   local n = NUM_BAG_SLOTS or 4
   local list = {}
   for b = 0, n do list[#list + 1] = b end
-  char.bags = scanContainers(list)
+  local got = scanContainers(list)
+  if loggingOut and not next(got) and char.bags and next(char.bags) then return end
+  char.bags = got
   char.bagsAt = now()
 end
 local function scanBank()
@@ -860,7 +868,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "PLAYER_LOGOUT" then
     -- the save time first: the app only imports a file whose save time is newer, so a failing step below mustn't block it
     db.savedAt = now()
-    safe(onXP); safe(closeSession); safe(noteState); safe(scanBags); safe(function() char.level = UnitLevel("player") end)
+    safe(onXP); safe(closeSession); safe(noteState, true); safe(scanBags, true); safe(function() char.level = UnitLevel("player") end)
   elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)

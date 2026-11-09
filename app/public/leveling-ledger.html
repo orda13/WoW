@@ -599,6 +599,12 @@ button:disabled { opacity: .55; }
 .secbar button:hover { color: var(--fg); border-color: var(--brass); }
 .secbar button[aria-pressed="true"] { color: var(--brass); border-color: var(--brass); background: var(--surface); font-weight: 600; }
 .sec-off { display: none !important; }
+.inv-tog { width: 1.4em; text-align: center; color: var(--brass); }
+tr.inv-open > td { background: var(--surface-2); padding: 8px 12px 12px; }
+.inv-box { margin: 4px 0; }
+.inv-box > summary { cursor: pointer; font-weight: 600; }
+.inv-items { list-style: none; margin: 6px 0 2px; padding: 0; columns: 3 220px; column-gap: 18px; }
+.inv-items li { break-inside: avoid; padding: 1px 0; font-size: .92rem; }
 .icard details.imore > summary { cursor: pointer; color: var(--brass); font-size: .9rem; margin-top: 4px; }
 .icard details.imore[open] > summary { margin-bottom: 6px; }
 details.ab-lv > summary.ab-h { cursor: pointer; }
@@ -2259,6 +2265,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const h = r.hoursToFull; return bars + ` · full in ${h < 24 ? Math.ceil(h) + " h" : Math.round(h / 24) + " days"}`;
   }
   const lastPlayed = (t) => { if (!t) return "–"; const d = (Date.now() - t) / 86400000; return d < 1 ? "today" : d < 2 ? "yesterday" : `${Math.floor(d)} days ago`; };
+  const INV = { open: new Set(), closed: new Set() };
   function renderInv() {
     const rows = $("invRows"); if (!rows) return;
     const list = invChars();
@@ -2266,24 +2273,55 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     // who's worth playing next: the most rested (as a share of their level) among the others
     const best = list.filter((c) => !isMe(c)).map((c) => ({ c, r: restedNow(c) })).filter((x) => x.r && x.r.pct >= 0.25).sort((a, b) => b.r.pct - a.r.pct)[0];
     if (best) $("invNote").append(el("span", "rest-hi", ` · Best to play next: ${best.c.name} (${Math.round(best.r.pct * 100)}% of a level rested${best.r.full ? ", full" : ""})`));
-    rows.replaceChildren(...(list.length ? list.map((c) => {
+    rows.replaceChildren(...(list.length ? list.flatMap((c) => {
       const tr = el("tr", isMe(c) ? "me" : null);
       const count = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
-      // name with class icon and class colour; gold with coin colours
+      const key = (c.account || "") + "/" + (c.key || c.name);
+      const open = INV.open.has(key);
+      const toggle = () => { if (INV.open.has(key)) INV.open.delete(key); else INV.open.add(key); renderInv(); };
+      // name with class icon and class colour; gold with coin colours; the arrow opens bags and bank
       const nameTd = el("td", "cls-" + classKey(c.cls));
+      const arrow = el("button", "linkish inv-tog", open ? "▾" : "▸"); arrow.type = "button";
+      arrow.setAttribute("aria-expanded", String(open)); arrow.setAttribute("aria-label", `${open ? "Hide" : "Show"} ${c.name}'s bags and bank`); arrow.onclick = toggle;
+      nameTd.append(arrow);
       if (classKey(c.cls)) nameTd.append(iconImg("classicon_" + classKey(c.cls)));
       nameTd.append(document.createTextNode(c.name), el("span", "muted", isMe(c) ? " (this ledger)" : ""));
       const goldTd = el("td"); if (c.money != null) goldTd.append(moneyEl(c.money)); else goldTd.textContent = "–";
       const r = restedNow(c), restTd = el("td", r && r.pct >= 1 ? "rest-hi" : null, restedText(r));
       if (r) restTd.title = `About ${fmt(r.now)} rested XP now (estimate; ${c.resting ? "logged out in an inn or city" : "logged out in the open, so it builds 4 times slower"})`;
       tr.append(nameTd, el("td", null, c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–"), goldTd, restTd);
-      for (const v of [
-        c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at),
-        c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–", c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${lastPlayed(c.bankAt)}` : "open the bank once"]) tr.append(el("td", null, v));
+      for (const v of [c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at)]) tr.append(el("td", null, v));
+      // bags and bank: click to open the lists
+      for (const [has, text] of [[c.bagsAt, c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–"],
+        [c.bankAt, c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${count(c.bank)} items` : "open the bank once"]]) {
+        const td = el("td");
+        if (has) { const b = el("button", "linkish", text); b.type = "button"; b.onclick = toggle; td.append(b); } else td.textContent = text;
+        tr.append(td);
+      }
       tr.title = c.account ? "WoW account " + c.account : "";
-      return tr;
+      if (!open) return [tr];
+      const dtr = el("tr", "inv-open"); const td = el("td"); td.colSpan = 8;
+      td.append(invList(c, "bags", "Bags", c.bagsAt), invList(c, "bank", "Bank", c.bankAt));
+      dtr.append(td);
+      return [tr, dtr];
     }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 8; tr.append(td); return tr; })()]));
     renderInvSearch();
+  }
+  // one character's bags or bank as a list: best quality first, then by name, with counts
+  function invList(c, which, label, at) {
+    const items = Object.entries(c[which] || {}).filter(([, n]) => n > 0).map(([id, n]) => ({ ...invItemName(id), id: +id, cnt: n }))
+      .sort((a, b) => (b.q || 1) - (a.q || 1) || a.n.localeCompare(b.n));
+    const k = `${(c.account || "")}/${c.key || c.name}/${which}`;
+    const d = el("details", "inv-box"); d.open = !INV.closed.has(k);
+    d.addEventListener("toggle", () => { if (d.open) INV.closed.delete(k); else INV.closed.add(k); });
+    const total = items.reduce((a, x) => a + x.cnt, 0);
+    d.append(el("summary", null, at ? `${label}: ${items.length} kinds, ${total} items · updated ${lastPlayed(at)}` : `${label}: ${which === "bank" ? "open the bank in game once to record it" : "not recorded yet"}`));
+    if (items.length) {
+      const ul = el("ul", "inv-items");
+      for (const x of items) { const li = el("li"); li.append(whA("item", x.id, x.n, "who q" + (x.q || 1)), el("span", "num muted", ` ×${x.cnt}`)); ul.append(li); }
+      d.append(ul);
+    } else if (at) d.append(el("p", "muted", "Empty."));
+    return d;
   }
   function renderInvSearch() {
     const q = $("invSearch").value.trim().toLowerCase(), out = $("invResults");
