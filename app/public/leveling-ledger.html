@@ -591,6 +591,20 @@ button:disabled { opacity: .55; }
 .views { border-bottom: 1px solid var(--line); }
 .views a { font-family: var(--display); font-weight: 600; letter-spacing: .03em; }
 .views a[aria-current="page"] { color: var(--brass); border-bottom-color: var(--brass); text-shadow: var(--glow); }
+/* section buttons: each tab shows one group of its sections at a time (or all) */
+.secbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+.secbar[hidden] { display: none; }
+.secbar button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: inherit; font-size: .92rem; cursor: pointer; }
+.secbar button .ic { font-size: 1.05rem; line-height: 1; }
+.secbar button:hover { color: var(--fg); border-color: var(--brass); }
+.secbar button[aria-pressed="true"] { color: var(--brass); border-color: var(--brass); background: var(--surface); font-weight: 600; }
+.sec-off { display: none !important; }
+.icard details.imore > summary { cursor: pointer; color: var(--brass); font-size: .9rem; margin-top: 4px; }
+.icard details.imore[open] > summary { margin-bottom: 6px; }
+details.ab-lv > summary.ab-h { cursor: pointer; }
+details.ab-lv:not([open]) { padding-bottom: 4px; }
+.ab-names { font-family: var(--body); font-weight: 400; font-size: .92rem; }
+details.ab-lv[open] .ab-names { display: none; }
 .bar { border: 1px solid var(--line); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5); }
 .bar .fill { background: linear-gradient(180deg, color-mix(in srgb, var(--xp) 70%, #fff) 0, var(--xp) 45%, color-mix(in srgb, var(--xp) 70%, #000) 100%); }
 .bar .rest { background: color-mix(in srgb, var(--rested) 60%, transparent); }
@@ -740,6 +754,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       <span class="row" id="barChips"></span>
     </div>
   </section>
+  <div class="secbar" id="secBar" role="toolbar" aria-label="Sections on this page" hidden></div>
 
   <p class="notice" id="readonly" hidden>You're viewing someone else's ledger. Only its owner can change it.</p>
   <p class="notice" id="offline" hidden>Your saved ledger can't be reached right now. Changes may not save until it reconnects.</p>
@@ -1627,6 +1642,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
   function openQuest(zoneName, qid) {
     QD.zone = zoneName; QD.focus = qid; try { localStorage.setItem("ledger.qzone", zoneName); } catch {}
+    showSection("questPanel");
     if (location.hash !== "#quests") { location.hash = "#quests"; setView(); }
     $("qSearch").value = "";
     renderQuests();
@@ -2071,9 +2087,16 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     for (const e of list) if (e.lv >= lo && e.lv <= hi) { if (!by.has(e.lv)) by.set(e.lv, []); by.get(e.lv).push(e); }
     const box = $("abList"); box.replaceChildren();
     if (!by.size) box.append(el("p", "empty", "Nothing new in this level range."));
-    for (const [L, es] of [...by].sort((a, b) => a[0] - b[0])) {
-      const g = el("div", "ab-lv" + (L === lv ? " now" : L < lv ? " past" : ""));
-      g.append(el("div", "ab-h", L === lv ? `Level ${L} (you)` : `Level ${L}`));
+    const levels = [...by].sort((a, b) => a[0] - b[0]);
+    const nextL = (levels.find(([L]) => L > lv) || [])[0];
+    AB.open = AB.open || new Map();
+    for (const [L, es] of levels) {
+      const g = el("details", "ab-lv" + (L === lv ? " now" : L < lv ? " past" : ""));
+      g.open = AB.open.has(L) ? AB.open.get(L) : (L === lv || L === nextL);
+      g.addEventListener("toggle", () => AB.open.set(L, g.open));
+      const sm = el("summary", "ab-h", L === lv ? `Level ${L} (you)` : `Level ${L}`);
+      sm.append(el("span", "muted ab-names", " · " + es.map((e) => e.n + (e.r ? " " + e.r.replace(/^Rank\s*/i, "") : "")).join(", ")));
+      g.append(sm);
       for (const e of es) {
         const r = el("div", "ab-row");
         r.append(whA("spell", e.id, e.n, "who"));
@@ -2298,7 +2321,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const add = (cls, text, title, view, target) => {
       const c = el(view ? "a" : "span", "chip " + cls, text);
       if (title) c.title = title;
-      if (view) { c.href = "#" + view; if (target) c.onclick = () => setTimeout(() => { const t = $(target); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50); }
+      if (view) { c.href = "#" + view; if (target) c.onclick = () => { showSection(target); setTimeout(() => { showSection(target); const t = $(target); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50); }; }
       chips.push(c);
     };
     const conn = window.LL_CONN && window.LL_CONN.ok;
@@ -2542,7 +2565,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
   function gearForZone(zoneName) {
     $("gZone").value = zoneName; GF.shown = 40; renderGear();
-    $("gearPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    showSection("gearPanel"); $("gearPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function renderGear() {
     if (!QD.items || !QD.data) return;
@@ -2666,7 +2689,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         if (sub) b.append(el("span", "muted", sub));
         b.onclick = () => {
           $("rProf").value = p; fillCats(); $("rCat").value = ""; $("rSrc").value = "Favor"; $("rText").value = ""; RC.shown = 30; renderRecipes();
-          $("recipePanel").scrollIntoView({ behavior: "smooth", block: "start" });
+          showSection("recipePanel"); $("recipePanel").scrollIntoView({ behavior: "smooth", block: "start" });
         };
         pb.append(b);
       }
@@ -2886,6 +2909,18 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       }
     }
     card.append(learnBlock(e));
+    return foldCard(card, 2, "Reagents, cost and where to learn");
+  }
+  // a card's first lines stay; the rest opens on a click (cards were 400-500px tall each)
+  function foldCard(card, keep, label) {
+    const rest = [...card.children].slice(keep);
+    if (!rest.length) return card;
+    // a line that says you can make it now is worth seeing without opening
+    const can = rest.find((x) => x.querySelector && x.querySelector(".pill.go") && /Can make/.test(x.textContent));
+    const d = el("details", "imore"); d.append(el("summary", null, label));
+    for (const x of rest) if (x !== can) d.append(x);
+    if (can) card.append(can);
+    card.append(d);
     return card;
   }
   function recipeHay(e) {
@@ -2995,7 +3030,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
   function showOnMap(prof, zid) {
     $("gProf").value = prof; GA.zone = zid; renderGather();
-    $("gatherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    showSection("gatherPanel"); $("gatherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function profSkip() { return (S.profPrefs && S.profPrefs.skip) || {}; }
   function setSkip(name, on) {
@@ -3329,7 +3364,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       }
     }
     card.append(materialSources(m, opts));
-    return card;
+    return opts.compact ? card : foldCard(card, card.children.length > 2 ? 2 : 1, "Where to get it");
   }
   let matPop = null;
   function showMaterial(name, anchor) {
@@ -3806,6 +3841,41 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   const isOwned = (e, owned) => owned.has(cName(e.n).toLowerCase()) || (e.item && owned.has(e.item.toLowerCase()));
   function myFaction() { const c = S.char || {}; return c.faction || (ALLY_RACES.includes(c.race) ? "Alliance" : c.race ? "Horde" : null); }
   const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables", "settings"];
+  // ---------- section buttons: each tab shows one group of its sections at a time, or all (remembered per tab) ----------
+  const SECTIONS = {
+    ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel"]]],
+    quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
+    talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
+    skills: [["📊", "Overview", ["skillsPanel", "repPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
+      ["📖", "Recipes", ["recipePanel"]], ["🧱", "Materials", ["matPanel"]]],
+  };
+  const secKey = (v) => "ledger.sec." + v;
+  function secPick(v) { let k = null; try { k = localStorage.getItem(secKey(v)); } catch {} return k === "all" || (SECTIONS[v] || []).some(([, l]) => l === k) ? k : SECTIONS[v] ? SECTIONS[v][0][1] : "all"; }
+  function applySections(v) {
+    const bar = $("secBar"), groups = SECTIONS[v];
+    for (const e of document.querySelectorAll(".sec-off")) e.classList.remove("sec-off");
+    if (!groups) { bar.hidden = true; return; }
+    const pick = secPick(v);
+    for (const [, label, ids] of groups) for (const id of ids) { const e = $(id); if (e) e.classList.toggle("sec-off", pick !== "all" && pick !== label); }
+    bar.replaceChildren();
+    const btn = (icon, label, key) => {
+      const b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(pick === key));
+      b.append(el("span", "ic", icon), document.createTextNode(label));
+      b.onclick = () => { try { localStorage.setItem(secKey(v), key); } catch {} applySections(v); window.scrollTo({ top: 0 }); };
+      bar.append(b);
+    };
+    for (const [icon, label] of groups) btn(icon, label, label);
+    btn("☰", "All", "all");
+    bar.hidden = false;
+  }
+  // show the group holding a section (for links that jump to it), then the caller scrolls to it
+  function showSection(id) {
+    for (const [v, groups] of Object.entries(SECTIONS)) for (const [, label, ids] of groups) if (ids.includes(id)) {
+      if (secPick(v) !== "all" && secPick(v) !== label) { try { localStorage.setItem(secKey(v), label); } catch {} }
+      if (curView === v) applySections(v);
+      return;
+    }
+  }
   let curView = null;
   function setView() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
@@ -3819,6 +3889,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     if (v === "settings") loadSettings();
     if (curView && curView !== v) window.scrollTo({ top: 0 });
     curView = v;
+    applySections(v);
   }
   function loadCollect() {
     if (CV.data || CV.loading) { renderCollect(); return; }
