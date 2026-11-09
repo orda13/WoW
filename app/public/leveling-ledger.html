@@ -1500,6 +1500,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     if (q.f && myFac && q.f !== myFac) return false;
     if (q.c && myCls && !q.c.includes(myCls)) return false;
     if (q.r && c.race && !q.r.includes(c.race)) return false;
+    // a profession quest: only when the character has that profession (or none are recorded yet)
+    if (q.prof) { const mine = profs().map((p) => p.name); if (mine.length && !mine.includes(q.prof)) return false; }
     return !QD.marks.hidden[q.i];
   }
   const isDone = (q) => QD.done.has(q.i) || !!QD.marks.done[q.i];
@@ -1772,6 +1774,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     t.append(a);
     const tags = el("span", "tags");
     if (q.c) tags.append(el("span", null, q.c.join("/") + " only"));
+    if (q.prof) tags.append(el("span", null, q.prof + " only"));
     if (!q.f) tags.append(el("span", null, "faction unknown"));
     const missing = (q.p || []).filter((p) => !QD.done.has(p) && !QD.marks.done[p]);
     if (!done && missing.length) tags.append(el("span", "lock", "after " + (QD.titles.get(missing[0]) || "an earlier quest")));
@@ -2661,7 +2664,18 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   $("gMore").onclick = () => { GF.shown += 40; renderGear(); };
 
   $("qZone").onchange = () => { QD.zone = $("qZone").value; try { localStorage.setItem("ledger.qzone", QD.zone); } catch {} renderQuests(); };
-  Promise.all([fetch("quests-forever.json").then((r) => r.json()), fetch("items-forever.json").then((r) => r.json())]).then(([d, items]) => {
+  Promise.all([fetch("quests-forever.json").then((r) => r.json()), fetch("items-forever.json").then((r) => r.json()),
+    fetch("quests-att-forever.json").then((r) => r.ok ? r.json() : null).catch(() => null)]).then(([d, items, att]) => {
+    // quests from AllTheThings' Forever database that the main data lacks (class, profession and new Forever quests), by zone
+    if (att && att.zones) {
+      const have = new Set(d.zones.flatMap((z) => z.q.map((q) => q.i)));
+      for (const az of att.zones) {
+        if (!az.z) continue;
+        const qs = az.q.filter((q) => !have.has(q.i)); if (!qs.length) continue;
+        const z = d.zones.find((x) => x.z === az.z);
+        if (z) z.q.push(...qs); else d.zones.push({ z: az.z, lv: az.lv || null, q: qs });
+      }
+    }
     QD.data = d; QD.items = items.items; QD.itemSrc = new Map(); QD.zoneOf = new Map();
     for (const z of d.zones) for (const q of z.q) QD.zoneOf.set(q.i, z);
     setTimeout(renderQuestLog, 0);
@@ -3464,9 +3478,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     // plus hand-entered dungeons the other sources don't have yet (dungeons-curated-forever.json)
     // and MSPaintWoW's guides (dungeon-guides-forever.json): pull order, boss difficulty, drop chances, best-in-slot marks, quest rewards
     const opt = (f) => fetch(f).then((r) => r.ok ? r.json() : null).catch(() => null);
-    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), opt("dungeons-curated-forever.json"), opt("dungeon-guides-forever.json"), opt("dungeons-atlasloot-forever.json")]).then(([d, cur, g, al]) => {
+    Promise.all([fetch("dungeons-forever.json").then((r) => r.json()), opt("dungeons-curated-forever.json"), opt("dungeon-guides-forever.json"), opt("dungeons-atlasloot-forever.json"), opt("dungeons-att-forever.json")]).then(([d, cur, g, al, att]) => {
       // the Wowhead pastes, then AtlasLoot's Forever loot for what's still missing (same format)
-      for (const c of [cur, al].filter(Boolean)) {
+      for (const c of [cur, al, att].filter(Boolean)) {
         const bn = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
         for (const x of c.dungeons || []) {
           const have = d.dungeons.find((y) => y.key === x.key || bn(y.n) === bn(x.n));
@@ -3702,7 +3716,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (sorted.length > 40) o.append(el("p", "hint", `and ${sorted.length - 40} more`));
       body.append(o);
     }
-    if (d.curated) body.append(el("p", "hint", `Bosses and loot from ${d.curated}; item stats aren't known yet, so each item links to Wowhead.`));
+    if (d.curated) body.append(el("p", "hint", d.bosses.some((b) => (b.loot || []).length) ? `Bosses and loot from ${d.curated}; item stats aren't known yet, so each item links to Wowhead.` : `Bosses from ${d.curated}. No loot list is published for it yet; your own drops show here as you run it.`));
     if (d.gone) body.append(el("p", "hint", `${d.gone} classic item${d.gone > 1 ? "s" : ""} from here no longer exist in Forever and are hidden. Forever's replacements aren't published yet.`));
     if (d.guide) {
       const gp = el("p", "hint"); const a = el("a", null, "MSPaintWoW's guide"); a.href = d.guide.url; a.target = "_blank"; a.rel = "noopener";

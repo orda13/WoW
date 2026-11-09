@@ -1,0 +1,256 @@
+{
+ "source": "AllTheThings' WoW Forever database (MIT): the newest dungeons' bosses and quests. Boss names: Forever Dungeon Routes.",
+ "dungeons": [
+  {
+   "key": "ALCAZ_PRISON",
+   "n": "Alcaz Prison",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "",
+   "lv": [
+    48,
+    53
+   ],
+   "bosses": [
+    {
+     "n": "Tidemistress Ca'zass",
+     "loot": [],
+     "npcid": 255997
+    },
+    {
+     "n": "Katerina the Cleaner",
+     "loot": [],
+     "npcid": 257016
+    },
+    {
+     "n": "The Questioner",
+     "loot": [],
+     "npcid": 256236
+    },
+    {
+     "n": "Blazeroar",
+     "loot": [],
+     "npcid": 255702
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Alcaz Prison"
+   ],
+   "curated": "AllTheThings' Forever database"
+  },
+  {
+   "key": "BLACKMAW_HOLD",
+   "n": "Blackmaw Hold",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "",
+   "lv": [
+    55,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Withermaw",
+     "loot": [],
+     "npcid": 247195
+    },
+    {
+     "n": "Impaan the Imprisoner",
+     "loot": [],
+     "npcid": 247206
+    },
+    {
+     "n": "Elder Shaman Bloodmane",
+     "loot": [],
+     "npcid": 247209
+    },
+    {
+     "n": "Bonesnout the Unbroken",
+     "loot": [],
+     "npcid": 247198
+    },
+    {
+     "n": "Varrox Bleakhoof",
+     "loot": [],
+     "npcid": 247234
+    },
+    {
+     "n": "Blackmaw Behemoth",
+     "loot": [],
+     "npcid": 247207
+    },
+    {
+     "n": "Unbound Spirit",
+     "loot": [],
+     "npcid": 247231
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Blackmaw Hold"
+   ],
+   "curated": "AllTheThings' Forever database"
+  },
+  {
+   "key": "KROL_DOK_STRONGHOLD",
+   "n": "Krol'dok Stronghold",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "",
+   "lv": [
+    40,
+    45
+   ],
+   "bosses": [
+    {
+     "n": "Slavecrusher Grox",
+     "loot": [],
+     "npcid": 258966
+    },
+    {
+     "n": "Twilight Commander Zarmok",
+     "loot": [],
+     "npcid": 258972
+    },
+    {
+     "n": "Handler Ashka",
+     "loot": [],
+     "npcid": 259281
+    },
+    {
+     "n": "Nar'gurk",
+     "loot": [],
+     "npcid": 258964
+    },
+    {
+     "n": "Overseer Mugg",
+     "loot": [],
+     "npcid": 258968
+    }
+   ],
+   "other": [],
+   "qz": [
+    "Krol'dok Stronghold"
+   ],
+   "curated": "AllTheThings' Forever database"
+  },
+  {
+   "key": "THE_DROWNED_CITY",
+   "n": "The Drowned City",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "",
+   "lv": [
+    35,
+    40
+   ],
+   "bosses": [
+    {
+     "n": "Zul'Alai",
+     "loot": [],
+     "npcid": 258905
+    },
+    {
+     "n": "Var'Taka",
+     "loot": [],
+     "npcid": 258924
+    },
+    {
+     "n": "Captain Dreadrise",
+     "loot": [],
+     "npcid": 260042
+    },
+    {
+     "n": "Deathless Guardians",
+     "loot": [],
+     "npcid": 260213
+    },
+    {
+     "n": "Primeval Elemental",
+     "loot": [],
+     "npcid": 273738
+    },
+    {
+     "n": "Min'loth the Serpent",
+     "loot": [],
+     "npcid": 260243
+    }
+   ],
+   "other": [],
+   "qz": [
+    "The Drowned City"
+   ],
+   "curated": "AllTheThings' Forever database"
+  },
+  {
+   "key": "THE_SHAPER_S_TERRACE",
+   "n": "The Shaper's Terrace",
+   "kind": "Dungeon",
+   "size": 5,
+   "loc": "",
+   "lv": [
+    58,
+    60
+   ],
+   "bosses": [
+    {
+     "n": "Titanosaur",
+     "loot": [],
+     "npcid": 253201
+    },
+    {
+     "n": "Ravasaur Hunters",
+     "loot": [],
+     "npcid": 253214
+    },
+    {
+     "n": "Thunderhoof",
+     "loot": [],
+     "npcid": 261812
+    },
+    {
+     "n": "Venomridge",
+     "loot": [],
+     "npcid": 261813
+    },
+    {
+     "n": "Direhorn Matriarch",
+     "loot": [],
+     "npcid": 262127
+    },
+    {
+     "n": "Cinder",
+     "loot": [],
+     "npcid": 261974
+    },
+    {
+     "n": "Snowtalon",
+     "loot": [],
+     "npcid": 262297
+    },
+    {
+     "n": "Bolt",
+     "loot": [],
+     "npcid": 262081
+    },
+    {
+     "n": "Vitrix",
+     "loot": [],
+     "npcid": 272561
+    },
+    {
+     "n": "Nanaya",
+     "loot": [],
+     "npcid": 261809
+    }
+   ],
+   "other": [],
+   "qz": [
+    "The Shaper's Terrace"
+   ],
+   "curated": "AllTheThings' Forever database"
+  }
+ ],
+ "items": {}
+}

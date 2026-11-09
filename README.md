@@ -40,6 +40,8 @@ Planned changes are tracked in the Leveling Ledger Roadmap doc.
 
 ## License and credits
 
+All the outside sources, and how to re-check them as WoW Forever fills in, are listed in [tools/data-build/SOURCES.md](tools/data-build/SOURCES.md).
+
 Leveling Ledger is free software under the [GNU General Public License v3.0](LICENSE.md).
 
 The game data in `app/public/` comes from several places:
@@ -50,6 +52,7 @@ The game data in `app/public/` comes from several places:
 - **Wowhead's Forever dungeon journal**: dungeon bosses and their drops, pasted by hand from its pages (`dungeons-curated-forever.json`).
 - **[MSPaintWoW](https://www.mspaintwow.com/wow-forever/dungeons)**: pull order, boss difficulty, drop chances, best-in-slot marks and quest rewards for the WoW Forever dungeons it covers (`dungeon-guides-forever.json`). Its guides, maps and tactics stay on its site; the page links to them.
 - **[Forever Dungeon Routes](https://github.com/Checkov23/ForeverDungeonRoutes)** by Checkov23 (MIT license, © 2026 Checkov23): the standard routes, boss stops and notes drawn on the dungeon maps (`dungeon-routes-forever.json`). Its routes were traced from the walkthrough maps of aetherflask.com ([mirrored at eintr.net](https://eintr.net/WoW/World-of-Warcraft-Classic-Dungeon-Walkthrough.html)). Its map pictures by Santiago Reyes aren't used, so the four new dungeons have no route here.
+- **[AllTheThings](https://github.com/ATTWoWAddon/AllTheThings)** (MIT license, © 2026 AllTheThings WoW Addon): the newest Forever dungeons' bosses and quests, and the class, profession and new Forever quests the other sources lack, with their quest givers (`dungeons-att-forever.json`, `quests-att-forever.json`). Only facts are used; quest titles come from Blizzard and quest-giver names from Wowhead's Forever tooltips.
 - **Ask Mr. Robot**: if you use the [Ask Mr. Robot Classic](https://www.curseforge.com/wow/addons/askmrrobotclassic) add-on with [askmrrobot.com/forever](https://www.askmrrobot.com/forever), the add-on copies your imported gear setups and sell list at logout so the page can show them. Nothing of Ask Mr. Robot's is included here.
 - **[AtlasLoot Continued](https://www.curseforge.com/wow/addons/atlasloot-continued)** (GPL-2.0): which boss drops which item, from its WoW Forever loot tables, for the items the other sources don't list (`dungeons-atlasloot-forever.json`). Only those facts are used; none of its code or files.
 
