@@ -85,6 +85,10 @@ LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"
 function GetLootSourceInfo(s) return LOOTSRC, 1 end
 function GetItemInfo(link) return nil end
 C_Item = { GetItemQualityByID = function(link) if link:find("Goblin") then return 3 end return 1 end }
+-- items the game hasn't loaded yet: their links have an empty name until requested (Wool Cloth here)
+LOADED = {}
+C_Item.GetItemNameByID = function(id) return LOADED[id] end
+C_Item.RequestLoadItemDataByID = function(id) if id == 2592 and not LOADED[id] then LOADED[id] = "Wool Cloth"; FRAME_FIRE("GET_ITEM_INFO_RECEIVED", id, true) end end
 SlashCmdList = {}
 -- another character already in the saved data (as if played before), with bags and bank
 LevelingLedgerDB = { chars = { ["Bob-Normal"] = { name = "Bob", level = 12, class = "MAGE", money = 52000, rested = 1200, zone = "Elwynn Forest",
@@ -93,7 +97,7 @@ LevelingLedgerDB = { chars = { ["Bob-Normal"] = { name = "Bob", level = 12, clas
   items = { [2447] = { n = "Peacebloom", q = 1 }, [2589] = { n = "Linen Cloth", q = 1 }, [3371] = { n = "Empty Vial", q = 1 } } }
 -- your bags and bank (C_Container, as modern clients have it)
 CONTAINERS = { [0] = { { 2589, 4, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" }, { 2447, 1, "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r" } },
-  [1] = { { 3371, 5, "|cffffffff|Hitem:3371::::::::13:::::|h[Empty Vial]|h|r" } },
+  [1] = { { 3371, 5, "|cffffffff|Hitem:3371::::::::13:::::|h[Empty Vial]|h|r" }, { 2592, 10, "|cffffffff|Hitem:2592::::::::13:::::|h[]|h|r" } },
   [-1] = { { 2450, 7, "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r" } }, [5] = { { 2589, 10, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" } } }
 C_Container = { GetContainerNumSlots = function(b) return CONTAINERS[b] and #CONTAINERS[b] or 0 end,
   GetContainerItemInfo = function(b, s) local x = CONTAINERS[b] and CONTAINERS[b][s]; if x then return { itemID = x[1], stackCount = x[2], hyperlink = x[3] } end end }
@@ -194,6 +198,7 @@ L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShar
 L.execute('CreateFrame("Button", "MerchantItem1ItemButton"); CreateFrame("Button", "MerchantItem2ItemButton")')
 L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.plans = { talwyn = { [486] = "Ursal the Mauler", [999] = "The Balance of Nature", [488] = "Zenn\'s Bidding" } }')
 fire('ADDON_LOADED', 'LevelingLedger'); fire('PLAYER_LOGIN')
+print('item name for an unloaded item, after the game sent it:', L.eval('LevelingLedgerDB.items[2592] and LevelingLedgerDB.items[2592].n'))
 print('plan: tracked', dict(L.globals().WATCHED), '| pins', list(L.globals().PINS.values()), '| unhidden', list(L.globals().UNHIDDEN.values()))
 slash_ = L.eval('SlashCmdList.LEVELINGLEDGER'); slash_('plan'); fire('PLAYER_ENTERING_WORLD', True, False)
 L.execute('T = T + 1800; state.xp = 10000; REST = 500'); fire('PLAYER_XP_UPDATE')

@@ -175,13 +175,42 @@ end
 
 -- ---------- bags and bank ----------
 -- Item counts by item id. Bags are read whenever they change; the bank only while it's open (the game has no bank data otherwise).
+-- An item's name: from its link, else asked of the game by id. When the game hasn't loaded the item yet the link
+-- has an empty name; then it's requested and recorded when GET_ITEM_INFO_RECEIVED arrives (never saved empty).
+local wantNames = {}
+local function itemNameNow(id, link)
+  local n = nameFromLink(link)
+  if n and n ~= "" then return n end
+  if C_Item and C_Item.GetItemNameByID then local ok, x = pcall(C_Item.GetItemNameByID, id); if ok and type(x) == "string" and x ~= "" then return x end end
+  if GetItemInfo then local ok, x = pcall(GetItemInfo, id); if ok and type(x) == "string" and x ~= "" then return x end end
+end
 local function noteItemName(id, link)
   db.items = db.items or {}
-  if not db.items[id] then
-    local n = nameFromLink(link)
-    if n then db.items[id] = { n = n, q = qualityFromLink(link) } end
+  local have = db.items[id]
+  if have and type(have.n) == "string" and have.n ~= "" then return end
+  local n = itemNameNow(id, link)
+  if n then
+    db.items[id] = { n = n, q = qualityFromLink(link) or qualityFromLink(id) }
+    wantNames[id] = nil
+  else
+    wantNames[id] = true
+    if C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, id) end
   end
 end
+-- at login: every item in your characters' bags and bank still without a name (bank items otherwise wait for a visit)
+local function askMissingNames()
+  db.items = db.items or {}
+  local asked = 0
+  for _, c in pairs(db.chars or {}) do
+    for _, where in ipairs({ c.bags, c.bank }) do
+      for id in pairs(where or {}) do
+        local have = db.items[id]
+        if asked < 400 and not (have and type(have.n) == "string" and have.n ~= "") then noteItemName(id); asked = asked + 1 end
+      end
+    end
+  end
+end
+ns.onItemInfo = function(id) id = tonumber(id); if id and wantNames[id] then noteItemName(id) end end
 local function slotCount(bag)
   if C_Container and C_Container.GetContainerNumSlots then return C_Container.GetContainerNumSlots(bag) or 0 end
   return GetContainerNumSlots and GetContainerNumSlots(bag) or 0
@@ -831,7 +860,7 @@ listen(f, "PLAYER_UPDATE_RESTING")
 listen(f, "PLAYER_TARGET_CHANGED")
 listen(f, "PLAYER_MONEY")
 for _, e in ipairs({ "UPDATE_FACTION", "CHAT_MSG_COMBAT_FACTION_CHANGE", "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "CHAT_MSG_SYSTEM", "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE" }) do listen(f, e) end
-for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED" }) do listen(f, e) end
+for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "PLAYERBANKSLOTS_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do listen(f, e) end
 for _, e in ipairs({ "MERCHANT_CLOSED", "TRAINER_CLOSED", "MAIL_SHOW", "MAIL_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do listen(f, e) end
 listen(f, "CHAT_MSG_COMBAT_XP_GAIN")
 
@@ -852,7 +881,7 @@ f:SetScript("OnEvent", function(_, event, ...)
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end
       char.deaths = char.deaths or 0
       char.xpMax[char.level] = UnitXPMax("player")
-      startSession(); noteZone(); noteState(); scanSkills(); scanReps(); scanBags()
+      startSession(); noteZone(); noteState(); scanSkills(); scanReps(); scanBags(); askMissingNames()
       createPanel()
     end)
   elseif event == "ADDON_ACTION_FORBIDDEN" or event == "ADDON_ACTION_BLOCKED" then
@@ -876,6 +905,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "QUEST_TURNED_IN" then local q, xp, money = ...; safe(onQuestTurnedIn, q, xp, money); safe(onQuestMoney, money)
   elseif event == "PLAYER_MONEY" then safe(onMoney); safe(noteState)
   elseif event == "BAG_UPDATE_DELAYED" then safe(scanBags); safe(scanBank)
+  elseif event == "GET_ITEM_INFO_RECEIVED" then local id = ...; safe(ns.onItemInfo, id)
   elseif event == "BANKFRAME_OPENED" then bankOpen = true; safe(scanBank)
   elseif event == "PLAYERBANKSLOTS_CHANGED" then safe(scanBank)
   elseif event == "BANKFRAME_CLOSED" then bankOpen = false

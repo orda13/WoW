@@ -2212,12 +2212,18 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const a = S.invItems && S.invItems.items && S.invItems.items[id];
     if (a) return { n: a[0], q: a[1] };
     const b = (QD.items && QD.items[id]) || (DG.data && DG.data.items[id]);
-    return b ? { n: b.n, q: b.q } : { n: "Item " + id, q: 1 };
+    if (b) return { n: b.n, q: b.q };
+    // the page's own materials data knows cloth, herbs, ore and fish by id
+    if (typeof MAT !== "undefined") {
+      const m = MAT.data && MAT.data[id]; if (m) return { n: m.n, q: m.q || 1 };
+      if (!MAT.data) loadMaterials();   // names show once it's loaded
+    }
+    return { n: "Item " + id, q: 1 };
   }
   // item name (lower case) -> [{ c, bags, bank }], rebuilt when the data changes
   let holdCache = { key: "", map: new Map() };
   function holdings() {
-    const key = ((S.inv && S.inv.updatedAt) || 0) + ":" + ((S.invItems && S.invItems.updatedAt) || 0);
+    const key = ((S.inv && S.inv.updatedAt) || 0) + ":" + ((S.invItems && S.invItems.updatedAt) || 0) + ":" + (MAT.data ? 1 : 0);
     if (holdCache.key === key) return holdCache.map;
     const map = new Map();
     for (const c of invChars()) {
@@ -3341,7 +3347,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     fetch("materials-forever.json").then((r) => r.json()).then((d) => {
       MAT.data = d.materials;
       for (const [id, m] of Object.entries(MAT.data)) { m.id = +id; MAT.byName.set(m.n.toLowerCase(), m); }
-      renderMaterials(); renderRecipes();
+      renderMaterials(); renderRecipes(); renderInv();
     }).catch(() => { $("mList").replaceChildren(el("p", "empty", "Couldn't load the materials list. Reload the page to try again.")); });
   }
   function materialSources(m, opts = {}) {
