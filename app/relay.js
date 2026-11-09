@@ -15,6 +15,23 @@ const { execFileSync } = require("child_process");
 const CONFIG_FILE = process.env.LL_RELAY_CONFIG || path.join(__dirname, "relay.json");
 const STATE_FILE = process.env.LL_RELAY_STATE || path.join(path.dirname(CONFIG_FILE), "relay-state.json");
 const log = (m) => console.log(new Date().toISOString() + " " + m);
+// Node's fetch says only "fetch failed"; the reason (name not found, connection refused, certificate rejected...) is in e.cause
+const HINT = {
+  ENOTFOUND: "the hub's name doesn't resolve: check the address in relay.json",
+  EAI_AGAIN: "no answer from DNS: is this PC online?",
+  ECONNREFUSED: "the connection was refused",
+  ECONNRESET: "the connection was cut: a firewall or antivirus may be blocking node.exe",
+  ETIMEDOUT: "the connection timed out: a firewall may be blocking node.exe",
+  UND_ERR_CONNECT_TIMEOUT: "the connection timed out: a firewall may be blocking node.exe",
+  UNABLE_TO_GET_ISSUER_CERT_LOCALLY: "the hub's certificate was replaced on the way, usually by antivirus HTTPS scanning",
+  SELF_SIGNED_CERT_IN_CHAIN: "the hub's certificate was replaced on the way, usually by antivirus HTTPS scanning",
+  CERT_HAS_EXPIRED: "a certificate on the way has expired: check this PC's date and time",
+};
+const why = (e) => {
+  const c = e && e.cause, code = c && (c.code || (c.cause && c.cause.code));
+  if (!c) return e && e.message || String(e);
+  return `${e.message}: ${code || ""}${code && c.message && !c.message.includes(code) ? " " : ""}${c.message && !String(c.message).includes(code) || !code ? c.message || "" : ""}${HINT[code] ? " (" + HINT[code] + ")" : ""}`.trim();
+};
 const UPDATE_FILE = process.env.LL_RELAY_UPDATE_FILE || path.join(path.dirname(STATE_FILE), "relay-update.json");
 const BACKUP_DIR = process.env.LL_RELAY_BACKUP_DIR || path.join(path.dirname(STATE_FILE), "relay-backup");
 const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
@@ -174,7 +191,7 @@ async function test() {
     for (const f of fl) { await send(cfg, f); console.log(`Sent ${accountOf(f)}: OK`); }
     const s = await pullSummary(cfg, fl);
     console.log(s.found ? `In-game summary: ${s.chars} characters, written to ${s.found} add-on folder${s.found === 1 ? "" : "s"}` : "In-game summary: the add-on wasn't found next to the game's files, so there's nowhere to write it yet.");
-  } catch (e) { console.log("Couldn't reach the hub: " + e.message); process.exitCode = 1; }
+  } catch (e) { console.log("Couldn't reach the hub: " + why(e)); process.exitCode = 1; }
 }
 
 function run() {
@@ -198,7 +215,7 @@ function run() {
         setTimeout(summary, 8000); // the hub needs a moment to import it
         delay = (cfg.retrySeconds || 60) * 1000;
       } catch (e) {
-        log(`Couldn't send ${accountOf(f)} (${e.message}); trying again in ${delay < 60000 ? Math.round(delay / 1000) + " s" : Math.round(delay / 60000) + " min"}`);
+        log(`Couldn't send ${accountOf(f)} (${why(e)}); trying again in ${delay < 60000 ? Math.round(delay / 1000) + " s" : Math.round(delay / 60000) + " min"}`);
         timer = setTimeout(flush, delay);
         delay = Math.min(delay * 2, 15 * 60 * 1000); // back off to every 15 minutes while away
         return;
@@ -222,14 +239,14 @@ function run() {
   async function summary() {
     if (pulling) return; pulling = true;
     try { const s = await pullSummary(cfg, [...watched]); if (s.wrote) log(`Updated the in-game summary (${s.chars} characters)`); }
-    catch (e) { log("Couldn't get the in-game summary: " + e.message); }
+    catch (e) { log("Couldn't get the in-game summary: " + why(e)); }
     finally { pulling = false; }
   }
   setInterval(summary, 15 * 60 * 1000);
   setTimeout(summary, 10 * 1000);
   // self-update: every 15 minutes; an add-on update waiting for WoW to close is tried every minute
   const update = () => selfUpdate(cfg, [...new Set([...watched].map(addonDirOf))].filter((d) => fs.existsSync(path.join(d, "LevelingLedger.toc"))))
-    .catch((e) => log("Couldn't update the relay: " + e.message));
+    .catch((e) => log("Couldn't update the relay: " + why(e)));
   setTimeout(update, 30 * 1000);
   setInterval(update, 15 * 60 * 1000);
   setInterval(() => { if (waitingForWow) update(); }, 60 * 1000);
