@@ -549,6 +549,14 @@ a.whi:hover { color: var(--brass); text-decoration: none; }
 .tnode.sel { outline: 2px solid var(--rested); outline-offset: 1px; }
 .tal-detail { background: var(--surface-2); border-radius: 8px; padding: 12px; font-size: .94rem; min-height: 4.5rem; }
 .tal-detail b { font-family: var(--display); }
+.tal-plan { margin-top: 14px; }
+.tal-plan ol { list-style: none; padding: 0; margin: 6px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 2px 14px; }
+.tal-plan li { font-size: .9rem; padding: 2px 6px; border-radius: 4px; }
+.tal-plan li .lv { display: inline-block; min-width: 3.2em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tal-plan li.taken { color: var(--muted); }
+.tal-plan li.taken::after { content: " ✓"; color: var(--good, #6c3); }
+.tal-plan li.due { background: var(--surface-2); font-weight: 700; }
+.tal-plan li.now { outline: 2px solid var(--brass); }
 
 /* Ask */
 .answer { white-space: pre-wrap; background: var(--surface-2); border-radius: 6px; padding: 12px; font-size: .95rem; max-height: 420px; overflow: auto; overflow-wrap: anywhere; }
@@ -1057,6 +1065,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <p class="hint">Click a talent to spend a point; right-click (or switch to Remove point) to take one back. Rows unlock every 5 points spent in that tree. Blizzard doesn't share Forever talent picks yet, so set them here to match the game.</p>
     <div class="tal-trees" id="talTrees"><p class="empty">Loading talent trees…</p></div>
     <div class="tal-detail" id="talDetail">Select a talent to read what each rank does.</div>
+    <div class="tal-plan" id="talPlan"></div>
     <p class="hint" id="talSource"></p>
   </section>
 </div>
@@ -3913,7 +3922,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   setView();
 
   // ---------- talent planner ----------
-  const TAL = { data: null, ranks: {}, sel: null, remove: false, saveT: null };
+  const TAL = { data: null, ranks: {}, sel: null, remove: false, saveT: null, plans: [] };
   const talAvail = () => Math.max(0, ((S.char && S.char.level) || 0) - 9);
   const talSpent = () => Object.values(TAL.ranks).reduce((a, b) => a + b, 0);
   const treeSpent = (tree, belowRow = 99) => tree.nodes.reduce((a, n) => a + (n.row < belowRow ? TAL.ranks[n.id] || 0 : 0), 0);
@@ -3946,6 +3955,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
   function renderTalents() {
     if (!TAL.data) return;
+    try { renderTalPlan(); } catch (e) { console.error(e); }
     const avail = talAvail(), spent = talSpent();
     $("talPoints").textContent = `${spent} / ${avail} points spent` + (avail - spent > 0 ? ` · ${avail - spent} to spend` : "");
     const wrap = $("talTrees"); wrap.replaceChildren();
@@ -3990,6 +4000,71 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   fetch("talents-druid.json").then((r) => r.json()).then((d) => {
     TAL.data = d; $("talSource").textContent = `Druid talent trees from Blizzard's World of Warcraft: Forever game data, fetched ${d.fetched}.`; renderTalents();
   }).catch(() => { $("talTrees").replaceChildren(el("p", "empty", "Couldn't load the talent trees. Reload the page to try again.")); });
+  fetch("talentplans-druid.json").then((r) => r.ok ? r.json() : null).then((d) => { TAL.plans = (d && d.plans) || []; renderTalPlan(); }).catch(() => {});
+
+  // ---------- talent leveling plan: shared/talentplans { byChar: { "<first name>": { id, name, from, order: [nodeId per level], labels } } };
+  // the add-on names the next talent when you level up (through Shared.lua) ----------
+  const myTalPlan = () => ((S.tplan && S.tplan.byChar) || {})[planWho()] || null;
+  // each level's pick with the rank it brings that talent to
+  const stepName = (s) => s.max > 1 ? `${s.n} ${s.rank}/${s.max}` : s.n;
+  function planSteps(p) {
+    const seen = {}, steps = [];
+    p.order.forEach((id, i) => {
+      const [tree, n] = nodeById(id); seen[id] = (seen[id] || 0) + 1;
+      steps.push({ lv: (p.from || 10) + i, id, n: n ? n.name : "Talent " + id, spec: tree ? tree.spec : "", rank: seen[id], max: n ? n.max : 1 });
+    });
+    return steps;
+  }
+  function chooseTalPlan(id) {
+    const who = planWho(); if (!who || !db || !S.canWrite) return;
+    const by = { ...((S.tplan && S.tplan.byChar) || {}) };
+    const p = TAL.plans.find((x) => x.id === id);
+    if (!p) delete by[who];
+    else by[who] = { id: p.id, name: p.name, from: p.from || 10, order: p.order, labels: planSteps(p).map(stepName) };
+    S.tplan = { byChar: by, updatedAt: Date.now() };
+    renderTalPlan();
+    write(() => db.doc("shared/talentplans").set(S.tplan), p ? "Talent plan saved" : "Talent plan removed");
+  }
+  function renderTalPlan() {
+    const box = $("talPlan"); if (!box || !TAL.data) return;
+    box.replaceChildren();
+    if (!TAL.plans.length) return;
+    const mine = myTalPlan(), lv = (S.char && S.char.level) || 0;
+    const h = el("div", "row"); h.append(el("h3", null, "Leveling plan"));
+    const sel = el("select"); sel.setAttribute("aria-label", "Talent plan for this character");
+    sel.append(new Option("No plan", ""));
+    for (const p of TAL.plans) sel.append(new Option(p.name, p.id, false, !!mine && mine.id === p.id));
+    sel.disabled = !S.canWrite; sel.onchange = () => chooseTalPlan(sel.value);
+    h.append(sel); box.append(h);
+    if (!mine) { box.append(el("p", "hint", "Pick a plan to see which talent to take at each level; in game, the add-on names it when you level up.")); return; }
+    const p = TAL.plans.find((x) => x.id === mine.id) || mine;
+    if (p.note) box.append(el("p", "hint", p.note));
+    const steps = planSteps(p);
+    // a step is taken when the tree already has that talent at that rank
+    const taken = (s) => (TAL.ranks[s.id] || 0) >= s.rank;
+    const due = steps.filter((s) => s.lv <= lv && !taken(s));
+    const next = steps.find((s) => !taken(s));
+    box.append(el("p", due.length ? "bud-warn" : "muted", due.length ? `You have ${due.length} point${due.length === 1 ? "" : "s"} to spend: ${due.map(stepName).join(", ")}.`
+      : next ? `Next: ${stepName(next)} at level ${next.lv}.` : "Plan complete."));
+    if (due.length && S.canWrite) {
+      const b = el("button", null, `Take them in the tree (up to level ${lv})`); b.type = "button";
+      b.onclick = () => {
+        const r = {}; for (const s of steps) if (s.lv <= lv) r[s.id] = s.rank;
+        TAL.ranks = { ...TAL.ranks, ...Object.fromEntries(Object.entries(r).filter(([id, n]) => n > (TAL.ranks[id] || 0))) };
+        renderTalents(); renderTalPlan();
+        write(() => db.doc("state/talents").set({ ranks: { ...TAL.ranks }, cls: TAL.data.class, updatedAt: Date.now() }), "Talents updated");
+      };
+      box.append(b);
+    }
+    const ol = el("ol");
+    for (const s of steps) {
+      const li = el("li", taken(s) ? "taken" : s.lv <= lv ? "due" : null);
+      if (s.lv === lv + 1 || (s.lv === lv && !taken(s))) li.classList.add("now");
+      li.append(el("span", "lv", `${s.lv}`), document.createTextNode(stepName(s)));
+      li.title = s.spec; ol.append(li);
+    }
+    box.append(ol);
+  }
 
   // ---------- session history: XP per session from Blizzard, XP/hour, level per hour ----------
   // XP needed for each level in the original game, used only when you haven't entered a level's XP yourself.
@@ -4278,6 +4353,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});
+    db.doc("shared/talentplans").onSnapshot((s) => { S.tplan = s.exists ? s.data() : null; renderTalPlan(); }, () => {});
     db.doc("state/talents").onSnapshot((s) => { if (TAL.dirty || s.metadata.hasPendingWrites) return; TAL.ranks = { ...((s.exists && s.data().ranks) || {}) }; renderTalents(); }, () => {});
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});

@@ -39,7 +39,13 @@ function buildSummary(store) {
       .map(([id, l]) => [id, l.filter((x) => /^\d{1,9}$/.test(String(x))).slice(0, 20).map(Number)]));
     if (Object.keys(items).length) recipes[String(who).toLowerCase()] = { items, npcs };
   }
-  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes };
+  // talent plans, per character: { who: { from: first level, picks: ["Ferocity 1/5", ...] } }
+  const talents = {};
+  for (const [who, t] of Object.entries((store.get("shared/talentplans") || {}).byChar || {})) {
+    if (!t || !Array.isArray(t.labels) || !t.labels.length) continue;
+    talents[String(who).toLowerCase()] = { from: Number(t.from) || 10, picks: t.labels.slice(0, 80).map((x) => String(x || "")) };
+  }
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -87,9 +93,14 @@ function toLua(sum) {
       .map(([id, l]) => `[${id}]={${l.map((x) => int(x, 1e9)).filter((x) => x > 0).slice(0, 20).join(",")}}`);
     if (items.length) recipes.push(`  [${luaStr(who, 40)}] = { items = {${items.join(",")}}, npcs = {${npcs.join(",")}} },`);
   }
+  const talents = [];
+  for (const [who, t] of Object.entries((sum && sum.talents) || {}).slice(0, MAX_CHARS)) {
+    if (!t || !Array.isArray(t.picks) || !t.picks.length) continue;
+    talents.push(`  [${luaStr(who, 40)}] = { from = ${int(t.from, 100)}, picks = {${t.picks.slice(0, 80).map((x) => luaStr(x, 60)).join(",")}} },`);
+  }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

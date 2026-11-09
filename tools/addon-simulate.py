@@ -186,7 +186,7 @@ function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -334,6 +334,9 @@ L.execute('LL_NS.ahScan()')   # too soon
 L.execute('LevelingLedgerDB.ahScanAt = 0; C_AuctionHouse.ReplicateItems = nil; AHLIST = { { "Earthroot", 10, 900, 2449 } }; LL_NS.ahScan()'); tick()
 print('full scan (classic):', dict(L.globals().LevelingLedgerDB.ah[2449]))
 slash('water 45'); slash('water off'); L.execute('LevelingLedgerWater:Hide(); T = T + 9000'); tick(); print('with reminders off:', water()[:7]); slash('water on')
+# talent plan reminders from Shared.lua: at level up, and /ledger talents
+L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.talents = { ["talwyn"] = { from = 10, picks = { "Ferocity 1/5", "Ferocity 2/5", "Ferocity 3/5", "Ferocity 4/5", "Ferocity 5/5", "Furor 1/3" } } }')
+fire('PLAYER_LEVEL_UP', 14); slash('talents')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
 function(v)
