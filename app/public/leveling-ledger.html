@@ -2797,7 +2797,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     for (const c of cats) { const o = el("option", null, c); o.value = c; sel.append(o); }
     sel.value = cats.includes(cur) ? cur : "";
   }
-  function craftedBlock(e) {
+  // what the made item does (Use:, Equip:) and its stat bonuses: shown on the card itself, not behind the fold
+  function effectLine(e) {
+    const box = el("div", "istats isum"), mi = e.mi || {};
+    for (const [k, v] of mi.st || []) box.append(el("span", "stat-g", `+${v} ${k}`));
+    for (const fx of [...(mi.fx || []), ...(e.fx || [])]) box.append(el("span", "fx", fx));
+    return box.childNodes.length ? box : null;
+  }
+  function craftedBlock(e, opts = {}) {
     const box = el("div", "istats"), mi = e.mi;
     if (mi) {
       const kind = [mi.sl, mi.sc && mi.sc !== "Miscellaneous" ? mi.sc : (mi.sl ? "" : mi.cl)].filter(Boolean).join(" · ");
@@ -2805,13 +2812,13 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (mi.bag) box.append(el("span", null, `${mi.bag} slot bag`));
       if (mi.ar) box.append(el("span", null, `${mi.ar} Armor`));
       if (mi.w) box.append(el("span", null, `${mi.w[0]}–${mi.w[1]} damage · ${mi.w[2]} speed · ${mi.w[3]} DPS`));
-      for (const [k, v] of mi.st || []) box.append(el("span", "stat-g", `+${v} ${k}`));
-      for (const fx of mi.fx || []) box.append(el("span", "fx", fx));
+      if (!opts.noFx) for (const [k, v] of mi.st || []) box.append(el("span", "stat-g", `+${v} ${k}`));
+      if (!opts.noFx) for (const fx of mi.fx || []) box.append(el("span", "fx", fx));
       const meta = [mi.rl && `Requires level ${mi.rl}`, mi.il && `Item level ${mi.il}`, mi.b].filter(Boolean).join(" · ");
       if (meta) box.append(el("span", "muted", meta));
     }
-    for (const fx of e.fx || []) box.append(el("span", "fx", fx));
-    if (!box.childNodes.length && e.ci) box.append(el("span", "muted", "Blizzard has no details for the item this makes."));
+    if (!opts.noFx) for (const fx of e.fx || []) box.append(el("span", "fx", fx));
+    if (!box.childNodes.length && e.ci && !opts.noFx) box.append(el("span", "muted", "Blizzard has no details for the item this makes."));
     return box;
   }
   function learnBlock(e) {
@@ -2929,8 +2936,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     h.append(el("span", "pill " + (isKnown ? "known" : "miss"), isKnown ? "Known" : e.c));
     card.append(h);
     card.append(el("div", "hint", [e.p, isKnown ? e.c : "", e.qty ? `Makes ${e.qty}` : ""].filter(Boolean).join(" · ")));
+    const fxl = effectLine(e); if (fxl) card.append(fxl);
     const sstrip = skillupStrip(e, known); if (sstrip) card.append(sstrip);
-    card.append(craftedBlock(e));
+    card.append(craftedBlock(e, { noFx: !!fxl }));
     if (e.ci) { const sb = setBlock(e.ci); if (sb) card.append(sb); if (e.mi) { const up = upgradePill({ ...e.mi, n: e.n }); if (up) card.querySelector(".ihead").append(up); } }
     if (e.rg) {
       const r = el("div", "creq"); r.append(document.createTextNode("Reagents: "));
@@ -2967,7 +2975,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       }
     }
     card.append(learnBlock(e));
-    return foldCard(card, 2, "Reagents, cost and where to learn");
+    return foldCard(card, fxl ? 3 : 2, "Reagents, cost and where to learn");
   }
   // a card's first lines stay; the rest opens on a click (cards were 400-500px tall each)
   function foldCard(card, keep, label) {
