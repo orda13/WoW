@@ -72,17 +72,44 @@ if ($cfg.wowFolder -and (Test-Path $cfg.wowFolder)) {
 }
 
 # --- NSSM, as for the hub ---
+# NSSM 2.24's official zip, by its SHA-256: whichever source it comes from, any other file is refused.
+# nssm.cc is often down (503), so: an nssm.exe you put next to this script, nssm.cc (twice), the Internet Archive's
+# copy of the same file, then winget.
+$NssmSha = "727D1E42275C605E0F04ABA98095C38A8E1E46DEF453CDFFCE42869428AA6743"
+function Get-Nssm([string]$target) {
+  $own = Join-Path $PSScriptRoot "nssm.exe"
+  if (Test-Path $own) { Copy-Item $own $target -Force; Write-Host "Using the nssm.exe next to this script."; return }
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+  $zip = Join-Path $env:TEMP "nssm-2.24.zip"
+  $urls = @("https://nssm.cc/release/nssm-2.24.zip", "https://nssm.cc/release/nssm-2.24.zip",
+            "https://web.archive.org/web/2024id_/https://nssm.cc/release/nssm-2.24.zip")
+  Write-Host "Downloading NSSM (the service helper)..."
+  foreach ($u in $urls) {
+    try {
+      Remove-Item $zip -Force -ErrorAction SilentlyContinue
+      Invoke-WebRequest $u -OutFile $zip -UseBasicParsing -TimeoutSec 90
+      if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $NssmSha) { Write-Host "  $u sent a different file; not using it."; continue }
+      $x = Join-Path $env:TEMP "nssm-2.24"
+      Expand-Archive $zip -DestinationPath $env:TEMP -Force
+      Copy-Item "$x\win64\nssm.exe" $target -Force
+      Write-Host "  Got NSSM from $u (checked)."
+      return
+    } catch {
+      Write-Host "  $u didn't work: $(($_.Exception.Message -split "`n")[0])"
+      Start-Sleep -Seconds 3
+    }
+  }
+  Write-Host "  Trying winget..."
+  try { winget install -e --id NSSM.NSSM --accept-source-agreements --accept-package-agreements | Out-Null } catch { }
+  $found = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter nssm.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "win64" } | Select-Object -First 1
+  if ($found) { Copy-Item $found.FullName $target -Force; Write-Host "  Got NSSM from winget."; return }
+  throw "Couldn't get NSSM. Download nssm-2.24.zip (from https://nssm.cc when it's up), take win64\nssm.exe out of it, put it in $PSScriptRoot, and run this again."
+}
 $nssm = "$Dest\tools\nssm.exe"
 if (-not (Test-Path $nssm)) {
   $hubNssm = "C:\LevelingLedger\tools\nssm.exe"
   if (Test-Path $hubNssm) { Copy-Item $hubNssm $nssm }
-  else {
-    Write-Host "Downloading NSSM (the service helper)..."
-    $zip = Join-Path $env:TEMP "nssm-2.24.zip"
-    Invoke-WebRequest "https://nssm.cc/release/nssm-2.24.zip" -OutFile $zip -UseBasicParsing
-    Expand-Archive $zip -DestinationPath $env:TEMP -Force
-    Copy-Item (Join-Path $env:TEMP "nssm-2.24\win64\nssm.exe") $nssm -Force
-  }
+  else { Get-Nssm $nssm }
 }
 if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) { & $nssm install $ServiceName $node "`"$Dest\relay-boot.js`"" | Out-Null }
 & $nssm set $ServiceName Application $node | Out-Null
