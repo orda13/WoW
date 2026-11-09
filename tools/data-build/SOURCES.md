@@ -11,7 +11,8 @@ It fetches each source into a scratch folder, rebuilds the files below, and list
 | Source | What we take | Built file | How it's refreshed |
 |---|---|---|---|
 | [QuestieDB](https://github.com/Questie/QuestieDB) (`data/Forever`) | creatures, levels and ranks inside dungeons (and the original quest, NPC and object data) | `dungeon-maps-forever.json` (others from the older builders) | cloned by the script |
-| Blizzard Game Data API (`static-forever-us`) | quest titles, zones, XP and faction; items | used by `build_att_forever.py` (and the older builders) | token from `oauth.battle.net` |
+| Blizzard Game Data API (`static-forever-us`) | quest titles, zones, XP and faction; items; every class's talent trees | used by `build_att_forever.py`, `build_talents.py` (`talents-<class>.json`) and the older builders | token from `oauth.battle.net` |
+| Wowhead's image server | spell icons (names from its Forever tooltips) and the classic talent tree backgrounds, shown straight from there | `build_talents.py` records icon names and background ids only | nothing to refresh |
 | [Forever Dungeon Routes](https://github.com/Checkov23/ForeverDungeonRoutes) (MIT) | standard routes, boss stops, map notes; boss names by encounter | `dungeon-routes-forever.json` | cloned by the script |
 | [AllTheThings](https://github.com/ATTWoWAddon/AllTheThings) (MIT; `db/Camelot`) | the newest dungeons' bosses and quests; quests the main data lacks (class, profession, new Forever quests) | `dungeons-att-forever.json`, `quests-att-forever.json` | cloned by the script (only `db/Camelot`) |
 | [MSPaintWoW](https://www.mspaintwow.com/wow-forever/dungeons) | pull order, difficulty, drop chances, best-in-slot marks, quest rewards | `dungeon-guides-forever.json` | read from its site (robots.txt allows it) |

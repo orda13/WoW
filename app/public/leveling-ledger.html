@@ -530,6 +530,36 @@ a.whi:hover { color: var(--brass); text-decoration: none; }
 /* Talents */
 .tal-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
 .tal-trees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+/* the classic talent window: each tree on its background art, square icons, rank badges, prerequisite arrows */
+.ctree { position: relative; border-radius: 8px; overflow: hidden; background: #0d0b08 center / cover no-repeat; border: 1px solid #3a2f1c; box-shadow: inset 0 0 0 1px rgba(0,0,0,.6); min-width: 0; }
+.ctree::before { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.25), rgba(0,0,0,.55)); pointer-events: none; }
+.ctree > * { position: relative; }
+.ctree header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,.65); border-bottom: 1px solid #3a2f1c; }
+.ctree header h3 { color: #f2c14e; font-size: 1.05rem; text-shadow: 0 1px 2px #000; }
+.ctree header .num { color: #f5e6c4; }
+.cgrid { position: relative; margin: 14px auto 16px; }
+.cgrid svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.carrow { fill: none; stroke: #8a8a8a; stroke-width: 4; stroke-linecap: square; }
+.carrow.on { stroke: #e8b64c; }
+.cnode { position: absolute; width: 44px; height: 44px; padding: 0; border-radius: 6px; border: 2px solid #6b6b6b; background: #000; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.8); }
+.cnode img { width: 100%; height: 100%; border-radius: 4px; display: block; }
+.cnode.locked img { filter: grayscale(1) brightness(.55); }
+.cnode.locked { border-color: #4a4a4a; }
+.cnode.open { border-color: #3fd23f; }
+.cnode.some { border-color: #3fd23f; }
+.cnode.full { border-color: #f2c14e; }
+.cnode.sel { box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.8); }
+.cnode .rk { position: absolute; right: -8px; bottom: -8px; min-width: 22px; padding: 0 3px; font: 700 11px/16px var(--mono); text-align: center; color: #ccc; background: #111; border: 1px solid #555; border-radius: 4px; }
+.cnode.some .rk, .cnode.open .rk { color: #3fd23f; }
+.cnode.full .rk { color: #f2c14e; }
+.cnode.locked .rk { color: #888; }
+.ttip { position: fixed; z-index: 50; max-width: 300px; padding: 8px 10px; background: rgba(8,10,24,.96); border: 1px solid #5c6a8a; border-radius: 6px; color: #fff; font-size: .86rem; line-height: 1.35; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.6); }
+.ttip b { display: block; font-size: .95rem; }
+.ttip .rk2 { color: #ccc; }
+.ttip .now { color: #ffd100; }
+.ttip .nx { color: #fff; margin-top: 4px; }
+.ttip .req { color: #ff4040; margin-top: 4px; }
+.ttip .hint2 { color: #3fd23f; margin-top: 4px; }
 @media (max-width: 900px) { .tal-trees { grid-template-columns: minmax(0, 1fr); } }
 .tree { background: var(--surface-2); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .tree header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -1077,13 +1107,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   <section class="panel" id="talPanel" data-view="talents" lang="en">
     <div class="tal-head">
       <h2>Talents</h2>
+      <select id="talClass" aria-label="Talent trees for class"></select>
       <span class="num" id="talPoints">– points</span>
       <span class="row">
         <span class="seg" role="group" aria-label="Click to"><button id="tAdd" aria-pressed="true">Add point</button><button id="tRem" aria-pressed="false">Remove point</button></span>
         <button class="ghost" id="tReset">Reset all</button>
       </span>
     </div>
-    <p class="hint">Click a talent to spend a point; right-click (or switch to Remove point) to take one back. Rows unlock every 5 points spent in that tree. Blizzard doesn't share Forever talent picks yet, so set them here to match the game.</p>
+    <p class="hint">Click a talent to spend a point; right-click (or switch to Remove point) to take one back. Rows unlock every 5 points spent in that tree. Blizzard doesn't share Forever talent picks yet, so set them here to match the game. Pick another class to plan a build for it; those picks are kept apart from your character's.</p>
     <div class="tal-trees" id="talTrees"><p class="empty">Loading talent trees…</p></div>
     <div class="tal-detail" id="talDetail">Select a talent to read what each rank does.</div>
     <div class="tal-plan" id="talPlan"></div>
@@ -4059,8 +4090,13 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   setView();
 
   // ---------- talent planner ----------
-  const TAL = { data: null, ranks: {}, sel: null, remove: false, saveT: null, plans: [] };
-  const talAvail = () => Math.max(0, ((S.char && S.char.level) || 0) - 9);
+  const TAL = { data: null, ranks: {}, sel: null, remove: false, saveT: null, plans: [], cls: null, unsub: null };
+  const TAL_CLASSES = ["Druid", "Hunter", "Mage", "Paladin", "Priest", "Rogue", "Shaman", "Warlock", "Warrior"];
+  const charClass = () => { const c = ((S.char && S.char.cls) || "").split(/[ (]/)[0]; return TAL_CLASSES.includes(c) ? c : "Druid"; };
+  const talOwn = () => TAL.cls === charClass();
+  // your character's picks live in state/talents; a build planned for another class in state/talents-<class>
+  const talDoc = () => talOwn() ? "state/talents" : "state/talents-" + TAL.cls.toLowerCase();
+  const talAvail = () => talOwn() ? Math.max(0, ((S.char && S.char.level) || 0) - 9) : 51;
   const talSpent = () => Object.values(TAL.ranks).reduce((a, b) => a + b, 0);
   const treeSpent = (tree, belowRow = 99) => tree.nodes.reduce((a, n) => a + (n.row < belowRow ? TAL.ranks[n.id] || 0 : 0), 0);
   const nodeById = (id) => { for (const t of TAL.data.trees) for (const n of t.nodes) if (n.id === id) return [t, n]; return [null, null]; };
@@ -4088,7 +4124,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     renderTalents();
     clearTimeout(TAL.saveT);
     TAL.dirty = true;
-    TAL.saveT = setTimeout(() => write(() => db.doc("state/talents").set({ ranks: { ...TAL.ranks }, cls: TAL.data.class, updatedAt: Date.now() })).finally(() => { TAL.dirty = false; }), 800);
+    TAL.saveT = setTimeout(() => write(() => db.doc(talDoc()).set({ ranks: { ...TAL.ranks }, cls: TAL.data.class, updatedAt: Date.now() })).finally(() => { TAL.dirty = false; }), 800);
   }
   function renderTalents() {
     if (!TAL.data) return;
@@ -4096,21 +4132,51 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const avail = talAvail(), spent = talSpent();
     $("talPoints").textContent = `${spent} / ${avail} points spent` + (avail - spent > 0 ? ` · ${avail - spent} to spend` : "");
     const wrap = $("talTrees"); wrap.replaceChildren();
+    const CELL = 62, PAD = 9, NS = "http://www.w3.org/2000/svg";
+    const reqMet = (n) => !n.req || (() => { const [, p] = nodeById(n.req); return !p || (TAL.ranks[p.id] || 0) >= p.max; })();
     for (const tree of TAL.data.trees) {
-      const box = el("div", "tree");
-      const h = el("header"); h.append(el("h3", null, tree.spec), el("span", "num muted", String(treeSpent(tree))));
-      const grid = el("div", "tgrid");
+      const box = el("div", "ctree");
+      if (tree.bg) box.style.backgroundImage = `url("https://wow.zamimg.com/images/wow/talents/backgrounds/classic/${tree.bg}.jpg")`;
+      const h = el("header"); h.append(el("h3", null, tree.spec), el("span", "num", String(treeSpent(tree))));
+      const rows = Math.max(...tree.nodes.map((n) => n.row));
+      const grid = el("div", "cgrid"); grid.style.width = 4 * CELL + "px"; grid.style.height = rows * CELL + "px";
+      const at = (n) => ({ x: n.col * CELL + CELL / 2, y: (n.row - 1) * CELL + CELL / 2 });
+      // arrows from each prerequisite (gold once it's maxed), under the icons
+      const svg = document.createElementNS(NS, "svg"); svg.setAttribute("width", 4 * CELL); svg.setAttribute("height", rows * CELL);
+      for (const n of tree.nodes) {
+        if (!n.req) continue;
+        const [, p] = nodeById(n.req); if (!p) continue;
+        const a = at(p), b = at(n), half = 22;
+        const pts = p.row === n.row ? [[a.x + Math.sign(b.x - a.x) * half, a.y], [b.x - Math.sign(b.x - a.x) * half, b.y]]
+          : p.col === n.col ? [[a.x, a.y + half], [b.x, b.y - half]]
+          : [[a.x + Math.sign(b.x - a.x) * half, a.y], [b.x, a.y], [b.x, b.y - half]];
+        const pl = document.createElementNS(NS, "polyline");
+        pl.setAttribute("points", pts.map((q) => q.join(",")).join(" ")); pl.setAttribute("class", "carrow" + (reqMet(n) ? " on" : ""));
+        svg.append(pl);
+        // the arrowhead
+        const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], ang = Math.atan2(y2 - y1, x2 - x1), L = 8;
+        const head = document.createElementNS(NS, "polygon");
+        head.setAttribute("points", [[x2, y2], [x2 - L * Math.cos(ang - 0.55), y2 - L * Math.sin(ang - 0.55)], [x2 - L * Math.cos(ang + 0.55), y2 - L * Math.sin(ang + 0.55)]].map((q) => q.join(",")).join(" "));
+        head.setAttribute("class", "carrow" + (reqMet(n) ? " on" : "")); head.style.fill = reqMet(n) ? "#e8b64c" : "#8a8a8a";
+        svg.append(head);
+      }
+      grid.append(svg);
       for (const n of tree.nodes) {
         const r = TAL.ranks[n.id] || 0;
-        const b = el("button", "tnode"); b.type = "button";
-        b.style.gridRow = String(n.row); b.style.gridColumn = String(n.col + 1);
-        const unlocked = treeSpent(tree, n.row) >= 5 * (n.row - 1) && (!n.req || (() => { const [, p] = nodeById(n.req); return !p || (TAL.ranks[p.id] || 0) >= p.max; })());
-        b.classList.add(r >= n.max ? "full" : r > 0 ? "some" : unlocked ? "open" : "locked");
+        const b = el("button", "cnode"); b.type = "button";
+        b.style.left = n.col * CELL + PAD + "px"; b.style.top = (n.row - 1) * CELL + PAD + "px";
+        const unlocked = treeSpent(tree, n.row) >= 5 * (n.row - 1) && reqMet(n);
+        const canSpend = unlocked && talSpent() < talAvail();
+        b.classList.add(r >= n.max ? "full" : r > 0 ? "some" : canSpend ? "open" : "locked");
         if (TAL.sel === n.id) b.classList.add("sel");
-        b.append(el("span", "tn", n.name), el("span", "tr", `${r}/${n.max}`));
+        if (n.icon) b.append(iconImg(n.icon));
+        b.append(el("span", "rk", `${r}/${n.max}`));
         b.setAttribute("aria-label", `${n.name}, ${r} of ${n.max}`);
         b.onclick = () => talChange(tree, n, TAL.remove ? -1 : 1);
         b.oncontextmenu = (e) => { e.preventDefault(); talChange(tree, n, -1); };
+        b.onmouseenter = (e) => talTip(tree, n, b);
+        b.onmouseleave = () => talTip(null);
+        b.onfocus = () => talTip(tree, n, b); b.onblur = () => talTip(null);
         grid.append(b);
       }
       box.append(h, grid); wrap.append(box);
@@ -4126,18 +4192,49 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (r < n.max) det.append(el("p", "muted", (r ? "Next: " : "Rank 1: ") + n.desc[r]));
     }
   }
+  // the in-game talent tooltip: name, rank, what this rank and the next do, and what it still needs
+  let tipEl = null;
+  function talTip(tree, n, anchor) {
+    if (!tree) { if (tipEl) tipEl.hidden = true; return; }
+    if (!tipEl) { tipEl = el("div", "ttip"); document.body.append(tipEl); }
+    const r = TAL.ranks[n.id] || 0;
+    tipEl.replaceChildren(el("b", null, n.name), el("div", "rk2", `Rank ${r}/${n.max}`));
+    if (r > 0) tipEl.append(el("div", "now", n.desc[r - 1] || ""));
+    if (r < n.max) { if (r > 0) tipEl.append(el("div", "nx", "Next rank:")); tipEl.append(el("div", r > 0 ? "now" : "now", n.desc[r] || "")); }
+    if (n.row > 1 && treeSpent(tree, n.row) < 5 * (n.row - 1)) tipEl.append(el("div", "req", `Requires ${5 * (n.row - 1)} points in ${tree.spec} Talents`));
+    if (n.req) { const [, p] = nodeById(n.req); if (p && (TAL.ranks[p.id] || 0) < p.max) tipEl.append(el("div", "req", `Requires ${p.max} point${p.max > 1 ? "s" : ""} in ${p.name}`)); }
+    if (r < n.max && S.canWrite) tipEl.append(el("div", "hint2", TAL.remove ? "Click to remove a point" : "Click to learn · right-click to remove"));
+    tipEl.hidden = false;
+    const rc = anchor.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 16);
+    let x = rc.right + 8; if (x + w > window.innerWidth - 8) x = Math.max(8, rc.left - w - 8);
+    tipEl.style.left = x + "px"; tipEl.style.top = Math.max(8, Math.min(rc.top, window.innerHeight - tipEl.offsetHeight - 8)) + "px";
+  }
   $("tAdd").onclick = () => { TAL.remove = false; $("tAdd").setAttribute("aria-pressed", "true"); $("tRem").setAttribute("aria-pressed", "false"); };
   $("tRem").onclick = () => { TAL.remove = true; $("tRem").setAttribute("aria-pressed", "true"); $("tAdd").setAttribute("aria-pressed", "false"); };
   let resetArm = 0;
   $("tReset").onclick = () => {
     if (Date.now() - resetArm > 4000) { resetArm = Date.now(); $("tReset").textContent = "Click again to reset"; setTimeout(() => $("tReset").textContent = "Reset all", 4000); return; }
     resetArm = 0; $("tReset").textContent = "Reset all"; TAL.ranks = {}; renderTalents();
-    write(() => db.doc("state/talents").set({ ranks: {}, cls: TAL.data.class, updatedAt: Date.now() }), "Talents reset");
+    write(() => db.doc(talDoc()).set({ ranks: {}, cls: TAL.data.class, updatedAt: Date.now() }), "Talents reset");
   };
-  fetch("talents-druid.json").then((r) => r.json()).then((d) => {
-    TAL.data = d; $("talSource").textContent = `Druid talent trees from Blizzard's World of Warcraft: Forever game data, fetched ${d.fetched}.`; renderTalents();
-  }).catch(() => { $("talTrees").replaceChildren(el("p", "empty", "Couldn't load the talent trees. Reload the page to try again.")); });
-  fetch("talentplans-druid.json").then((r) => r.ok ? r.json() : null).then((d) => { TAL.plans = (d && d.plans) || []; renderTalPlan(); }).catch(() => {});
+  // load a class's trees (and its leveling plans), and follow that class's saved picks
+  function loadTalents(cls) {
+    if (TAL.cls === cls && TAL.data) return;
+    TAL.cls = cls; TAL.data = null; TAL.ranks = {}; TAL.sel = null; TAL.plans = [];
+    $("talClass").value = cls;
+    $("talTrees").replaceChildren(el("p", "empty", "Loading talent trees…"));
+    const f = cls.toLowerCase();
+    fetch(`talents-${f}.json`).then((r) => r.json()).then((d) => {
+      if (TAL.cls !== cls) return;
+      TAL.data = d; $("talSource").textContent = `${cls} talent trees from Blizzard's World of Warcraft: Forever game data, fetched ${d.fetched}. Background art and icons are shown from Wowhead's image server.`;
+      renderTalents();
+    }).catch(() => { $("talTrees").replaceChildren(el("p", "empty", "Couldn't load the talent trees. Reload the page to try again.")); });
+    fetch(`talentplans-${f}.json`).then((r) => r.ok ? r.json() : null).then((d) => { if (TAL.cls === cls) { TAL.plans = (d && d.plans) || []; renderTalPlan(); } }).catch(() => {});
+    if (TAL.unsub) { TAL.unsub(); TAL.unsub = null; }
+    if (db) TAL.unsub = db.doc(talDoc()).onSnapshot((s) => { if (TAL.cls !== cls || TAL.dirty || s.metadata.hasPendingWrites) return; TAL.ranks = { ...((s.exists && s.data().ranks) || {}) }; renderTalents(); }, () => {}) || null;
+  }
+  for (const c of TAL_CLASSES) $("talClass").append(new Option(c, c));
+  $("talClass").onchange = () => { TAL.picked = $("talClass").value !== charClass(); loadTalents($("talClass").value); };
 
   // ---------- talent leveling plan: shared/talentplans { byChar: { "<first name>": { id, name, from, order: [nodeId per level], labels } } };
   // the add-on names the next talent when you level up (through Shared.lua) ----------
@@ -4165,7 +4262,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function renderTalPlan() {
     const box = $("talPlan"); if (!box || !TAL.data) return;
     box.replaceChildren();
-    if (!TAL.plans.length) return;
+    if (!TAL.plans.length || !talOwn()) return;
     const mine = myTalPlan(), lv = (S.char && S.char.level) || 0;
     const h = el("div", "row"); h.append(el("h3", null, "Leveling plan"));
     const sel = el("select"); sel.setAttribute("aria-label", "Talent plan for this character");
@@ -4189,7 +4286,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         const r = {}; for (const s of steps) if (s.lv <= lv) r[s.id] = s.rank;
         TAL.ranks = { ...TAL.ranks, ...Object.fromEntries(Object.entries(r).filter(([id, n]) => n > (TAL.ranks[id] || 0))) };
         renderTalents(); renderTalPlan();
-        write(() => db.doc("state/talents").set({ ranks: { ...TAL.ranks }, cls: TAL.data.class, updatedAt: Date.now() }), "Talents updated");
+        write(() => db.doc(talDoc()).set({ ranks: { ...TAL.ranks }, cls: TAL.data.class, updatedAt: Date.now() }), "Talents updated");
       };
       box.append(b);
     }
@@ -4474,7 +4571,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const settle = (snap) => { if (snap.metadata && !snap.metadata.fromCache) { pending--; if (pending <= 0) { clearTimeout(timer); $("offline").hidden = true; } } };
     const fail = () => { clearTimeout(timer); $("offline").hidden = false; S.loaded = true; render(); };
     let gotChar = false, gotSess = false;
-    charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); }, fail);
+    charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); if (!TAL.picked) loadTalents(charClass()); }, fail);
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
@@ -4491,7 +4588,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});
     db.doc("shared/talentplans").onSnapshot((s) => { S.tplan = s.exists ? s.data() : null; renderTalPlan(); }, () => {});
-    db.doc("state/talents").onSnapshot((s) => { if (TAL.dirty || s.metadata.hasPendingWrites) return; TAL.ranks = { ...((s.exists && s.data().ranks) || {}) }; renderTalents(); }, () => {});
+    loadTalents(charClass());
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); renderReport(); }, () => {});
