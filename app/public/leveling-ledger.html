@@ -537,8 +537,8 @@ a.whi:hover { color: var(--brass); text-decoration: none; }
 .ctree header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,.65); border-bottom: 1px solid #3a2f1c; }
 .ctree header h3 { color: #f2c14e; font-size: 1.05rem; text-shadow: 0 1px 2px #000; }
 .ctree header .num { color: #f5e6c4; }
-.cgrid { position: relative; margin: 14px auto 16px; }
-.cgrid svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.ctgrid { position: relative; margin: 14px auto 16px; }
+.ctgrid svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 .carrow { fill: none; stroke: #8a8a8a; stroke-width: 4; stroke-linecap: square; }
 .carrow.on { stroke: #e8b64c; }
 .cnode { position: absolute; width: 44px; height: 44px; padding: 0; border-radius: 6px; border: 2px solid #6b6b6b; background: #000; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.8); }
@@ -629,6 +629,17 @@ button:disabled { opacity: .55; }
 .secbar button:hover { color: var(--fg); border-color: var(--brass); }
 .secbar button[aria-pressed="true"] { color: var(--brass); border-color: var(--brass); background: var(--surface); font-weight: 600; }
 .sec-off { display: none !important; }
+.bk-bar { position: relative; height: 14px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--line); margin: 10px 0 4px; overflow: visible; }
+.bk-bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 7px; background: var(--brass); }
+.bk-bar .mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--fg); }
+.bk-bar .mark span { position: absolute; top: 18px; left: -10px; font-size: .78rem; color: var(--muted); }
+.bk-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin: 22px 0 8px; }
+.bk-goal { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
+.bk-goal.reached { outline: 1px solid var(--brass); }
+.bk-table td, .bk-table th { vertical-align: top; }
+.bk-table tr.got td { color: var(--muted); }
+.bk-way { font-family: var(--mono); font-size: .8rem; }
+.bk-table td:nth-child(5) { white-space: nowrap; }
 .inv-tog { width: 1.4em; text-align: center; color: var(--brass); }
 tr.inv-open > td { background: var(--surface-2); padding: 8px 12px 12px; }
 .inv-box { margin: 4px 0; }
@@ -777,6 +788,12 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <div class="cgrid" id="cGrid"><p class="empty">Loading collectables…</p></div>
     <details id="cNaWrap"><summary id="cNaSum">Not currently available</summary><p class="hint">Blizzard marks these as hidden until collected. Most aren't obtainable in Forever yet, or were removed long ago.</p><div class="cgrid" id="cNa"></div></details>
     <p class="hint" id="cSource"></p>
+  </section>
+
+  <section class="panel" id="booksPanel" data-view="collectables">
+    <div class="tal-head"><h2>Library Books</h2><span class="num muted" id="bookNote"></span></div>
+    <div id="booksBody"><p class="empty">Loading…</p></div>
+    <p class="hint" id="bookSource"></p>
   </section>
 
   <section class="xpbar" aria-label="Experience" data-view="ledger quests dungeons talents skills collectables">
@@ -3943,6 +3960,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel"]]],
     quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
     talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
+    collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]]],
     skills: [["📊", "Overview", ["skillsPanel", "repPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
       ["📖", "Recipes", ["recipePanel"]], ["🧱", "Materials", ["matPanel"]]],
   };
@@ -3978,7 +3996,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
     for (const sec of document.querySelectorAll("[data-view]")) sec.hidden = !sec.dataset.view.split(" ").includes(v);
     for (const a of $("views").querySelectorAll("a")) { if (a.getAttribute("href") === "#" + v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
-    if (v === "collectables") loadCollect();
+    if (v === "collectables") { loadCollect(); loadBooks(); }
     if (v === "skills") { loadRecipes(); renderFavor(); }
     if (v === "dungeons") loadDungeons();
     if (v === "talents") loadAbilities();
@@ -3987,6 +4005,88 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     if (curView && curView !== v) window.scrollTo({ top: 0 });
     curView = v;
     applySections(v);
+  }
+  // ---------- Library Books ("Friend of the Library"): collections-forever.json; per character from the add-on
+  // (state/books: handed in and in bags), Blizzard's completed quests, and ticks you set here (state/bookticks) ----------
+  const BOOKS = { data: null, loading: false, show: "need" };
+  function loadBooks() {
+    if (BOOKS.data || BOOKS.loading) { renderBooks(); return; }
+    BOOKS.loading = true;
+    fetch("collections-forever.json").then((r) => r.json()).then((d) => { BOOKS.data = d; renderBooks(); }).catch(() => { $("booksBody").replaceChildren(el("p", "empty", "Couldn't load the book list. Reload the page to try again.")); });
+  }
+  function bookState(b) {
+    const got = S.books || {};
+    if ((got.done || []).includes(b.n) || (b.quest && QD.done && QD.done.has(b.quest)) || (S.bookTicks && S.bookTicks.have && S.bookTicks.have[b.n])) return "done";
+    if ((got.bags || []).includes(b.n)) return "bags";
+    return "need";
+  }
+  function renderBooks() {
+    const box = $("booksBody"); if (!box || !BOOKS.data) return;
+    const col = BOOKS.data.collections[0], fac = (myFaction() || "")[0];
+    const items = col.items.filter((b) => !b.fac || !fac || b.fac === fac);
+    const st = new Map(items.map((b) => [b.n, bookState(b)]));
+    const have = items.filter((b) => st.get(b.n) === "done").length, held = items.filter((b) => st.get(b.n) === "bags").length;
+    $("bookNote").textContent = `${have} of ${items.length}` + (held ? ` · ${held} to hand in` : "");
+    box.replaceChildren();
+    box.append(el("p", "muted", col.about));
+    // progress to the rewards
+    const bar = el("div", "bk-bar"); const fill = el("div", "fill"); fill.style.width = Math.min(100, have / items.length * 100) + "%"; bar.append(fill);
+    for (const m of col.milestones) { const mk = el("div", "mark"); mk.style.left = (m.at / items.length * 100) + "%"; mk.append(el("span", null, String(m.at))); bar.append(mk); }
+    box.append(bar);
+    const goals = el("div", "bk-goals");
+    const ti = col.turnin[fac || "A"];
+    for (const m of col.milestones) {
+      const g = el("div", "bk-goal" + (have >= m.at ? " reached" : ""));
+      g.append(el("b", null, `${m.at} books: ${m.title}`), el("span", have >= m.at ? "pill go" : "pill", have >= m.at ? " Reached" : ` ${m.at - have} to go`));
+      const r = el("div"); r.append(document.createTextNode("Choose one: "));
+      m.rewards.forEach(([id, n], i) => { if (i) r.append(document.createTextNode(" or ")); r.append(id ? whA("item", id, n) : el("span", null, n)); });
+      g.append(r); goals.append(g);
+    }
+    if (ti) {
+      const g = el("div", "bk-goal"); g.append(el("b", null, "Hand in to "), whA("npc", ti.npc, ti.n));
+      g.append(el("div", "muted", `${fac === "H" ? "Undercity" : "Stormwind City, top of the Mage Tower"} · `), el("code", "bk-way", `/way #${ti.map} ${ti.x}, ${ti.y} ${ti.n}`));
+      goals.append(g);
+    }
+    box.append(goals);
+    // the list, in route order
+    const bar2 = el("div", "row");
+    for (const [k, label] of [["need", "Still needed"], ["done", "Collected"], ["all", "All"]]) {
+      const b = el("button", BOOKS.show === k ? "pill go" : "pill", label); b.type = "button"; b.onclick = () => { BOOKS.show = k; renderBooks(); }; bar2.append(b);
+    }
+    const v = el("a", null, "All 40 in one video, shortest path"); v.href = col.video; v.target = "_blank"; v.rel = "noopener";
+    bar2.append(document.createTextNode(" · "), v);
+    box.append(bar2);
+    const rows = items.filter((b) => BOOKS.show === "all" || (BOOKS.show === "done" ? st.get(b.n) === "done" : st.get(b.n) !== "done"));
+    const t = el("table", "htable bk-table"); const hr = el("tr");
+    for (const h of ["#", "Book", "Zone", "Note", "Where", "Video", ""]) hr.append(el("th", null, h));
+    t.append(hr);
+    for (const b of rows) {
+      const s = st.get(b.n), tr = el("tr", s === "done" ? "got" : null);
+      tr.append(el("td", "num", String(b.n)));
+      const nm = el("td"); nm.append(b.item ? whA("item", b.item, b.name) : el("span", null, b.name)); if (b.fac) nm.append(el("span", "muted", b.fac === "A" ? " · Alliance" : " · Horde")); tr.append(nm);
+      tr.append(el("td", null, b.zone), el("td", "muted", b.note));
+      // the spot, and the full /way line (TomTom or Questie) to paste in game
+      const w = el("td"); const line = `/way #${b.map} ${b.x}, ${b.y} ${b.name}`;
+      const code = el("code", "bk-way", `${b.x}, ${b.y}`); code.title = line;
+      const cp = el("button", "linkish", "copy /way"); cp.type = "button"; cp.title = line;
+      cp.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(line).then(() => { cp.textContent = "copied"; setTimeout(() => cp.textContent = "copy /way", 1500); }).catch(() => {}); };
+      w.append(code, document.createTextNode(" "), cp); tr.append(w);
+      const vd = el("td"); if (b.video) { const a = el("a", null, "▶ watch"); a.href = b.video; a.target = "_blank"; a.rel = "noopener"; vd.append(a); } tr.append(vd);
+      const sc = el("td");
+      if (s === "done") sc.append(el("span", "pill go", "Collected"));
+      else if (s === "bags") { const pl = el("span", "pill wait", "In your bags"); pl.title = "Picked up: hand it in to the librarian"; sc.append(pl); }
+      // a tick for what the game can't tell us (books without a known quest), or to mark one by hand
+      const auto = s === "done" && !(S.bookTicks && S.bookTicks.have && S.bookTicks.have[b.n]);
+      if (S.canWrite && !auto) {
+        const lb = el("label", "check"); const cb = el("input"); cb.type = "checkbox"; cb.checked = s === "done";
+        cb.onchange = () => { const h = { ...((S.bookTicks && S.bookTicks.have) || {}) }; if (cb.checked) h[b.n] = true; else delete h[b.n]; S.bookTicks = { have: h, updatedAt: Date.now() }; renderBooks(); write(() => db.doc("state/bookticks").set(S.bookTicks)); };
+        lb.append(cb, document.createTextNode(b.quest ? " have it" : " have it (the game doesn't report this one)")); sc.append(lb);
+      }
+      tr.append(sc); t.append(tr);
+    }
+    box.append(el("div", "tablewrap", null)); box.lastChild.append(t);
+    if (!rows.length) box.append(el("p", "empty", BOOKS.show === "need" ? "You have them all." : "None yet."));
+    $("bookSource").textContent = "Book locations, notes and videos: your list. Quests and items: AllTheThings' Forever database. A book counts as collected once you hand it in (the add-on checks each book's quest at logout); in game, /ledger books lists the next ones, and Questie's map shows a book icon on each one you still need.";
   }
   function loadCollect() {
     if (CV.data || CV.loading) { renderCollect(); return; }
@@ -4139,7 +4239,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       if (tree.bg) box.style.backgroundImage = `url("https://wow.zamimg.com/images/wow/talents/backgrounds/classic/${tree.bg}.jpg")`;
       const h = el("header"); h.append(el("h3", null, tree.spec), el("span", "num", String(treeSpent(tree))));
       const rows = Math.max(...tree.nodes.map((n) => n.row));
-      const grid = el("div", "cgrid"); grid.style.width = 4 * CELL + "px"; grid.style.height = rows * CELL + "px";
+      const grid = el("div", "ctgrid"); grid.style.width = 4 * CELL + "px"; grid.style.height = rows * CELL + "px";
       const at = (n) => ({ x: n.col * CELL + CELL / 2, y: (n.row - 1) * CELL + CELL / 2 });
       // arrows from each prerequisite (gold once it's maxed), under the icons
       const svg = document.createElementNS(NS, "svg"); svg.setAttribute("width", 4 * CELL); svg.setAttribute("height", rows * CELL);
@@ -4576,6 +4676,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); renderAmr(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
+    db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/journal").onSnapshot((s) => { S.journal = s.exists ? s.data() : null; renderJournalStatus(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/dungeonroutes").onSnapshot((s) => { if (s.metadata && s.metadata.hasPendingWrites) return; S.routes = s.exists ? { byKey: s.data().byKey || {} } : { byKey: {} }; }, () => {});

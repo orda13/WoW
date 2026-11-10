@@ -180,6 +180,14 @@ function importAddon(text, store, publicDir, source, hint) {
     if ((!prev || doc.at >= (prev.at || 0)) && JSON.stringify(doc) !== JSON.stringify(prev)) store.set("state/addonreps", doc);
   }
 
+  // 2f. Library Books this character has handed in or holds (Collections.lua; the newest copy wins)
+  if (ch.books && ch.books.at) {
+    const list = (v) => (Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : []).map(Number).filter((n) => n > 0 && n < 1000);
+    const doc = { done: list(ch.books.done), bags: list(ch.books.bags), at: ch.books.at * 1000 };
+    const prev = store.get("state/books");
+    if (!prev || doc.at > (prev.at || 0)) { store.set("state/books", doc); done.push(`${doc.done.length} Library Book${doc.done.length === 1 ? "" : "s"}`); }
+  }
+
   // 2e. Ask Mr. Robot's gear setups and sell list, copied by MrRobot.lua from its add-on (the newest copy wins)
   if (ch.amr && ch.amr.at) {
     const list = (v) => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

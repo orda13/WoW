@@ -35,6 +35,7 @@ python3 -I "$B/build_dungeon_maps.py" "$W/questiedb" app/public/dungeon-maps-for
 python3 -I "$B/build_mspaint_guides.py" | tail -1
 python3 -I "$B/build_fdr_routes.py" "$W/fdr" | tail -1
 python3 -I "$B/build_att_forever.py" "$W/att" "$W/fdr" | tail -2
+python3 -I "$B/build_library_books.py" "$W/att" | tail -1
 if [ -n "$TOKEN" ]; then python3 -I "$B/build_talents.py" | tail -1; else echo "  talents skipped (no Blizzard token)"; fi
 if [ -n "$AL" ]; then python3 -I "$B/build_atlasloot_gaps.py" "$AL" | tail -1; else echo "  AtlasLoot skipped (no folder given)"; fi
 

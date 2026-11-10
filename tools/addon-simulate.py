@@ -160,14 +160,18 @@ C_QuestLog = {
 QUESTIE_CB = nil
 Questie = { API = { RegisterOnReady = function(cb) cb() end, RegisterForQuestUpdates = function(cb) QUESTIE_CB = cb end }, db = { char = { hidden = { [999] = true } } } }
 -- Questie's internals the plan bridge uses
-PINS, WATCHED, UNHIDDEN = {}, {}, {}
+PINS, WATCHED, UNHIDDEN, BOOKPINS = {}, {}, {}, {}
 local QMODS = {
   QuestieDB = { GetQuest = function(id) if id == 999 then return { name = "The Balance of Nature", level = 5, Starts = { NPC = { 2079 } } } end end },
-  QuestieMap = { ShowNPC = function(self, npc, icon, scale, title, body) table.insert(PINS, npc .. " " .. title) end },
+  QuestieMap = { ShowNPC = function(self, npc, icon, scale, title, body) table.insert(PINS, npc .. " " .. title) end,
+    DrawManualIcon = function(self, data, area, x, y, typ) BOOKPINS[data.id] = data.ManualTooltipData.Title .. " @" .. area .. " " .. x .. "," .. y; return {} end,
+    UnloadManualFrames = function(self, id, typ) BOOKPINS[id] = nil end },
+  ZoneDB = { GetAreaIdByUiMapId = function(self, m) return m + 100000 end },
   QuestieQuest = { UnhideQuest = function(self, id) UNHIDDEN[#UNHIDDEN + 1] = id; Questie.db.char.hidden[id] = nil end },
 }
 QuestieLoader = { ImportModule = function(self, name) return QMODS[name] end }
-C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 end
+C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 or id == 81952 end
+function GetItemCount(id) return id == 209843 and 1 or 0 end
 C_QuestLog.GetLogIndexForQuestID = function(id) for i, q in ipairs(QLOG) do if q.questID == id then return i + 1 end end end
 C_QuestLog.GetQuestWatchType = function(id) return WATCHED[id] end
 C_QuestLog.AddQuestWatch = function(id) WATCHED[id] = 0 end
@@ -190,7 +194,7 @@ function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -347,6 +351,11 @@ slash('water 45'); slash('water off'); L.execute('LevelingLedgerWater:Hide(); T 
 # talent plan reminders from Shared.lua: at level up, and /ledger talents
 L.execute('LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.talents = { ["talwyn"] = { from = 10, picks = { "Ferocity 1/5", "Ferocity 2/5", "Ferocity 3/5", "Ferocity 4/5", "Ferocity 5/5", "Furor 1/3" } } }')
 fire('PLAYER_LEVEL_UP', 14); slash('talents')
+# Library Books: pins for books still needed (not handed in, not in bags), /ledger books, and the logout record
+_n = L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()
+print('book pins:', _n, '| book 1 pinned:', L.eval('BOOKPINS[990001]'), '| book 2 pinned:', L.eval('BOOKPINS[990002]'), '| book 3:', L.eval('BOOKPINS[990003]'))
+slash('books')
+slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
 function(v)

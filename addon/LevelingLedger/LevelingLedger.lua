@@ -988,6 +988,8 @@ SlashCmdList.LEVELINGLEDGER = function(msg)
   if cmd == "save" then LevelingLedger_Save() return end
   if cmd == "recipes" then if ns.recipesCommand then ns.recipesCommand() end return end
   if cmd == "scan" then if ns.ahScanCommand then ns.ahScanCommand() end return end
+  local bk = cmd:match("^books?%s*(.*)$")
+  if bk and ns.booksCommand then ns.booksCommand(bk) return end
   if cmd == "talents" or cmd == "talent" then if ns.talentsCommand then ns.talentsCommand() end return end
   local w = cmd:match("^water%s*(.*)$")
   if w and ns.waterCommand then ns.waterCommand(w) return end
