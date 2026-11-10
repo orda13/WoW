@@ -129,7 +129,9 @@ const devices = (() => { try { return JSON.parse(fs.readFileSync(devicesFile, "u
 // Every character the add-on records gets its own page: new ones are tracked as soon as their file is read
 // (before it's imported, so their data comes in with the same import).
 function autoAlts(data) {
-  const add = newAlts(config, Object.values(data.chars || {}).map((c) => c && c.name));
+  // characters removed on the Ledger tab (shared/hiddenchars) aren't tracked again
+  const gone = new Set(Object.values((store.get("shared/hiddenchars") || {}).ids || {}).map((h) => String((h && h.name) || "").toLowerCase()));
+  const add = newAlts(config, Object.values(data.chars || {}).map((c) => c && c.name).filter((n) => n && !gone.has(String(n).toLowerCase())));
   if (!add.length) return;
   const draft = JSON.parse(JSON.stringify(config)); draft.alts = [...(config.alts || []), ...add];
   try { saveConfig(CONFIG_FILE, draft); } catch (e) { log("Couldn't save the new characters to config.json: " + e.message); return; }

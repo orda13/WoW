@@ -643,6 +643,8 @@ button:disabled { opacity: .55; }
 #chainBody .pp-list li.taken { color: var(--muted); }
 #chainBody .pp-list li.taken .muted { display: none; }
 .bk-table td:nth-child(5) { white-space: nowrap; }
+.inv-x { color: var(--muted); font-size: 1.1rem; padding: 0 4px; }
+.inv-x:hover, .inv-x:focus-visible { color: var(--danger, #c0392b); }
 .inv-tog { width: 1.4em; text-align: center; color: var(--brass); }
 tr.inv-open > td { background: var(--surface-2); padding: 8px 12px 12px; }
 .inv-box { margin: 4px 0; }
@@ -928,7 +930,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   <section class="panel" id="invPanel" data-view="ledger">
     <div class="tal-head"><h2>Your characters</h2><span class="hint" id="invNote"></span></div>
     <p class="muted">Every character the add-on has seen, on all your WoW accounts, with gold, bags and bank. Bags update whenever you play a character; the bank updates when you open it.</p>
-    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Rested</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th></tr></thead><tbody id="invRows"></tbody></table></div>
+    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Rested</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th><th aria-label="Remove"></th></tr></thead><tbody id="invRows"></tbody></table></div>
+    <p class="hint" id="invHidden" hidden></p>
     <label class="field"><span class="label">Find an item across your characters</span><input id="invSearch" placeholder="Linen Cloth" autocomplete="off"></label>
     <div id="invResults" class="inv-results"></div>
   </section>
@@ -2271,7 +2274,11 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   renderWatch(); setInterval(renderWatch, 60000);
 
   // ---------- your characters: gold, bags and bank across every account ----------
-  const invChars = () => Object.values((S.inv && S.inv.chars) || {}).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  // characters removed with the table's × (shared/hiddenchars { ids: { "<account>/<key>": { name, alt } } }) are left out everywhere
+  const invId = (c) => (c.account || "") + "/" + (c.key || c.name);
+  const hiddenIds = () => (S.hidden && S.hidden.ids) || {};
+  const invAll = () => Object.values((S.inv && S.inv.chars) || {}).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  const invChars = () => { const h = hiddenIds(); return invAll().filter((c) => !h[invId(c)]); };
   const isMe = (c) => { const n = ((S.char && S.char.name) || "").split(" ")[0].toLowerCase(); return !!n && c.name.toLowerCase() === n; };
   function invItemName(id) {
     const a = S.invItems && S.invItems.items && S.invItems.items[id];
@@ -2288,7 +2295,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   // item name (lower case) -> [{ c, bags, bank }], rebuilt when the data changes
   let holdCache = { key: "", map: new Map() };
   function holdings() {
-    const key = ((S.inv && S.inv.updatedAt) || 0) + ":" + ((S.invItems && S.invItems.updatedAt) || 0) + ":" + (MAT.data ? 1 : 0);
+    const key = ((S.inv && S.inv.updatedAt) || 0) + ":" + ((S.hidden && S.hidden.updatedAt) || 0) + ":" + ((S.invItems && S.invItems.updatedAt) || 0) + ":" + (MAT.data ? 1 : 0);
     if (holdCache.key === key) return holdCache.map;
     const map = new Map();
     for (const c of invChars()) {
@@ -2370,13 +2377,61 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         tr.append(td);
       }
       tr.title = c.account ? "WoW account " + c.account : "";
+      const xTd = el("td");
+      if (!isMe(c)) { const x = el("button", "linkish inv-x", "×"); x.type = "button"; x.title = `Remove ${c.name} from the ledger`; x.setAttribute("aria-label", x.title); x.onclick = () => hideChar(c); xTd.append(x); }
+      tr.append(xTd);
       if (!open) return [tr];
-      const dtr = el("tr", "inv-open"); const td = el("td"); td.colSpan = 8;
+      const dtr = el("tr", "inv-open"); const td = el("td"); td.colSpan = 9;
       td.append(invList(c, "bags", "Bags", c.bagsAt), invList(c, "bank", "Bank", c.bankAt));
       dtr.append(td);
       return [tr, dtr];
-    }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 8; tr.append(td); return tr; })()]));
+    }) : [(() => { const tr = el("tr"); const td = el("td", "muted", "No characters yet. Update the add-on, then log out or /reload with each character."); td.colSpan = 9; tr.append(td); return tr; })()]));
+    // removed characters, with a way back
+    const gone = invAll().filter((c) => hiddenIds()[invId(c)]);
+    const hb = $("invHidden"); hb.hidden = !gone.length;
+    if (gone.length) {
+      hb.replaceChildren(el("span", "muted", `Removed (${gone.length}): `), ...gone.flatMap((c, i) => {
+        const b = el("button", "linkish", "bring back"); b.type = "button"; b.onclick = () => unhideChar(c);
+        return [...(i ? [document.createTextNode(" · ")] : []), document.createTextNode(c.name + (c.account ? ` (${c.account}) ` : " ")), b];
+      }));
+    }
     renderInvSearch();
+  }
+  // the Settings list of extra characters, as Blizzard spells them ("bob-orda"); null if it can't be read
+  async function altsList() {
+    try { const r = await fetch("/api/settings"); if (!r.ok) return null; return ((await r.json()).alts || []).slice(); } catch (e) { return null; }
+  }
+  async function putAlts(alts) {
+    try {
+      const r = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", "X-Ledger": "1" }, body: JSON.stringify({ alts }) });
+      if (r.ok && $("stAlts")) $("stAlts").value = alts.join("\n");
+      return r.ok;
+    } catch (e) { return false; }
+  }
+  async function hideChar(c) {
+    if (!confirm(`Remove ${c.name} from the ledger?\n\nThey leave this table, the item search, the in-game summary and the character picker, and later imports won't add them back. Nothing is deleted: "bring back" under the table restores them.`)) return;
+    // the same character in Settings' list (matched by first name) leaves the picker too; remembered so "bring back" re-adds it
+    let alt = null;
+    const alts = await altsList();
+    if (alts) {
+      alt = alts.find((a) => a.split("-")[0] === c.name.toLowerCase()) || null;
+      if (alt && !(await putAlts(alts.filter((a) => a !== alt)))) { toast("Couldn't update the character list in Settings."); alt = null; }
+    }
+    const ids = { ...hiddenIds(), [invId(c)]: { name: c.name, ...(alt ? { alt } : {}), at: Date.now() } };
+    S.hidden = { ids, updatedAt: Date.now() }; renderInv();
+    if (await write(() => db.doc("shared/hiddenchars").set(S.hidden), `${c.name} removed.`) && alt) renderWatch();
+  }
+  async function unhideChar(c) {
+    const ids = { ...hiddenIds() }; const was = ids[invId(c)]; delete ids[invId(c)];
+    S.hidden = { ids, updatedAt: Date.now() }; renderInv();
+    if (!(await write(() => db.doc("shared/hiddenchars").set(S.hidden), `${c.name} is back.`))) return;
+    if (was && was.alt) {
+      const alts = await altsList();
+      if (alts && !alts.includes(was.alt)) {
+        if (alts.length >= 10) toast("Settings already has 10 extra characters, so add them back there if you want their own ledger.");
+        else if (await putAlts([...alts, was.alt])) renderWatch();
+      }
+    }
   }
   // one character's bags or bank as a list: best quality first, then by name, with counts
   function invList(c, which, label, at) {
@@ -4812,6 +4867,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); renderReport(); }, () => {});
     db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
+    db.doc("shared/hiddenchars").onSnapshot((s) => { S.hidden = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});

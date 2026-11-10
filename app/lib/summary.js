@@ -11,8 +11,10 @@ const MAX_CHARS = 60, MAX_ITEMS = 4000;
 function buildSummary(store) {
   const inv = (store.get("shared/inventories") || {}).chars || {};
   const names = (store.get("shared/items") || {}).items || {};
+  // characters removed on the page (shared/hiddenchars, keyed "<account>/<key>") stay out of the game too
+  const hidden = (store.get("shared/hiddenchars") || {}).ids || {};
   const chars = {}, used = new Set();
-  for (const c of Object.values(inv).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, MAX_CHARS)) {
+  for (const c of Object.values(inv).filter((c) => !hidden[(c.account || "") + "/" + (c.key || c.name)]).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, MAX_CHARS)) {
     const key = c.key || c.name;
     if (chars[key] && (chars[key].stateAt || 0) >= Math.floor((c.at || 0) / 1000)) continue;
     chars[key] = {
