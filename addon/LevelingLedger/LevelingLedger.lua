@@ -238,6 +238,17 @@ local function scanContainers(bags)
   return out
 end
 local bankOpen = false
+-- The bag items sitting in bag slots (not their contents): equipped bags, the reagent bag, the bank's bag slots
+local function bagItemIn(bag)
+  local inv = (C_Container and C_Container.ContainerIDToInventoryID and C_Container.ContainerIDToInventoryID(bag))
+    or (ContainerIDToInventoryID and ContainerIDToInventoryID(bag))
+  return inv and GetInventoryItemID and GetInventoryItemID("player", inv) or nil
+end
+local function bagItemsIn(first, last)
+  local out = {}
+  for b = first, last do local ok, id = pcall(bagItemIn, b); if ok and id then out[#out + 1] = id end end
+  return out
+end
 -- While you log out the game sometimes reports empty bags: then the last bags seen are kept.
 local function scanBags(loggingOut)
   local n = NUM_BAG_SLOTS or 4
@@ -247,6 +258,12 @@ local function scanBags(loggingOut)
   if loggingOut and not next(got) and char.bags and next(char.bags) then return end
   char.bags = got
   char.bagsAt = now()
+  -- the reagent bag slot, where this client has one (its own bag index)
+  local BI = Enum and Enum.BagIndex
+  local eq = bagItemsIn(1, n)
+  local rb = BI and BI.ReagentBag
+  if rb then local ok, id = pcall(bagItemIn, rb); if ok and id then eq[#eq + 1] = id end end
+  if #eq > 0 or not loggingOut then char.bagItems = eq end
 end
 local function scanBank()
   if not bankOpen then return end
@@ -255,6 +272,9 @@ local function scanBank()
   for b = n + 1, n + nb do list[#list + 1] = b end
   char.bank = scanContainers(list)
   char.bankAt = now()
+  local BI = Enum and Enum.BagIndex
+  local first = (BI and BI.BankBag_1) or (n + 1)
+  char.bankBagItems = bagItemsIn(first, first + nb - 1)
 end
 
 local function noteZone()

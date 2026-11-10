@@ -102,6 +102,9 @@ CONTAINERS = { [0] = { { 2589, 4, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen 
 C_Container = { GetContainerNumSlots = function(b) return CONTAINERS[b] and #CONTAINERS[b] or 0 end,
   GetContainerItemInfo = function(b, s) local x = CONTAINERS[b] and CONTAINERS[b][s]; if x then return { itemID = x[1], stackCount = x[2], hyperlink = x[3] } end end }
 NUM_BAG_SLOTS, NUM_BANKBAGSLOTS, BANK_CONTAINER = 4, 6, -1
+-- the bags in the bag slots: a Linen Bag (4245) in bag 1 and a Small Brown Pouch (4496) in the first bank bag slot
+function C_Container.ContainerIDToInventoryID(bag) return 30 + bag end
+function GetInventoryItemID(unit, slot) if slot == 31 then return 4245 elseif slot == 35 then return 4496 end end
 -- tooltips
 local function tooltip(name)
   local tt = { lines = {}, hooks = {} }
@@ -356,6 +359,7 @@ _n = L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; 
 print('book pins:', _n, '| book 1 pinned:', L.eval('BOOKPINS[990001]'), '| book 2 pinned:', L.eval('BOOKPINS[990002]'), '| book 3:', L.eval('BOOKPINS[990003]'))
 slash('books')
 print('chain pin:', L.eval('BOOKPINS[995001]'))
+print('bags in slots:', list(L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then return c.bagItems end end end')().values()), '| bank bag slots:', list((L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then return c.bankBagItems end end end')() or {}).values()))
 slash('chains')
 slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer

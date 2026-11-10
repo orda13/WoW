@@ -32,6 +32,9 @@ function mergeInventories(store, data, file) {
       resting: !!c.resting, xp: c.lastXP ?? null, xpMax: (c.xpMax && c.level && c.xpMax[c.level]) || null,
       bags: c.bags ? toCounts(c.bags) : (prev && prev.bags) || {}, bagsAt: (c.bagsAt || 0) * 1000 || (prev && prev.bagsAt) || 0,
       bank: c.bank ? toCounts(c.bank) : (prev && prev.bank) || {}, bankAt: (c.bankAt || 0) * 1000 || (prev && prev.bankAt) || 0,
+      // the bags themselves: in the bag slots (and reagent slot), and in the bank's bag slots
+      bagItems: Array.isArray(c.bagItems) ? c.bagItems.map(Number).filter((n) => n > 0) : c.bagItems && typeof c.bagItems === "object" ? Object.values(c.bagItems).map(Number).filter((n) => n > 0) : (prev && prev.bagItems) || [],
+      bankBagItems: Array.isArray(c.bankBagItems) ? c.bankBagItems.map(Number).filter((n) => n > 0) : c.bankBagItems && typeof c.bankBagItems === "object" ? Object.values(c.bankBagItems).map(Number).filter((n) => n > 0) : (prev && prev.bankBagItems) || [],
       professions: Object.fromEntries(Object.entries(c.skills || {}).map(([n, v]) => [n, v.rank || 0])),
     };
     if (JSON.stringify(prev) !== JSON.stringify(chars[id])) changed = true;

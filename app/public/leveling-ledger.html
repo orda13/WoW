@@ -812,6 +812,11 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <p class="hint" id="bookSource"></p>
   </section>
 
+  <section class="panel" id="bagsPanel" data-view="collectables">
+    <div class="tal-head"><h2>Bags</h2><span class="num muted" id="bagNote"></span></div>
+    <div id="bagsBody"><p class="empty">Loading…</p></div>
+  </section>
+
   <section class="panel" id="chainPanel" data-view="collectables">
     <div class="tal-head"><h2>Quest chains</h2><span class="num muted" id="chainNote"></span></div>
     <div id="chainBody"><p class="empty">Loading…</p></div>
@@ -3969,7 +3974,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel"]]],
     quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
     talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
-    collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]]],
+    collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
     skills: [["📊", "Overview", ["skillsPanel", "repPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
       ["📖", "Recipes", ["recipePanel"]], ["🧱", "Materials", ["matPanel"]]],
   };
@@ -4005,7 +4010,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
     for (const sec of document.querySelectorAll("[data-view]")) sec.hidden = !sec.dataset.view.split(" ").includes(v);
     for (const a of $("views").querySelectorAll("a")) { if (a.getAttribute("href") === "#" + v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
-    if (v === "collectables") { loadCollect(); loadBooks(); }
+    if (v === "collectables") { loadCollect(); loadBooks(); loadBags(); }
     if (v === "skills") { loadRecipes(); renderFavor(); }
     if (v === "dungeons") loadDungeons();
     if (v === "talents") loadAbilities();
@@ -4133,6 +4138,71 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     $("chainNote").textContent = notes.join(" · ");
     box.append(el("p", "hint", `Steps for ${fac === "H" ? "Horde" : "Alliance"}, from your guide; quests from AllTheThings' Forever data. A step is done once its quest is completed (the add-on checks at logout). In game, Questie's map pins your current step, and /ledger chains prints it with a /way line.`));
+  }
+  // ---------- bags: every bag in WoW Forever (bags-forever.json) and who has it: in a bag slot, carried, in the bank ----------
+  const BAGS = { data: null, loading: false };
+  function loadBags() {
+    if (BAGS.data || BAGS.loading) { renderBags(); return; }
+    BAGS.loading = true;
+    fetch("bags-forever.json").then((r) => r.json()).then((d) => { BAGS.data = d; renderBags(); }).catch(() => { $("bagsBody").replaceChildren(el("p", "empty", "Couldn't load the bag list. Reload the page to try again.")); });
+  }
+  function renderBags() {
+    const box = $("bagsBody"); if (!box || !BAGS.data) return;
+    box.replaceChildren();
+    const chars = invChars(), me = chars.find((c) => isMe(c));
+    const byId = new Map(BAGS.data.bags.filter((b) => b.id).map((b) => [b.id, b]));
+    // who has a bag: per character, where
+    const holders = (id) => {
+      const out = [];
+      for (const c of chars) {
+        const where = (c.bagItems || []).includes(id) ? "equipped" : (c.bags || {})[id] ? "carried" : (c.bankBagItems || []).includes(id) || (c.bank || {})[id] ? "bank" : null;
+        if (where) out.push({ c, where });
+      }
+      return out;
+    };
+    // your bag slots
+    if (me) {
+      const eq = (me.bagItems || []).map((id) => byId.get(id) || { n: invItemName(id).n, slots: null, id });
+      // the reagent bag holds only profession materials: counted apart
+      const reg = eq.filter((b) => b.kind === "reagent"), main = eq.filter((b) => b.kind !== "reagent");
+      const total = 16 + main.reduce((a, b) => a + (b.slots || 0), 0), rslots = reg.reduce((a, b) => a + (b.slots || 0), 0);
+      const p = el("div", "bk-goal");
+      p.append(el("b", null, `Your bags: ${total} slots`), el("span", "muted", " (backpack 16" + main.map((b) => ` + ${b.slots ?? "?"}`).join("") + ")" + (reg.length ? ` · reagent bag ${rslots || "?"} slots` : "")));
+      const l = el("div"); eq.forEach((b, i) => { if (i) l.append(document.createTextNode(" · ")); l.append(whA("item", b.id, b.n)); });
+      if (!eq.length) l.append(el("span", "muted", "The add-on records your bags at the next /reload (add-on 1.0.42)."));
+      p.append(l);
+      const smallest = main.filter((b) => b.slots).sort((a, b) => a.slots - b.slots)[0];
+      if (smallest && eq.length) p.append(el("div", "muted", `Smallest: ${smallest.n} (${smallest.slots}). Bigger bags you could get are listed below.`));
+      box.append(p);
+      $("bagNote").textContent = `${total} slots` + (reg.length ? ` + ${rslots} reagent` : "");
+    }
+    const cls = ((S.char && S.char.cls) || "").split(/[ (]/)[0], profsNow = new Set((typeof profs === "function" ? profs() : []).map((p) => p.name));
+    const relevant = { soul: cls === "Warlock", ammo: cls === "Hunter", quiver: cls === "Hunter", enchanting: profsNow.has("Enchanting") || profsNow.has("Tailoring"),
+      herb: profsNow.has("Herbalism"), reagent: true, starter: true, standard: true, special: true };
+    const done = QD.done || new Set();
+    for (const [kind, title] of BAGS.data.kinds) {
+      const list = BAGS.data.bags.filter((b) => b.kind === kind); if (!list.length) continue;
+      const d = el("details"); d.open = !!relevant[kind] && kind !== "special";
+      const mine = list.filter((b) => b.id && holders(b.id).length).length;
+      d.append(el("summary", null, `${title} (${list.length}${mine ? `, ${mine} with your characters` : ""})`));
+      const t = el("table", "htable bk-table"); const hr = el("tr");
+      for (const h of ["Bag", "Slots", "Where from", "Your characters"]) hr.append(el("th", null, h));
+      t.append(hr);
+      for (const b of list) {
+        const tr = el("tr");
+        tr.append(el("td")); tr.lastChild.append(b.id ? whA("item", b.id, b.n) : el("span", null, b.n));
+        tr.append(el("td", "num", b.slots != null ? String(b.slots) : "–"));
+        const src = el("td", "muted", b.src);
+        if (b.qids && b.qids.some((q) => done.has(q))) src.append(el("span", "pill go", " quest done"));
+        if (b.note) { src.append(el("div", "hint", b.note)); }
+        tr.append(src);
+        const who = el("td");
+        for (const h of b.id ? holders(b.id) : []) who.append(el("span", h.where === "equipped" ? "pill go" : "pill", `${isMe(h.c) ? "You" : h.c.name}: ${h.where}`), document.createTextNode(" "));
+        tr.append(who); t.append(tr);
+      }
+      const w = el("div", "tablewrap"); w.append(t); d.append(w); box.append(d);
+    }
+    box.append(el("p", "hint", "From the bag guide you shared; item ids from QuestieDB and AllTheThings. Bags in your bag slots and the bank's bag slots come from the add-on (1.0.42 and later); bags carried or in the bank come from your recorded bags and bank. The bank is recorded when you open it."));
   }
   function loadCollect() {
     if (CV.data || CV.loading) { renderCollect(); return; }
@@ -4741,7 +4811,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); renderReport(); }, () => {});
-    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); }, () => {});
+    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
     db.doc("state/addonskills").onSnapshot((s) => { S.askills = s.exists ? s.data() : null; renderCollections(); renderRecipes(); renderMaterials(); renderFavor(); renderSession(); }, () => {});

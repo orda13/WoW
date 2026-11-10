@@ -1,0 +1,876 @@
+{
+ "source": "The bag guide the owner shared (bags.tsv); item ids from QuestieDB's Forever and Classic data, new Forever bags from AllTheThings' quest rewards checked with Wowhead's Forever tooltips.",
+ "fetched": "2026-11-10",
+ "kinds": [
+  [
+   "standard",
+   "Standard bags"
+  ],
+  [
+   "starter",
+   "Starter-zone bag quests"
+  ],
+  [
+   "reagent",
+   "Reagent bag slot"
+  ],
+  [
+   "enchanting",
+   "Enchanting bags"
+  ],
+  [
+   "herb",
+   "Herb bags"
+  ],
+  [
+   "soul",
+   "Soul bags (Warlock)"
+  ],
+  [
+   "ammo",
+   "Ammo pouches"
+  ],
+  [
+   "quiver",
+   "Quivers"
+  ],
+  [
+   "special",
+   "Other"
+  ]
+ ],
+ "bags": [
+  {
+   "kind": "starter",
+   "n": "Collecting Basket",
+   "slots": 6,
+   "src": "Quest in Tirisfal Glades (Horde)",
+   "quest": "Sticks and Bones",
+   "qids": [
+    86784
+   ],
+   "id": 279939
+  },
+  {
+   "kind": "starter",
+   "n": "Book Bag",
+   "slots": 6,
+   "src": "Quest in Elwynn Forest (Alliance)",
+   "quest": "Book Return",
+   "qids": [
+    91775
+   ],
+   "id": 279936
+  },
+  {
+   "kind": "starter",
+   "n": "Soft Saber Sack",
+   "slots": 6,
+   "src": "Quest in Teldrassil (Alliance)",
+   "quest": "Soft Saber Pelts",
+   "qids": [
+    87288
+   ],
+   "id": 280088
+  },
+  {
+   "kind": "starter",
+   "n": "Simple Leather Satchel",
+   "slots": 6,
+   "src": "Quest in Zephras Isle",
+   "quest": "The Problem With Prideclaws",
+   "qids": [
+    92515
+   ],
+   "id": 256935
+  },
+  {
+   "kind": "starter",
+   "n": "Handmade Leather Bag",
+   "slots": 6,
+   "src": "Quest in Durotar (Horde)",
+   "quest": "Carry Your Weight",
+   "qids": [
+    791
+   ],
+   "id": 11845
+  },
+  {
+   "kind": "starter",
+   "n": "Canvas Latchbag",
+   "slots": 6,
+   "src": "Quest in Mulgore (Horde)",
+   "quest": "Grace of An'she and Mu'sha",
+   "qids": [
+    95805
+   ],
+   "note": "AllTheThings lists this quest's reward as a Scorched Leather Pouch (item 277200)",
+   "id": 277977
+  },
+  {
+   "kind": "starter",
+   "n": "Canvas Latchbag",
+   "slots": 6,
+   "src": "Quest in Dun Morogh (Alliance)",
+   "quest": "Grund and Gozwin",
+   "qids": [
+    97277
+   ],
+   "id": 277977
+  },
+  {
+   "kind": "standard",
+   "n": "Small Red Pouch",
+   "slots": 6,
+   "src": "Level 1-17 world drop",
+   "id": 805
+  },
+  {
+   "kind": "standard",
+   "n": "Small Blue Pouch",
+   "slots": 6,
+   "src": "Level 1-17 world drop",
+   "id": 828
+  },
+  {
+   "kind": "standard",
+   "n": "Wizbang's Gunnysack",
+   "slots": 6,
+   "src": "Reward from Buzzbox 525",
+   "quest": "Buzzbox 525",
+   "qids": [
+    1003
+   ],
+   "id": 2082
+  },
+  {
+   "kind": "standard",
+   "n": "Linen Bag",
+   "slots": 6,
+   "src": "Crafted with Tailoring",
+   "id": 4238
+  },
+  {
+   "kind": "standard",
+   "n": "Small Brown Pouch",
+   "slots": 6,
+   "src": "Level 1-17 world drop; sold by general vendors",
+   "id": 4496
+  },
+  {
+   "kind": "standard",
+   "n": "Old Moneybag",
+   "slots": 6,
+   "src": "Reward from Miner's Fortune",
+   "quest": "Miner's Fortune",
+   "qids": [
+    896
+   ],
+   "id": 4957
+  },
+  {
+   "kind": "standard",
+   "n": "Kodo Hide Bag",
+   "slots": 6,
+   "src": "Crafted with Leatherworking",
+   "id": 5081
+  },
+  {
+   "kind": "standard",
+   "n": "Small Black Pouch",
+   "slots": 6,
+   "src": "Level 1-17 world drop",
+   "id": 5571
+  },
+  {
+   "kind": "standard",
+   "n": "Small Green Pouch",
+   "slots": 6,
+   "src": "Level 1-17 world drop",
+   "id": 5572
+  },
+  {
+   "kind": "standard",
+   "n": "Red Linen Bag",
+   "slots": 6,
+   "src": "Crafted with Tailoring",
+   "id": 5762
+  },
+  {
+   "kind": "standard",
+   "n": "Jewelry Box",
+   "slots": 6,
+   "src": "Reward from Blueleaf Tubers",
+   "quest": "Blueleaf Tubers",
+   "qids": [
+    1221
+   ],
+   "id": 6756
+  },
+  {
+   "kind": "standard",
+   "n": "Old Blanchy's Feed Pouch",
+   "slots": 8,
+   "src": "Reward from Poor Old Blanchy",
+   "quest": "Poor Old Blanchy",
+   "qids": [
+    151
+   ],
+   "id": 1537
+  },
+  {
+   "kind": "standard",
+   "n": "Blue Leather Bag",
+   "slots": 8,
+   "src": "Level 9-25 world drop",
+   "id": 856
+  },
+  {
+   "kind": "standard",
+   "n": "Red Leather Bag",
+   "slots": 8,
+   "src": "Level 9-25 world drop",
+   "id": 2657
+  },
+  {
+   "kind": "standard",
+   "n": "Gnoll Hide Sack",
+   "slots": 8,
+   "src": "Drops from Fedfennel in Elwynn Forest",
+   "id": 3233
+  },
+  {
+   "kind": "standard",
+   "n": "Captain Sander's Booty Bag",
+   "slots": 8,
+   "src": "Reward from Captain Sander's Hidden Treasure",
+   "quest": "Captain Sander's Hidden Treasure",
+   "qids": [
+    136,
+    138,
+    139,
+    140
+   ],
+   "id": 3343
+  },
+  {
+   "kind": "standard",
+   "n": "Woolen Bag",
+   "slots": 8,
+   "src": "Crafted with Tailoring",
+   "id": 4240
+  },
+  {
+   "kind": "standard",
+   "n": "Green Woolen Bag",
+   "slots": 8,
+   "src": "Crafted with Tailoring",
+   "id": 4241
+  },
+  {
+   "kind": "standard",
+   "n": "Brown Leather Satchel",
+   "slots": 8,
+   "src": "Sold by general vendors",
+   "id": 4498
+  },
+  {
+   "kind": "standard",
+   "n": "Green Leather Bag",
+   "slots": 8,
+   "src": "Level 9-25 world drop",
+   "id": 5573
+  },
+  {
+   "kind": "standard",
+   "n": "Red Woolen Bag",
+   "slots": 8,
+   "src": "Crafted with Tailoring",
+   "id": 5763
+  },
+  {
+   "kind": "standard",
+   "n": "White Leather Bag",
+   "slots": 8,
+   "src": "Level 9-25 world drop",
+   "id": 5574
+  },
+  {
+   "kind": "standard",
+   "n": "Large Blue Sack",
+   "slots": 10,
+   "src": "Level 19-32 world drop",
+   "id": 804
+  },
+  {
+   "kind": "standard",
+   "n": "Large Red Sack",
+   "slots": 10,
+   "src": "Level 19-32 world drop",
+   "id": 857
+  },
+  {
+   "kind": "standard",
+   "n": "Deviate Hide Pack",
+   "slots": 10,
+   "src": "Reward from Deviate Hides",
+   "quest": "Deviate Hides",
+   "qids": [
+    1486
+   ],
+   "id": 918
+  },
+  {
+   "kind": "standard",
+   "n": "Fel Steed Saddlebags",
+   "slots": 10,
+   "src": "Drop from Fel Steed in Shadowfang Keep",
+   "id": 932
+  },
+  {
+   "kind": "standard",
+   "n": "Large Rucksack",
+   "slots": 10,
+   "src": "Drop from Foe Reaper 4000 in Westfall",
+   "id": 933
+  },
+  {
+   "kind": "standard",
+   "n": "Murloc Skin Bag",
+   "slots": 10,
+   "src": "Drop from Gelihast in Blackfathom Deeps",
+   "id": 1470
+  },
+  {
+   "kind": "standard",
+   "n": "Gunnysack of the Night Watch",
+   "slots": 10,
+   "src": "Reward from The Night Watch",
+   "quest": "The Night Watch",
+   "qids": [
+    56,
+    57,
+    58
+   ],
+   "id": 1729
+  },
+  {
+   "kind": "standard",
+   "n": "Ooze-covered Bag",
+   "slots": 10,
+   "src": "Reward from Digging Through the Ooze",
+   "quest": "Digging Through the Ooze",
+   "qids": [
+    470
+   ],
+   "id": 3352
+  },
+  {
+   "kind": "standard",
+   "n": "Small Silk Pack",
+   "slots": 10,
+   "src": "Crafted with Tailoring",
+   "id": 4245
+  },
+  {
+   "kind": "standard",
+   "n": "Heavy Brown Bag",
+   "slots": 10,
+   "src": "Sold by general vendors",
+   "id": 4497
+  },
+  {
+   "kind": "standard",
+   "n": "Green Silk Pack",
+   "slots": 10,
+   "src": "Crafted with Tailoring",
+   "id": 5764
+  },
+  {
+   "kind": "standard",
+   "n": "Large Green Sack",
+   "slots": 10,
+   "src": "Level 19-32 world drop",
+   "id": 5575
+  },
+  {
+   "kind": "standard",
+   "n": "Black Silk Pack",
+   "slots": 10,
+   "src": "Crafted with Tailoring",
+   "id": 5765
+  },
+  {
+   "kind": "standard",
+   "n": "Large Brown Sack",
+   "slots": 10,
+   "src": "Level 19-32 world drop",
+   "id": 5576
+  },
+  {
+   "kind": "standard",
+   "n": "Snakeskin Bag",
+   "slots": 10,
+   "src": "Drop from Lady Anacondra in Wailing Caverns",
+   "id": 6446
+  },
+  {
+   "kind": "standard",
+   "n": "Spidersilk Pouch",
+   "slots": 12,
+   "src": "Reward from Stronger than Steel in Mulgore",
+   "quest": "Stronger than Steel",
+   "qids": [
+    96260
+   ],
+   "id": 276891
+  },
+  {
+   "kind": "standard",
+   "n": "Sturdy Lunchbox",
+   "slots": 12,
+   "src": "Drop from Venture Co. Foreman in Stranglethorn Vale",
+   "id": 1652
+  },
+  {
+   "kind": "standard",
+   "n": "Large Knapsack",
+   "slots": 12,
+   "src": "Level 30-49 world drop",
+   "id": 1725
+  },
+  {
+   "kind": "standard",
+   "n": "Huge Brown Sack",
+   "slots": 12,
+   "src": "Sold by general vendors",
+   "id": 4499
+  },
+  {
+   "kind": "standard",
+   "n": "Mageweave Bag",
+   "slots": 12,
+   "src": "Crafted with Tailoring",
+   "id": 10050
+  },
+  {
+   "kind": "standard",
+   "n": "Red Mageweave Bag",
+   "slots": 12,
+   "src": "Crafted with Tailoring",
+   "id": 10051
+  },
+  {
+   "kind": "standard",
+   "n": "Troll-hide Bag",
+   "slots": 14,
+   "src": "Level 39-53 world drop",
+   "id": 1685
+  },
+  {
+   "kind": "standard",
+   "n": "Journeyman's Backpack",
+   "slots": 14,
+   "src": "Level 39-60 world drop",
+   "id": 3914
+  },
+  {
+   "kind": "standard",
+   "n": "Thawpelt Sack",
+   "slots": 14,
+   "src": "Reward from The Platinum Discs",
+   "quest": "The Platinum Discs",
+   "qids": [
+    2278,
+    2279,
+    2280,
+    2439,
+    2440
+   ],
+   "id": 9587
+  },
+  {
+   "kind": "standard",
+   "n": "Runecloth Bag",
+   "slots": 14,
+   "src": "Crafted with Tailoring",
+   "id": 14046
+  },
+  {
+   "kind": "standard",
+   "n": "Explorer's Knapsack",
+   "slots": 14,
+   "src": "Reward from Cortello's Riddle",
+   "quest": "Cortello's Riddle",
+   "qids": [
+    624,
+    625,
+    626
+   ],
+   "id": 11324
+  },
+  {
+   "kind": "standard",
+   "n": "Darkmoon Storage Box",
+   "slots": 14,
+   "src": "Reward from 50 Tickets - Darkmoon Storage Box",
+   "quest": "50 Tickets - Darkmoon Storage Box",
+   "id": 19291
+  },
+  {
+   "kind": "standard",
+   "n": "Traveler's Backpack",
+   "slots": 16,
+   "src": "Level 47-60 world drop",
+   "id": 4500
+  },
+  {
+   "kind": "standard",
+   "n": "Demon Hide Sack",
+   "slots": 16,
+   "src": "Reward from You Are Rakh'likh, Demon",
+   "quest": "You Are Rakh'likh, Demon",
+   "qids": [
+    3628
+   ],
+   "id": 10959
+  },
+  {
+   "kind": "standard",
+   "n": "Wayfarer's Knapsack",
+   "slots": 16,
+   "src": "Drop from Ribbly Screwspigot in Blackrock Depths",
+   "id": 11742
+  },
+  {
+   "kind": "standard",
+   "n": "Mooncloth Bag",
+   "slots": 16,
+   "src": "Crafted with Tailoring",
+   "id": 14155
+  },
+  {
+   "kind": "standard",
+   "n": "Pumpkin Bag",
+   "slots": 16,
+   "src": "Drop from level 50+ mobs (only during Hallow's End)",
+   "id": 20400
+  },
+  {
+   "kind": "standard",
+   "n": "Bottomless Bag",
+   "slots": 18,
+   "src": "Crafted with Tailoring",
+   "id": 14156
+  },
+  {
+   "kind": "standard",
+   "n": "Panther Hide Sack",
+   "slots": 18,
+   "src": "Drop from High Priestess Arlokk in Zul'Gurub",
+   "id": 19914
+  },
+  {
+   "kind": "standard",
+   "n": "Supply Bag",
+   "slots": 18,
+   "src": "Reward from Superior Armaments of Battle quests",
+   "id": 22679
+  },
+  {
+   "kind": "standard",
+   "n": "Onyxia Hide Backpack",
+   "slots": 18,
+   "src": "Drop from Onyxia in Onyxia's Lair",
+   "id": 17966
+  },
+  {
+   "kind": "reagent",
+   "n": "Apprentice's Mining Pack",
+   "slots": null,
+   "src": "Bought from the beginner Mining trainer at level 1 (goes in the reagent bag slot)",
+   "id": 277115
+  },
+  {
+   "kind": "reagent",
+   "n": "Apprentice's Skinning Satchel",
+   "slots": null,
+   "src": "Bought from the beginner Skinning trainer at level 1 (goes in the reagent bag slot)",
+   "id": 277114
+  },
+  {
+   "kind": "reagent",
+   "n": "Apprentice's Herb Pouch",
+   "slots": 4,
+   "src": "Sold by Herbalism suppliers; the beginner Herbalism trainer at level 1 (reagent bag slot)",
+   "id": 277113
+  },
+  {
+   "kind": "enchanting",
+   "n": "Enchanted Mageweave Pouch",
+   "slots": 16,
+   "src": "Crafted with Tailoring",
+   "id": 22246
+  },
+  {
+   "kind": "enchanting",
+   "n": "Enchanted Runecloth Bag",
+   "slots": 20,
+   "src": "Crafted with Tailoring",
+   "id": 22248
+  },
+  {
+   "kind": "enchanting",
+   "n": "Big Bag of Enchantment",
+   "slots": 24,
+   "src": "Crafted with Tailoring",
+   "id": 22249
+  },
+  {
+   "kind": "herb",
+   "n": "Herb Pouch",
+   "slots": 12,
+   "src": "Sold by Herbalism suppliers",
+   "id": 22250
+  },
+  {
+   "kind": "herb",
+   "n": "Cenarion Herb Bag",
+   "slots": 20,
+   "src": "Crafted with Tailoring",
+   "id": 22251
+  },
+  {
+   "kind": "herb",
+   "n": "Satchel of Cenarius",
+   "slots": 24,
+   "src": "Crafted with Tailoring",
+   "id": 22252
+  },
+  {
+   "kind": "soul",
+   "n": "Small Soul Pouch",
+   "slots": 12,
+   "src": "Reward from The Binding (Warlock)",
+   "quest": "The Binding",
+   "qids": [
+    1471,
+    1474,
+    1504,
+    1513,
+    1689,
+    1739,
+    65597,
+    65603,
+    65604
+   ],
+   "id": 22243
+  },
+  {
+   "kind": "soul",
+   "n": "Box of Souls",
+   "slots": 16,
+   "src": "Reward from The Binding (Warlock)",
+   "quest": "The Binding",
+   "qids": [
+    1471,
+    1474,
+    1504,
+    1513,
+    1689,
+    1739,
+    65597,
+    65603,
+    65604
+   ],
+   "id": 22244
+  },
+  {
+   "kind": "soul",
+   "n": "Soul Pouch",
+   "slots": 20,
+   "src": "Crafted with Tailoring",
+   "id": 21340
+  },
+  {
+   "kind": "soul",
+   "n": "Felcloth Bag",
+   "slots": 24,
+   "src": "Crafted with Tailoring",
+   "id": 21341
+  },
+  {
+   "kind": "soul",
+   "n": "Core Felcloth Bag",
+   "slots": 28,
+   "src": "Crafted with Tailoring",
+   "id": 21342
+  },
+  {
+   "kind": "ammo",
+   "n": "Small Shot Pouch",
+   "slots": 8,
+   "src": "Sold by gun and weapon vendors",
+   "id": 5441
+  },
+  {
+   "kind": "ammo",
+   "n": "Small Leather Ammo Pouch",
+   "slots": 8,
+   "src": "Crafted with Leatherworking",
+   "id": 7279
+  },
+  {
+   "kind": "ammo",
+   "n": "Hunting Ammo Sack",
+   "slots": 10,
+   "src": "Reward from Vyrin's Revenge",
+   "quest": "Vyrin's Revenge",
+   "qids": [
+    271,
+    531
+   ],
+   "id": 3574
+  },
+  {
+   "kind": "ammo",
+   "n": "Bandolier of the Night Watch",
+   "slots": 12,
+   "src": "Reward from The Night Watch",
+   "quest": "The Night Watch",
+   "qids": [
+    56,
+    57,
+    58
+   ],
+   "id": 3604
+  },
+  {
+   "kind": "ammo",
+   "n": "Heavy Leather Ammo Pouch",
+   "slots": 14,
+   "src": "Crafted with Leatherworking",
+   "id": 7372
+  },
+  {
+   "kind": "ammo",
+   "n": "Thick Leather Ammo Pouch",
+   "slots": 16,
+   "src": "Crafted with Leatherworking",
+   "id": 8218
+  },
+  {
+   "kind": "ammo",
+   "n": "Ribbly's Bandolier",
+   "slots": 16,
+   "src": "Drop from Ribbly Screwspigot",
+   "id": 2663
+  },
+  {
+   "kind": "ammo",
+   "n": "Gnoll Skin Bandolier",
+   "slots": 16,
+   "src": "Sold by Alterac Valley Supply Officer vendors",
+   "id": 19320
+  },
+  {
+   "kind": "quiver",
+   "n": "Light Quiver",
+   "slots": 6,
+   "src": "Sold by weapon merchant vendors",
+   "id": 2101
+  },
+  {
+   "kind": "quiver",
+   "n": "Small Quiver",
+   "slots": 8,
+   "src": "Sold by bowyer and weapon merchant vendors",
+   "id": 5439
+  },
+  {
+   "kind": "quiver",
+   "n": "Light Leather Quiver",
+   "slots": 8,
+   "src": "Crafted with Leatherworking",
+   "id": 7278
+  },
+  {
+   "kind": "quiver",
+   "n": "Medium Quiver",
+   "slots": 10,
+   "src": "Sold by bowyer and weapon merchant vendors",
+   "id": 11362
+  },
+  {
+   "kind": "quiver",
+   "n": "Hunting Quiver",
+   "slots": 10,
+   "src": "Reward from Vyrin's Revenge",
+   "quest": "Vyrin's Revenge",
+   "qids": [
+    271,
+    531
+   ],
+   "id": 3573
+  },
+  {
+   "kind": "quiver",
+   "n": "Quiver of the Night Watch",
+   "slots": 12,
+   "src": "Reward from The Night Watch",
+   "quest": "The Night Watch",
+   "qids": [
+    56,
+    57,
+    58
+   ],
+   "id": 3605
+  },
+  {
+   "kind": "quiver",
+   "n": "Heavy Quiver",
+   "slots": 14,
+   "src": "Sold by Benijah Fenner, Marda Weller, Thalgus Thunderfist",
+   "id": 7371
+  },
+  {
+   "kind": "quiver",
+   "n": "Quickdraw Quiver",
+   "slots": 16,
+   "src": "Crafted with Leatherworking",
+   "id": 8217
+  },
+  {
+   "kind": "quiver",
+   "n": "Ribbly's Quiver",
+   "slots": 16,
+   "src": "Drop from Ribbly Screwspigot",
+   "id": 2662
+  },
+  {
+   "kind": "quiver",
+   "n": "Harpy Hide Quiver",
+   "slots": 16,
+   "src": "Sold by Alterac Valley Supply Officer vendors",
+   "id": 19319
+  },
+  {
+   "kind": "quiver",
+   "n": "Ancient Sinew Wrapped Lamina",
+   "slots": 18,
+   "src": "Reward from Ancient Sinew Wrapped Lamina",
+   "quest": "Ancient Sinew Wrapped Lamina",
+   "qids": [
+    7634
+   ],
+   "id": 18714
+  },
+  {
+   "kind": "special",
+   "n": "Cozy Sleeping Bag",
+   "slots": null,
+   "src": "The Cozy Sleeping Bag quest chain (not a storage bag: rest in it for bonus experience)",
+   "id": 211527
+  }
+ ]
+}

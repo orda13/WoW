@@ -1,0 +1,102 @@
+# Bags in WoW Forever, transcribed from the bag guide the owner shared (screenshots, Nov 10 2026). Kind, name, slots, source; quest = a quest that rewards it.
+# The builder (build_bags.py) finds each bag's item id by name in QuestieDB's Forever item data, and each quest's id in our quest data.
+kind	name	slots	source	quest
+starter	Collecting Basket	6	Quest in Tirisfal Glades (Horde)	Sticks and Bones
+starter	Book Bag	6	Quest in Elwynn Forest (Alliance)	Book Return
+starter	Soft Saber Sack	6	Quest in Teldrassil (Alliance)	Soft Saber Pelts
+starter	Simple Leather Satchel	6	Quest in Zephras Isle	The Problem With Prideclaws
+starter	Handmade Leather Bag	6	Quest in Durotar (Horde)	Carry Your Weight
+starter	Canvas Latchbag	6	Quest in Mulgore (Horde)	Grace of An'she and Mu'sha
+starter	Canvas Latchbag	6	Quest in Dun Morogh (Alliance)	Grund and Gozwin
+standard	Small Red Pouch	6	Level 1-17 world drop
+standard	Small Blue Pouch	6	Level 1-17 world drop
+standard	Wizbang's Gunnysack	6	Reward from Buzzbox 525	Buzzbox 525
+standard	Linen Bag	6	Crafted with Tailoring
+standard	Small Brown Pouch	6	Level 1-17 world drop; sold by general vendors
+standard	Old Moneybag	6	Reward from Miner's Fortune	Miner's Fortune
+standard	Kodo Hide Bag	6	Crafted with Leatherworking
+standard	Small Black Pouch	6	Level 1-17 world drop
+standard	Small Green Pouch	6	Level 1-17 world drop
+standard	Red Linen Bag	6	Crafted with Tailoring
+standard	Jewelry Box	6	Reward from Blueleaf Tubers	Blueleaf Tubers
+standard	Old Blanchy's Feed Pouch	8	Reward from Poor Old Blanchy	Poor Old Blanchy
+standard	Blue Leather Bag	8	Level 9-25 world drop
+standard	Red Leather Bag	8	Level 9-25 world drop
+standard	Gnoll Hide Sack	8	Drops from Fedfennel in Elwynn Forest
+standard	Captain Sander's Booty Bag	8	Reward from Captain Sander's Hidden Treasure	Captain Sander's Hidden Treasure
+standard	Woolen Bag	8	Crafted with Tailoring
+standard	Green Woolen Bag	8	Crafted with Tailoring
+standard	Brown Leather Satchel	8	Sold by general vendors
+standard	Green Leather Bag	8	Level 9-25 world drop
+standard	Red Woolen Bag	8	Crafted with Tailoring
+standard	White Leather Bag	8	Level 9-25 world drop
+standard	Large Blue Sack	10	Level 19-32 world drop
+standard	Large Red Sack	10	Level 19-32 world drop
+standard	Deviate Hide Pack	10	Reward from Deviate Hides	Deviate Hides
+standard	Fel Steed Saddlebags	10	Drop from Fel Steed in Shadowfang Keep
+standard	Large Rucksack	10	Drop from Foe Reaper 4000 in Westfall
+standard	Murloc Skin Bag	10	Drop from Gelihast in Blackfathom Deeps
+standard	Gunnysack of the Night Watch	10	Reward from The Night Watch	The Night Watch
+standard	Ooze-covered Bag	10	Reward from Digging Through the Ooze	Digging Through the Ooze
+standard	Small Silk Pack	10	Crafted with Tailoring
+standard	Heavy Brown Bag	10	Sold by general vendors
+standard	Green Silk Pack	10	Crafted with Tailoring
+standard	Large Green Sack	10	Level 19-32 world drop
+standard	Black Silk Pack	10	Crafted with Tailoring
+standard	Large Brown Sack	10	Level 19-32 world drop
+standard	Snakeskin Bag	10	Drop from Lady Anacondra in Wailing Caverns
+standard	Spidersilk Pouch	12	Reward from Stronger than Steel in Mulgore	Stronger than Steel
+standard	Sturdy Lunchbox	12	Drop from Venture Co. Foreman in Stranglethorn Vale
+standard	Large Knapsack	12	Level 30-49 world drop
+standard	Huge Brown Sack	12	Sold by general vendors
+standard	Mageweave Bag	12	Crafted with Tailoring
+standard	Red Mageweave Bag	12	Crafted with Tailoring
+standard	Troll-hide Bag	14	Level 39-53 world drop
+standard	Journeyman's Backpack	14	Level 39-60 world drop
+standard	Thawpelt Sack	14	Reward from The Platinum Discs	The Platinum Discs
+standard	Runecloth Bag	14	Crafted with Tailoring
+standard	Explorer's Knapsack	14	Reward from Cortello's Riddle	Cortello's Riddle
+standard	Darkmoon Storage Box	14	Reward from 50 Tickets - Darkmoon Storage Box	50 Tickets - Darkmoon Storage Box
+standard	Traveler's Backpack	16	Level 47-60 world drop
+standard	Demon Hide Sack	16	Reward from You Are Rakh'likh, Demon	You Are Rakh'likh, Demon
+standard	Wayfarer's Knapsack	16	Drop from Ribbly Screwspigot in Blackrock Depths
+standard	Mooncloth Bag	16	Crafted with Tailoring
+standard	Pumpkin Bag	16	Drop from level 50+ mobs (only during Hallow's End)
+standard	Bottomless Bag	18	Crafted with Tailoring
+standard	Panther Hide Sack	18	Drop from High Priestess Arlokk in Zul'Gurub
+standard	Supply Bag	18	Reward from Superior Armaments of Battle quests
+standard	Onyxia Hide Backpack	18	Drop from Onyxia in Onyxia's Lair
+reagent	Apprentice's Mining Pack	-	Bought from the beginner Mining trainer at level 1 (goes in the reagent bag slot)
+reagent	Apprentice's Skinning Satchel	-	Bought from the beginner Skinning trainer at level 1 (goes in the reagent bag slot)
+reagent	Apprentice's Herb Pouch	4	Sold by Herbalism suppliers; the beginner Herbalism trainer at level 1 (reagent bag slot)
+enchanting	Enchanted Mageweave Pouch	16	Crafted with Tailoring
+enchanting	Enchanted Runecloth Bag	20	Crafted with Tailoring
+enchanting	Big Bag of Enchantment	24	Crafted with Tailoring
+herb	Herb Pouch	12	Sold by Herbalism suppliers
+herb	Cenarion Herb Bag	20	Crafted with Tailoring
+herb	Satchel of Cenarius	24	Crafted with Tailoring
+soul	Small Soul Pouch	12	Reward from The Binding (Warlock)	The Binding
+soul	Box of Souls	16	Reward from The Binding (Warlock)	The Binding
+soul	Soul Pouch	20	Crafted with Tailoring
+soul	Felcloth Bag	24	Crafted with Tailoring
+soul	Core Felcloth Bag	28	Crafted with Tailoring
+ammo	Small Shot Pouch	8	Sold by gun and weapon vendors
+ammo	Small Leather Ammo Pouch	8	Crafted with Leatherworking
+ammo	Hunting Ammo Sack	10	Reward from Vyrin's Revenge	Vyrin's Revenge
+ammo	Bandolier of the Night Watch	12	Reward from The Night Watch	The Night Watch
+ammo	Heavy Leather Ammo Pouch	14	Crafted with Leatherworking
+ammo	Thick Leather Ammo Pouch	16	Crafted with Leatherworking
+ammo	Ribbly's Bandolier	16	Drop from Ribbly Screwspigot
+ammo	Gnoll Skin Bandolier	16	Sold by Alterac Valley Supply Officer vendors
+quiver	Light Quiver	6	Sold by weapon merchant vendors
+quiver	Small Quiver	8	Sold by bowyer and weapon merchant vendors
+quiver	Light Leather Quiver	8	Crafted with Leatherworking
+quiver	Medium Quiver	10	Sold by bowyer and weapon merchant vendors
+quiver	Hunting Quiver	10	Reward from Vyrin's Revenge	Vyrin's Revenge
+quiver	Quiver of the Night Watch	12	Reward from The Night Watch	The Night Watch
+quiver	Heavy Quiver	14	Sold by Benijah Fenner, Marda Weller, Thalgus Thunderfist
+quiver	Quickdraw Quiver	16	Crafted with Leatherworking
+quiver	Ribbly's Quiver	16	Drop from Ribbly Screwspigot
+quiver	Harpy Hide Quiver	16	Sold by Alterac Valley Supply Officer vendors
+quiver	Ancient Sinew Wrapped Lamina	18	Reward from Ancient Sinew Wrapped Lamina	Ancient Sinew Wrapped Lamina
+special	Cozy Sleeping Bag	-	The Cozy Sleeping Bag quest chain (not a storage bag: rest in it for bonus experience)
