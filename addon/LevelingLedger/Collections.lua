@@ -7,6 +7,7 @@
 --   * At logout the add-on saves which books this character has, for the ledger page.
 --   /ledger books            how many you have, and the next ones to get with /way lines
 --   /ledger books pins off   no map pins (on brings them back)
+--   /ledger chains           your step in each quest chain (Cozy Sleeping Bag), pinned on Questie's map
 local ADDON, ns = ...
 local TAG = "|cffd9aa5aLeveling Ledger|r: "
 local ICON = "Interface\\Icons\\INV_Misc_Book_09"
@@ -58,10 +59,52 @@ local function pin(b)
   }
   if pcall(Map.DrawManualIcon, Map, data, area, b.x, b.y, TYP) then pinned[b.n] = true end
 end
+-- ---------- quest chains (Cozy Sleeping Bag): a pin on the step you're on ----------
+local CHAIN_BASE = 995000
+local function qdone(q) return q and C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(q) or false end
+local function qlog(q) return q and C_QuestLog and C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(q) and true or false end
+local function chainSteps(c) return (c.steps or {})[myFac() or "A"] or {} end
+local function stepDone(st) return st.quest and (qdone(st.quest) or (st.start and qlog(st.quest))) or false end
+-- the first step still to do (optional steps are skipped), and its number
+local function current(c)
+  for i, st in ipairs(chainSteps(c)) do if not st.optional and not stepDone(st) then return st, i end end
+end
+local chainPinned = {}
+local function refreshChains()
+  local Map, Zone = questie("QuestieMap"), questie("ZoneDB")
+  for ci, c in ipairs(ns.questChains or {}) do
+    local id = CHAIN_BASE + ci
+    local st, i = current(c)
+    local key = st and (i .. ":" .. st.map) or nil
+    if chainPinned[ci] ~= key and chainPinned[ci] and Map and type(Map.UnloadManualFrames) == "function" then pcall(Map.UnloadManualFrames, Map, id, TYP); chainPinned[ci] = nil end
+    if st and pinsOn() and (UnitLevel("player") or 0) >= (c.level or 1) and not chainPinned[ci] and Map and Zone
+       and type(Map.DrawManualIcon) == "function" and type(Zone.GetAreaIdByUiMapId) == "function" then
+      local ok, area = pcall(Zone.GetAreaIdByUiMapId, Zone, st.map)
+      if ok and type(area) == "number" then
+        local data = { id = id, Icon = "Interface\\Icons\\INV_Misc_Bag_BigBagofEnchantments", Type = "manual", spawnType = "object", Name = c.name, IsObjectiveNote = false }
+        data.GetIconScale = function() return 1.2 end
+        data.IconScale = 1.2
+        data.ManualTooltipData = { Title = c.name .. ", step " .. i .. ": " .. st.title,
+          Body = { { "Step", i .. " of " .. #chainSteps(c) }, { "Where", st.zone }, { "From", "Leveling Ledger" } }, disableShiftToRemove = true }
+        if pcall(Map.DrawManualIcon, Map, data, area, st.x, st.y, TYP) then chainPinned[ci] = key end
+      end
+    end
+  end
+end
+function ns.chainsCommand()
+  for _, c in ipairs(ns.questChains or {}) do
+    local st, i = current(c)
+    if not st then print(TAG .. c.name .. ": done.")
+    elseif (UnitLevel("player") or 0) < (c.level or 1) then print(TAG .. c.name .. ": starts at level " .. c.level .. ".")
+    else print(TAG .. c.name .. ", step " .. i .. " of " .. #chainSteps(c) .. ": " .. st.title .. " (" .. st.zone .. ") " .. string.format("/way #%d %.1f, %.1f %s", st.map, st.x, st.y, st.title)) end
+  end
+end
+
 local function refresh()
   for _, b in ipairs(books()) do
     if pinsOn() and mine(b) and not done(b) and not inBags(b) then pin(b) else unpin(b) end
   end
+  refreshChains()
 end
 
 -- ---------- what this character has, for the page ----------
@@ -74,6 +117,18 @@ local function save()
     if done(b) then d[#d + 1] = b.n elseif inBags(b) then g[#g + 1] = b.n end
   end
   c.books = { done = d, bags = g, at = time() }
+  -- the chains' quests this character has completed, or has in the quest log
+  local qd, ql, seen = {}, {}, {}
+  for _, ch in ipairs(ns.questChains or {}) do
+    for _, st in ipairs(chainSteps(ch)) do
+      local q = st.quest
+      if q and not seen[q] then
+        seen[q] = true
+        if qdone(q) then qd[#qd + 1] = q elseif qlog(q) then ql[#ql + 1] = q end
+      end
+    end
+  end
+  c.chainq = { done = qd, log = ql, at = time() }
 end
 
 -- ---------- /ledger books ----------
@@ -105,7 +160,7 @@ function ns.booksCommand(arg)
 end
 
 local f = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LOGOUT", "QUEST_TURNED_IN", "BAG_UPDATE_DELAYED" }) do
+for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LOGOUT", "QUEST_TURNED_IN", "QUEST_ACCEPTED", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP" }) do
   if ns.listen then ns.listen(f, e) else pcall(f.RegisterEvent, f, e) end
 end
 local pending = false

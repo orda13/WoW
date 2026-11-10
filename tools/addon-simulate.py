@@ -170,7 +170,7 @@ local QMODS = {
   QuestieQuest = { UnhideQuest = function(self, id) UNHIDDEN[#UNHIDDEN + 1] = id; Questie.db.char.hidden[id] = nil end },
 }
 QuestieLoader = { ImportModule = function(self, name) return QMODS[name] end }
-C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 or id == 81952 end
+C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 488 or id == 81952 or id == 79008 or id == 79192 end
 function GetItemCount(id) return id == 209843 and 1 or 0 end
 C_QuestLog.GetLogIndexForQuestID = function(id) for i, q in ipairs(QLOG) do if q.questID == id then return i + 1 end end end
 C_QuestLog.GetQuestWatchType = function(id) return WATCHED[id] end
@@ -355,6 +355,8 @@ fire('PLAYER_LEVEL_UP', 14); slash('talents')
 _n = L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()
 print('book pins:', _n, '| book 1 pinned:', L.eval('BOOKPINS[990001]'), '| book 2 pinned:', L.eval('BOOKPINS[990002]'), '| book 3:', L.eval('BOOKPINS[990003]'))
 slash('books')
+print('chain pin:', L.eval('BOOKPINS[995001]'))
+slash('chains')
 slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''

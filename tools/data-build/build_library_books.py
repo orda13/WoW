@@ -64,6 +64,13 @@ out = {'source': "The owner's list of Library Book locations, joined with AllThe
                {'at': rneed, 'title': 'Friend of the Library', 'quest': rq, 'rewards': [[i, tip('item', i) or f'Item {i}'] for i in rewards]},
                {'at': 20, 'title': 'Greater Friend of the Library', 'rewards': [[0, "Field Researcher's Loop"], [0, "Philanthropist's Ring"]]}],
            'items': books}]}
+# quest chains (tools/data-build/quest-chains.json): steps per faction, a Horde step {"same": n} reuses Alliance step n
+chains = json.load(open(os.path.join(HERE, 'quest-chains.json'), encoding='utf-8'))['chains']
+for c in chains:
+    a_steps = c['steps']['A']
+    for fac, steps in c['steps'].items():
+        c['steps'][fac] = [dict(a_steps[st['same']]) if 'same' in st else st for st in steps]
+out['chains'] = chains
 json.dump(out, open(os.path.join(ROOT, 'app', 'public', 'collections-forever.json'), 'w'), indent=1, ensure_ascii=False)
 
 # the add-on's copy (ASCII only: every other character escaped, as WoW reads it as Lua)
@@ -79,5 +86,19 @@ for b in books:
 L.append('}')
 t = out['collections'][0]['turnin']
 L.append('ns.libraryTurnIn = { A = ' + (f'{{ n = {lstr(t["A"]["n"])}, zone = "Stormwind City" }}' if t['A'] else 'nil') + ', H = ' + (f'{{ n = {lstr(t["H"]["n"])}, zone = "Undercity" }}' if t['H'] else 'nil') + ' }')
+L.append('ns.questChains = {')
+for c in chains:
+    L.append(f'  {{ id = {lstr(c["id"])}, name = {lstr(c["name"])}, level = {c.get("level", 1)}, steps = {{')
+    for fac, steps in c['steps'].items():
+        L.append(f'    {fac} = {{')
+        for st in steps:
+            parts = [f'zone = {lstr(st["zone"])}', f'map = {st["map"]}', f'x = {st["x"]}', f'y = {st["y"]}', f'title = {lstr(st["title"])}']
+            if st.get('quest'): parts.append(f'quest = {st["quest"]}')
+            if st.get('start'): parts.append('start = true')
+            if st.get('optional'): parts.append('optional = true')
+            L.append('      { ' + ', '.join(parts) + ' },')
+        L.append('    },')
+    L.append('  } },')
+L.append('}')
 open(os.path.join(ROOT, 'addon', 'LevelingLedger', 'CollectionsData.lua'), 'w', encoding='ascii').write('\n'.join(L) + '\n')
 print(len(books), 'books;', sum('quest' in b for b in books), 'with a quest;', 'rewards', out['collections'][0]['milestones'][0]['rewards'], '| librarians', t)

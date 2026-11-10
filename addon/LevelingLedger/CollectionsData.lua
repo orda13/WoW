@@ -44,3 +44,27 @@ ns.libraryBooks = {
   { n = 40, name = "Goaz Scrolls", zone = "Wetlands", map = 1437, x = 33.6, y = 47.9, note = "Solo", quest = 78146, item = 209848 },
 }
 ns.libraryTurnIn = { A = { n = "Garion Wendell", zone = "Stormwind City" }, H = { n = "Owen Thadd", zone = "Undercity" } }
+ns.questChains = {
+  { id = "cozy-sleeping-bag", name = "Cozy Sleeping Bag", level = 14, steps = {
+    A = {
+      { zone = "Westfall", map = 1436, x = 37, y = 50, title = "Burned-Out Remains", quest = 79008, start = true },
+      { zone = "The Barrens", map = 1413, x = 46, y = 74, title = "The burnt tower", quest = 79008 },
+      { zone = "Stonetalon Mountains", map = 1442, x = 40.6, y = 52.4, title = "The abandoned camp", quest = 79192 },
+      { zone = "Stonetalon Mountains", map = 1442, x = 40.6, y = 52.4, title = "Optional: the campfire", optional = true },
+      { zone = "Stonetalon Mountains", map = 1442, x = 39.6, y = 49.8, title = "Mound of Dirt", quest = 79980 },
+      { zone = "Loch Modan", map = 1432, x = 49.4, y = 12.9, title = "Eagle Figurine", quest = 79974 },
+      { zone = "Hillsbrad Foothills", map = 1424, x = 87.3, y = 49.6, title = "Thoradin Wall: Messenger Bag", quest = 79975 },
+      { zone = "Hillsbrad Foothills", map = 1424, x = 87.3, y = 49.6, title = "Hastily Rolled-Up Satchel", quest = 79976 },
+    },
+    H = {
+      { zone = "The Barrens", map = 1413, x = 46, y = 74, title = "The burnt tower", quest = 79007, start = true },
+      { zone = "Westfall", map = 1436, x = 37, y = 50, title = "Burned-Out Remains", quest = 79007 },
+      { zone = "Stonetalon Mountains", map = 1442, x = 40.6, y = 52.4, title = "The abandoned camp", quest = 79192 },
+      { zone = "Stonetalon Mountains", map = 1442, x = 40.6, y = 52.4, title = "Optional: the campfire", optional = true },
+      { zone = "Stonetalon Mountains", map = 1442, x = 39.6, y = 49.8, title = "Mound of Dirt", quest = 79980 },
+      { zone = "Loch Modan", map = 1432, x = 49.4, y = 12.9, title = "Eagle Figurine", quest = 79974 },
+      { zone = "Hillsbrad Foothills", map = 1424, x = 87.3, y = 49.6, title = "Thoradin Wall: Messenger Bag", quest = 79975 },
+      { zone = "Hillsbrad Foothills", map = 1424, x = 87.3, y = 49.6, title = "Hastily Rolled-Up Satchel", quest = 79976 },
+    },
+  } },
+}

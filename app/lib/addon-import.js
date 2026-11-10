@@ -188,6 +188,14 @@ function importAddon(text, store, publicDir, source, hint) {
     if (!prev || doc.at > (prev.at || 0)) { store.set("state/books", doc); done.push(`${doc.done.length} Library Book${doc.done.length === 1 ? "" : "s"}`); }
   }
 
+  // 2g. quest chains' quests (Cozy Sleeping Bag): completed, or in the quest log (Collections.lua)
+  if (ch.chainq && ch.chainq.at) {
+    const ids = (v) => (Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : []).map(Number).filter((n) => n > 0);
+    const doc = { done: ids(ch.chainq.done), log: ids(ch.chainq.log), at: ch.chainq.at * 1000 };
+    const prev = store.get("state/chainq");
+    if (!prev || doc.at > (prev.at || 0)) store.set("state/chainq", doc);
+  }
+
   // 2e. Ask Mr. Robot's gear setups and sell list, copied by MrRobot.lua from its add-on (the newest copy wins)
   if (ch.amr && ch.amr.at) {
     const list = (v) => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

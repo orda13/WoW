@@ -540,5 +540,169 @@
     }
    ]
   }
+ ],
+ "chains": [
+  {
+   "id": "cozy-sleeping-bag",
+   "name": "Cozy Sleeping Bag",
+   "level": 14,
+   "about": "A quest chain all over Azeroth with generous experience at each step and Student Fodder (heals you) along the way. It ends with the Cozy Sleeping Bag: lie in it for up to 3 minutes for 1% bonus experience per minute (stacks to 3%) for an hour, and you become rested while inside (1 hour cooldown). From level 14.",
+   "reward": [
+    211527,
+    "Cozy Sleeping Bag"
+   ],
+   "steps": {
+    "A": [
+     {
+      "zone": "Westfall",
+      "map": 1436,
+      "x": 37,
+      "y": 50,
+      "title": "Burned-Out Remains",
+      "do": "At the Alexston Farmstead, find the wreckage of a cart and click the Burned-Out Remains in the rubble. Accept \"... and that note you found\".",
+      "quest": 79008,
+      "start": true
+     },
+     {
+      "zone": "The Barrens",
+      "map": 1413,
+      "x": 46,
+      "y": 74,
+      "title": "The burnt tower",
+      "do": "Follow the road south of Camp Taurajo to the burnt tower and click the Burned-Out Remains. Turn in \"... and that note you found\" and accept Stepping Stones from the nearby wooden board.",
+      "quest": 79008
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 40.6,
+      "y": 52.4,
+      "title": "The abandoned camp",
+      "do": "Take the path northeast of Sun Rock Retreat (50.9, 52.3) to the abandoned camp. Click the Pocket Litter on top of a box to complete Stepping Stones, then accept Scramble.",
+      "quest": 79192
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 40.6,
+      "y": 52.4,
+      "title": "Optional: the campfire",
+      "do": "Click the campfire in the middle of the camp and complete Rekindle with the Simple Wood and Flint and Tinder from Stepping Stones.",
+      "optional": true
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 39.6,
+      "y": 49.8,
+      "title": "Mound of Dirt",
+      "do": "Head straight north and climb the hill. From the edge, jump across to the Mound of Dirt and click it to complete Scramble, then accept Wet Job.",
+      "quest": 79980
+     },
+     {
+      "zone": "Loch Modan",
+      "map": 1432,
+      "x": 49.4,
+      "y": 12.9,
+      "title": "Eagle Figurine",
+      "do": "At the Loch Modan Dam, jump onto the carved heads facing the Wetlands to reach the Eagle Figurine. Click it to complete Wet Job, then accept Eagle's Fist.",
+      "quest": 79974
+     },
+     {
+      "zone": "Hillsbrad Foothills",
+      "map": 1424,
+      "x": 87.3,
+      "y": 49.6,
+      "title": "Thoradin Wall: Messenger Bag",
+      "do": "At the Thoradin Wall (border of Arathi Highlands and Hillsbrad Foothills), use the cart on the Hillsbrad side to climb into the wall. Go through the room and look outside to the right for a hanging Messenger Bag; click it to complete Eagle's Fist and accept This Must Be The Place.",
+      "quest": 79975
+     },
+     {
+      "zone": "Hillsbrad Foothills",
+      "map": 1424,
+      "x": 87.3,
+      "y": 49.6,
+      "title": "Hastily Rolled-Up Satchel",
+      "do": "Click the Hastily Rolled-Up Satchel below the bag to complete This Must Be The Place and get the Cozy Sleeping Bag.",
+      "quest": 79976
+     }
+    ],
+    "H": [
+     {
+      "zone": "The Barrens",
+      "map": 1413,
+      "x": 46,
+      "y": 74,
+      "title": "The burnt tower",
+      "do": "Follow the road south of Camp Taurajo to the burnt tower and click the Burned-Out Remains in the rubble. Accept \"... and that note you found\".",
+      "quest": 79007,
+      "start": true
+     },
+     {
+      "zone": "Westfall",
+      "map": 1436,
+      "x": 37,
+      "y": 50,
+      "title": "Burned-Out Remains",
+      "do": "At the Alexston Farmstead, find the wreckage of a cart and click the Burned-Out Remains. Turn in \"... and that note you found\" and accept Stepping Stones.",
+      "quest": 79007
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 40.6,
+      "y": 52.4,
+      "title": "The abandoned camp",
+      "do": "Take the path northeast of Sun Rock Retreat (50.9, 52.3) to the abandoned camp. Click the Pocket Litter on top of a box to complete Stepping Stones, then accept Scramble.",
+      "quest": 79192
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 40.6,
+      "y": 52.4,
+      "title": "Optional: the campfire",
+      "do": "Click the campfire in the middle of the camp and complete Rekindle with the Simple Wood and Flint and Tinder from Stepping Stones.",
+      "optional": true
+     },
+     {
+      "zone": "Stonetalon Mountains",
+      "map": 1442,
+      "x": 39.6,
+      "y": 49.8,
+      "title": "Mound of Dirt",
+      "do": "Head straight north and climb the hill. From the edge, jump across to the Mound of Dirt and click it to complete Scramble, then accept Wet Job.",
+      "quest": 79980
+     },
+     {
+      "zone": "Loch Modan",
+      "map": 1432,
+      "x": 49.4,
+      "y": 12.9,
+      "title": "Eagle Figurine",
+      "do": "At the Loch Modan Dam, jump onto the carved heads facing the Wetlands to reach the Eagle Figurine. Click it to complete Wet Job, then accept Eagle's Fist.",
+      "quest": 79974
+     },
+     {
+      "zone": "Hillsbrad Foothills",
+      "map": 1424,
+      "x": 87.3,
+      "y": 49.6,
+      "title": "Thoradin Wall: Messenger Bag",
+      "do": "At the Thoradin Wall (border of Arathi Highlands and Hillsbrad Foothills), use the cart on the Hillsbrad side to climb into the wall. Go through the room and look outside to the right for a hanging Messenger Bag; click it to complete Eagle's Fist and accept This Must Be The Place.",
+      "quest": 79975
+     },
+     {
+      "zone": "Hillsbrad Foothills",
+      "map": 1424,
+      "x": 87.3,
+      "y": 49.6,
+      "title": "Hastily Rolled-Up Satchel",
+      "do": "Click the Hastily Rolled-Up Satchel below the bag to complete This Must Be The Place and get the Cozy Sleeping Bag.",
+      "quest": 79976
+     }
+    ]
+   }
+  }
  ]
 }
