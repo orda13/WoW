@@ -645,6 +645,9 @@ button:disabled { opacity: .55; }
 body:not(.is-person) .person-only { display: none !important; }
 body.is-person .st-group:not(#stCharGroup):not(.person-only), body.is-person .owner-only, body.is-person #bkPanel, body.is-person #impNow,
 body.is-person #stTest, body.is-person #stPort { display: none !important; }
+.st-dev { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.st-dev select { width: auto; font-size: .85rem; padding: 2px 6px; }
+.st-dev button { font-size: .82rem; padding: 2px 10px; }
 .st-people { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .st-person { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
 .st-person textarea { font-family: var(--mono); font-size: .8rem; min-height: 2.2em; resize: vertical; }
@@ -1080,7 +1083,7 @@ details.ab-lv[open] .ab-strip { display: none; }
           <label class="field wide"><span class="label">Google accounts that share your own ledger (one per line): they see and change your characters</span><textarea id="stEmails" rows="2" spellcheck="false"></textarea><span class="st-err" data-for="allowedEmails"></span></label>
           <label class="field wide"><span class="label">Devices allowed to send add-on data: Cloudflare service token Client IDs (one per line)</span><textarea id="stTokens" rows="2" spellcheck="false" placeholder="0123456789abcdef0123456789abcdef.access"></textarea><span class="st-err" data-for="serviceTokens"></span></label>
         </div>
-        <p class="hint" id="stDevices"></p>
+        <div class="hint" id="stDevices"></div>
         <p class="notice" id="stEmailsWarn" hidden></p>
       </fieldset>
       <fieldset class="st-group owner-only" id="stPeopleGroup">
@@ -2995,7 +2998,7 @@ details.ab-lv[open] .ab-strip { display: none; }
       $("stMyDevices").textContent = s.devices ? `Device tokens set up for you: ${s.devices}.` : "No device token set up for you yet: ask the hub's owner for one.";
       ST.loaded = true; return;
     }
-    ST.people = (s.users || []).map((u) => ({ email: u.email, character: u.character, alts: u.alts, tokens: (u.tokens || []).join("\n") }));
+    ST.people = (s.users || []).map((u) => ({ id: u.id, email: u.email, character: u.character, alts: u.alts, tokens: (u.tokens || []).join("\n") }));
     renderPeople(s.canEditAccess);
     $("stClientId").value = s.blizzard.clientId; $("stClientSecret").value = "";
     $("stClientSecret").placeholder = s.blizzard.hasSecret ? "Saved. Leave blank to keep it" : "Not set yet";
@@ -3023,9 +3026,39 @@ details.ab-lv[open] .ab-strip { display: none; }
       const trackedFirst = new Set([...tracked].map((n) => n.split(" ")[0]));
       const untracked = (st.seen || []).filter((c) => { const n = c.name.toLowerCase(); return n.includes(" ") ? !tracked.has(n) : !trackedFirst.has(n); });
       const devs = st.devices || [];
-      $("stDevices").textContent = devs.length ? "Devices sending add-on data: " + devs.map((d) => `${d.name} (last sent ${new Date(d.lastUpload).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })})`).join(", ") + "." : "No other devices have sent add-on data yet. See \"Other PCs and the Steam Deck\" in the README to set up the relay.";
+      renderDevices(devs);
       $("stSeen").textContent = untracked.length ? "The add-on has also seen: " + untracked.map((c) => c.name + (c.level ? ` (level ${c.level}${c.cls ? " " + c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""})` : "")).join(", ") + ". They aren't tracked because you removed them or there are already 10; add them above to track them." : "";
     } catch { $("stWatch").textContent = ""; }
+  }
+  // the devices that have sent add-on data: when each last sent, and (yours) forget one, or move it to a person's
+  // ledger when it's really their PC
+  function renderDevices(devs) {
+    const box = $("stDevices"); box.replaceChildren();
+    if (!devs.length) { box.textContent = "No other devices have sent add-on data yet. See \"Other PCs and the Steam Deck\" in the README to set up the relay."; return; }
+    box.append(el("span", null, "Devices sending add-on data to your ledger:"));
+    const people = ST.people || [];
+    for (const d of devs) {
+      const row = el("div", "st-dev");
+      row.append(el("b", null, d.name), el("span", "muted", ` · last sent ${new Date(d.lastUpload).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${d.accounts && d.accounts.length ? " · " + d.accounts.join(", ") : ""}`));
+      if (!ST.person) {
+        const act = async (action, to, msg) => {
+          try { const r = await fetch(`/api/relay/device?device=${encodeURIComponent(d.name)}&action=${action}${to ? "&to=" + encodeURIComponent(to) : ""}`, { method: "POST", headers: { "X-Ledger": "1" } });
+            const j = await r.json(); if (!r.ok) throw new Error(j.error || "failed"); toast(msg); stWatch(); } catch (e) { toast("Couldn't: " + e.message); }
+        };
+        if (people.length) {
+          const sel = el("select"); sel.setAttribute("aria-label", `Move ${d.name} to a person's ledger`);
+          sel.append(el("option", null, "Move to…"), ...people.map((u) => { const o = el("option", null, u.email); o.value = u.id || ""; return o; }));
+          sel.onchange = () => { const u = people.find((x) => x.id === sel.value); if (!u) return;
+            if (!confirm(`Move ${d.name}'s add-on data to ${u.email}'s ledger?\n\nIts file is imported there from now on. Also move its token: take its Client ID out of "Devices allowed to send add-on data" and put it next to ${u.email} under People with their own ledger, then save. Characters it already added to your ledger stay until you remove them (Your characters, Remove).`)) { sel.value = ""; return; }
+            act("move", u.id, `${d.name} moved to ${u.email}.`); };
+          row.append(sel);
+        }
+        const f = el("button", "ghost", "Forget"); f.type = "button";
+        f.onclick = () => { if (confirm(`Forget ${d.name}?\n\nIts stored add-on file is deleted from the hub. If its token is still allowed, it sends a new one next time it plays.`)) act("forget", null, `${d.name} forgotten.`); };
+        row.append(f);
+      }
+      box.append(row);
+    }
   }
   async function loadSettings() {
     try { stFill(await (await fetch("/api/settings")).json()); $("stNote").textContent = ""; }

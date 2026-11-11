@@ -18,7 +18,7 @@ function publicView(config, isLocal) {
     alts: config.alts || [],
     access: { teamDomain: a.teamDomain || "", aud: a.aud || "", allowedEmails: a.allowedEmails || [], serviceTokens: a.serviceTokens || [] },
     // people with a ledger of their own on this hub
-    users: (config.users || []).map((u) => ({ email: u.email, character: u.character || "", alts: (u.alts || []).length, tokens: u.tokens || [] })),
+    users: (config.users || []).map((u) => ({ id: u.id, email: u.email, character: u.character || "", alts: (u.alts || []).length, tokens: u.tokens || [] })),
     canEditAccess: isLocal,
   };
 }

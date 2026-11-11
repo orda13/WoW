@@ -225,7 +225,7 @@ const server = http.createServer(async (req, res) => {
     // whose ledger this is: the owner, or a person added in Settings (their own data only)
     const t = tenantOf(tenantFor(config, req)), st = t.store;
     // hub-wide things are the owner's alone
-    const ownerOnly = /^\/api\/(backups|update|journal\/check|import-now)(\/|$)/.test(p) || (p === "/api/settings" && req.method !== "GET" && req.method !== "PUT");
+    const ownerOnly = /^\/api\/(backups|update|journal\/check|import-now|relay\/device)(\/|$)/.test(p) || (p === "/api/settings" && req.method !== "GET" && req.method !== "PUT");
     if (t.uid && ownerOnly) return send(res, 403, { error: "only the hub's owner can do that" });
 
     if (p === "/" || p === "/index.html" || p === "/leveling-ledger.html") return send(res, 200, page(), "text/html; charset=utf-8");
@@ -327,6 +327,30 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, unchanged: same });
     }
     // a person added in Settings sees and changes only their own characters
+    // a device that has sent data: forget it (its stored files go), or move its files to a person's ledger (for a
+    // friend's PC whose token was listed among the owner's own devices); the owner's devices only
+    if (p === "/api/relay/device" && req.method === "POST") {
+      const device = url.searchParams.get("device") || "", action = url.searchParams.get("action") || "";
+      if (!NAME_OK.test(device) || /^\.+$/.test(device) || !t.devices[device]) return send(res, 404, { error: "no such device" });
+      const from = path.join(t.relayDir, device);
+      if (action === "move") {
+        const u = users(config).find((x) => x.id === url.searchParams.get("to"));
+        if (!u) return send(res, 400, { error: "no such person" });
+        const to = tenantOf(u), dest = path.join(to.relayDir, device);
+        if (fs.existsSync(dest)) return send(res, 409, { error: "that person already has a device with this name" });
+        fs.mkdirSync(to.relayDir, { recursive: true });
+        if (fs.existsSync(from)) fs.renameSync(from, dest);
+        to.devices[device] = t.devices[device]; fs.writeFileSync(to.devicesFile, JSON.stringify(to.devices));
+        delete t.devices[device]; fs.writeFileSync(t.devicesFile, JSON.stringify(t.devices));
+        log(`Moved device ${device}'s add-on data to ${u.email}`);
+      } else if (action === "forget") {
+        fs.rmSync(from, { recursive: true, force: true });
+        delete t.devices[device]; fs.writeFileSync(t.devicesFile, JSON.stringify(t.devices));
+        log(`Forgot device ${device} and its add-on data`);
+      } else return send(res, 400, { error: "unknown action" });
+      watcher.reset(); // stop watching the old files, find them in their new place
+      return send(res, 200, { ok: true });
+    }
     if (p === "/api/settings" && t.uid) {
       const u = t.u, me = () => ({ person: true, email: u.email, character: u.character || "", alts: u.alts || [], devices: (u.tokens || []).length });
       if (req.method === "GET") return send(res, 200, me());
