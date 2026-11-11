@@ -1,5 +1,8 @@
 <title>Leveling Ledger</title>
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("ll-theme") || "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
+<!-- Wowhead's item, spell and quest tooltips on hover over any Wowhead link (the owner chose them over in-house tooltips) -->
+<script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
+<script src="https://wow.zamimg.com/js/tooltips.js" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -1553,7 +1556,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   const classKey = (c) => String(c || "").split(/[ (]/)[0].toLowerCase().replace(/[^a-z]/g, "");
   function whA(type, id, text, cls) {
     const a = document.createElement("a"); a.className = "wh" + (cls ? " " + cls : ""); a.textContent = text;
-    a.href = whHref(type, id); a.target = "_blank"; a.rel = "noopener"; a.title = "Open on Wowhead";
+    a.href = whHref(type, id); a.target = "_blank"; a.rel = "noopener"; if (type === "search" || text === "↗") a.title = "Open on Wowhead";
     const ic = text !== "↗" && iconFor(type, id);
     if (ic) a.prepend(iconImg(ic));
     return a;
@@ -2588,7 +2591,7 @@ details.ab-lv[open] .ab-strip { display: none; }
         if (ic) icw.append(iconImg(ic)); card.append(icw);
         const body = el("div", "ab-body");
         const top = el("div", "ab-top");
-        const a = el("a", "wh ab-name", e.n); a.href = whHref("spell", e.id); a.target = "_blank"; a.rel = "noopener"; a.title = "Open on Wowhead";
+        const a = el("a", "wh ab-name", e.n); a.href = whHref("spell", e.id); a.target = "_blank"; a.rel = "noopener";
         top.append(a);
         if (e.r) top.append(el("span", "ab-rank", e.r));
         if (e.t) top.append(el("span", treeCls(e.t), e.t));
