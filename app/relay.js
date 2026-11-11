@@ -39,7 +39,9 @@ const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 function loadConfig() {
   const c = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8").replace(/^\uFEFF/, ""));
   if (!c.hubUrl) throw new Error("relay.json needs hubUrl, your Cloudflare address (https://ledger.example.com)");
-  c.hubUrl = c.hubUrl.replace(/\/+$/, "");
+  c.hubUrl = c.hubUrl.trim().replace(/\/+$/, "");
+  // Cloudflare only serves https: an http:// address would just be redirected
+  if (/^http:\/\//i.test(c.hubUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(c.hubUrl)) c.hubUrl = "https://" + c.hubUrl.slice(7);
   c.device = (c.device || os.hostname()).replace(/[^A-Za-z0-9 _#.()-]/g, "-").slice(0, 60);
   return c;
 }
@@ -70,6 +72,14 @@ function files(cfg) {
   return findFiles(cfg.wowFolder ? [].concat(cfg.wowFolder) : defaultRoots());
 }
 const accountOf = (f) => path.basename(path.dirname(path.dirname(f)));
+// A redirect instead of an answer: say where it pointed, which tells a refused token from a wrong address
+function redirectWhy(r, cfg) {
+  const to = r.headers.get("location") || "";
+  let host = ""; try { host = new URL(to, cfg.hubUrl).host; } catch {}
+  if (/cloudflareaccess\.com$/i.test(host) || /\/cdn-cgi\/access\/login/.test(to))
+    return "Cloudflare asked for a sign-in: it didn't accept this device's service token. Check the Client ID and Secret in relay.json against the token in Cloudflare, and that the Leveling Ledger application has a Service Auth policy that includes it.";
+  return `The hub address ${cfg.hubUrl} redirects to ${host || to || "somewhere else"}: check the address in relay.json (it's the one you open the ledger at, starting with https://).`;
+}
 // service token values: visible ASCII only (a paste can bring invisible characters, which make every request fail)
 const tok = (v) => String(v || "").replace(/[^\x21-\x7E]/g, "");
 const headers = (cfg, extra) => ({ "X-Ledger": "1", "CF-Access-Client-Id": tok(cfg.clientId), "CF-Access-Client-Secret": tok(cfg.clientSecret), "User-Agent": "leveling-ledger-relay", ...extra });
@@ -78,7 +88,7 @@ async function send(cfg, file) {
   const text = fs.readFileSync(file, "utf8");
   const q = `device=${encodeURIComponent(cfg.device)}&account=${encodeURIComponent(accountOf(file))}`;
   const r = await fetch(`${cfg.hubUrl}/api/relay/upload?${q}`, { method: "POST", headers: headers(cfg, { "Content-Type": "text/plain; charset=utf-8" }), body: text, redirect: "manual" });
-  if (r.status >= 300 && r.status < 400) throw new Error("Cloudflare asked for a sign-in: check the service token's Client ID and Secret, and that the Leveling Ledger application allows it (Service Auth).");
+  if (r.status >= 300 && r.status < 400) throw new Error(redirectWhy(r, cfg));
   if (!r.ok) throw new Error(`hub answered ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return crypto.createHash("sha1").update(text).digest("hex");
 }
@@ -88,7 +98,7 @@ async function send(cfg, file) {
 const addonDirOf = (f) => path.join(path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(f))))), "Interface", "AddOns", "LevelingLedger");
 async function pullSummary(cfg, fl) {
   const r = await fetch(`${cfg.hubUrl}/api/relay/summary`, { headers: headers(cfg), redirect: "manual" });
-  if (!r.ok) throw new Error(r.status >= 300 && r.status < 400 ? "Cloudflare asked for a sign-in" : `hub answered ${r.status}`);
+  if (!r.ok) throw new Error(r.status >= 300 && r.status < 400 ? redirectWhy(r, cfg) : `hub answered ${r.status}`);
   const sum = await r.json();
   let wrote = 0, found = 0;
   for (const d of [...new Set(fl.map(addonDirOf))]) { if (fs.existsSync(path.join(d, "LevelingLedger.toc"))) { found++; if (writeShared(d, sum)) wrote++; } }
@@ -187,7 +197,7 @@ async function test() {
   console.log(fl.length ? "Add-on files found:\n  " + fl.join("\n  ") : "No LevelingLedger.lua found yet. Play with the add-on enabled and log out or /reload once, or set wowFolder in relay.json.");
   try {
     const r = await fetch(`${cfg.hubUrl}/api/relay/ping`, { headers: headers(cfg), redirect: "manual" });
-    if (r.status >= 300 && r.status < 400) throw new Error("Cloudflare asked for a sign-in (check the service token and the Service Auth policy)");
+    if (r.status >= 300 && r.status < 400) throw new Error(redirectWhy(r, cfg));
     if (!r.ok) throw new Error(`hub answered ${r.status}`);
     console.log("Hub reached: OK");
     for (const f of fl) { await send(cfg, f); console.log(`Sent ${accountOf(f)}: OK`); }
