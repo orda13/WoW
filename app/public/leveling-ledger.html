@@ -642,6 +642,13 @@ button:disabled { opacity: .55; }
 .bk-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin: 22px 0 8px; }
 .bk-goal { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
 .bk-goal.reached { outline: 1px solid var(--brass); }
+body:not(.is-person) .person-only { display: none !important; }
+body.is-person .st-group:not(#stCharGroup):not(.person-only), body.is-person .owner-only, body.is-person #bkPanel, body.is-person #impNow,
+body.is-person #stTest, body.is-person #stPort { display: none !important; }
+.st-people { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.st-person { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.st-person textarea { font-family: var(--mono); font-size: .8rem; min-height: 2.2em; resize: vertical; }
+.st-people-add input { flex: 1; min-width: 0; }
 .st-chars { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; }
 .st-char { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
 .st-char-n img.ico { border-radius: 50%; }
@@ -1040,8 +1047,9 @@ details.ab-lv[open] .ab-strip { display: none; }
           <label class="field"><span class="label">Check Blizzard every (hours)</span><input id="stSyncEvery" type="number" min="1" max="24" step="0.5"><span class="st-err" data-for="syncEveryHours"></span></label>
         </div>
       </fieldset>
-      <fieldset class="st-group">
+      <fieldset class="st-group" id="stCharGroup">
         <legend>Characters</legend>
+        <label class="field person-only"><span class="label">Your main character (as Blizzard spells it)</span><input id="stMain" spellcheck="false" placeholder="talwyn-orda"><span class="st-err" data-for="character"></span></label>
         <p class="hint">The character above is your main. Every other character the add-on records is added here by itself as first name and surname, the way Blizzard spells it (<code>talwyn-bank</code>), up to 10. Each gets its own ledger; switch with the menu under the name. Removing one stops it being added again and keeps its data, so adding it back restores it.</p>
         <div class="form-grid">
           <label class="field wide"><span class="label">Other characters</span><textarea id="stAlts" rows="3" spellcheck="false" placeholder="bob-smith"></textarea><span class="st-err" data-for="alts"></span></label>
@@ -1073,6 +1081,18 @@ details.ab-lv[open] .ab-strip { display: none; }
           <label class="field wide"><span class="label">Devices allowed to send add-on data: Cloudflare service token Client IDs (one per line)</span><textarea id="stTokens" rows="2" spellcheck="false" placeholder="0123456789abcdef0123456789abcdef.access"></textarea><span class="st-err" data-for="serviceTokens"></span></label>
         </div>
         <p class="hint" id="stDevices"></p>
+      </fieldset>
+      <fieldset class="st-group owner-only" id="stPeopleGroup">
+        <legend>People with their own ledger</legend>
+        <p class="hint" id="stPeopleNote">Each person here signs in through Cloudflare with their Google account and gets a ledger of their own: their characters, sessions, bags, plans and history are theirs alone; only auction prices and item names are pooled. For their game data, create a Cloudflare service token for each of their PCs (like your relays: Zero Trust, Access, Service Auth), give them its Client ID and secret for the relay installer, and add the Client ID here. Their first character the add-on reports becomes their main. Add their Google address to your Cloudflare Access policy too.</p>
+        <div class="st-people" id="stPeople"></div>
+        <div class="row st-people-add"><input id="stPeopleEmail" type="email" spellcheck="false" placeholder="friend@gmail.com" aria-label="Email of the person to add"><button type="button" id="stPeopleAdd">Add person</button></div>
+        <span class="st-err" data-for="users"></span>
+      </fieldset>
+      <fieldset class="st-group person-only" id="stPersonGroup">
+        <legend>Your PC</legend>
+        <p class="hint">Your ledger fills itself from the Leveling Ledger add-on on your PC. Install the add-on and the relay (the relay installer is in the project's README), with the hub address you open this page at and the device token (Client ID and secret) the hub's owner gave you. After you log out or /reload in game, your characters appear here within a minute; the first one becomes your main.</p>
+        <p class="hint" id="stMyDevices"></p>
       </fieldset>
       <fieldset class="st-group" id="stUpdates">
         <legend>Updates</legend>
@@ -1142,6 +1162,12 @@ details.ab-lv[open] .ab-strip { display: none; }
 
   <p class="notice" id="readonly" hidden>You're viewing someone else's ledger. Only its owner can change it.</p>
   <p class="notice" id="offline" hidden>Your saved ledger can't be reached right now. Changes may not save until it reconnects.</p>
+
+  <section class="panel" id="welcome" hidden>
+    <header><h2>Welcome to your ledger</h2></header>
+    <p>Your ledger is empty for now. It fills itself from the Leveling Ledger add-on on your PC: install the add-on and the relay with the device token the hub's owner gave you, then log out or /reload in game. Your characters appear here within a minute, and the first one becomes your main.</p>
+    <p class="hint">Or open <a href="#settings">Settings</a> and type your main character as Blizzard spells it (like <code>talwyn-orda</code>) to start from Blizzard's data.</p>
+  </section>
 
   <section class="panel" id="setup" hidden>
     <header><h2 id="setupTitle">Set up your character</h2></header>
@@ -1562,9 +1588,11 @@ details.ab-lv[open] .ab-strip { display: none; }
     const c = S.char;
     $("readonly").hidden = S.canWrite || !db;
     const editing = !$("setup").hidden && $("setup").dataset.editing === "1";
-    if (S.loaded && !c && S.canWrite && !window.LL_CHAR) { $("setup").hidden = false; $("setupCancel").hidden = true; }
+    const person = !!(S.status && S.status.account && !S.status.account.owner);
+    $("welcome").hidden = !(S.loaded && !c && person);
+    if (S.loaded && !c && S.canWrite && !window.LL_CHAR && !person) { $("setup").hidden = false; $("setupCancel").hidden = true; }
     else if (!editing) $("setup").hidden = true;
-    document.body.classList.toggle("needs-setup", !!(S.loaded && !c && S.canWrite));
+    document.body.classList.toggle("needs-setup", !!(S.loaded && !c && S.canWrite && !person));
     $("editChar").hidden = !S.canWrite || !c;
 
     if (!c) {
@@ -2619,8 +2647,12 @@ details.ab-lv[open] .ab-strip { display: none; }
   async function renderWatch() {
     try {
       const st = await (await fetch("/api/status")).json();
-      const before = myFullName();
+      const before = myFullName(), wasPerson = document.body.classList.contains("is-person");
       S.status = st; renderHealth(); renderCharPick(); renderCharList();
+      // someone the owner added: their own ledger, without the hub's own controls
+      const person = !!(st.account && !st.account.owner);
+      document.body.classList.toggle("is-person", person);
+      if (person !== wasPerson) render();
       // the ledger's full name comes with the status: redraw what depends on knowing which character is this one
       if (myFullName() !== before) { render(); if (typeof BOOKS !== "undefined" && BOOKS.data) renderSecrets(); if (typeof renderRecipes === "function") renderRecipes(); }
       const w = $("impWatch");
@@ -2922,17 +2954,18 @@ details.ab-lv[open] .ab-strip { display: none; }
       if (errs.length) add("warn", `Add-on reported ${errs.length} error${errs.length === 1 ? "" : "s"}`, errs[errs.length - 1].err, "settings", "impPanel");
       else add("good", `Add-on imported ${ago(a.importedAt)}`, a.message || "", "settings", "impPanel");
     }
+    const ownerView = !(st && st.account && !st.account.owner);
     // Blizzard
     const sy = S.sync || {};
-    if (st && !st.blizzard) add("warn", "Blizzard keys not set", "Add your API keys on the Settings tab", "settings");
+    if (st && !st.blizzard && ownerView) add("warn", "Blizzard keys not set", "Add your API keys on the Settings tab", "settings");
     else if (sy.pending && Date.now() - (sy.startedAt || 0) < 5 * 60000) add("good", "Checking Blizzard…", "");
     else if (sy.ok === false) add("bad", "Blizzard sync failed", sy.message || "", "settings");
     else if (sy.at) {
       const stale = Date.now() - sy.at > Math.max(24, 2 * ((st && st.syncEveryHours) || 6)) * 3600000;
       add(stale ? "warn" : "good", `Blizzard synced ${ago(sy.at)}`, sy.message || "", stale ? "settings" : null);
     } else add("warn", "Not synced with Blizzard yet", "", "settings");
-    // backups
-    if (st) {
+    // backups and updates (the owner's)
+    if (st && ownerView) {
       if (!st.lastBackup) add("warn", "No backup yet", "", "settings", "bkPanel");
       else {
         const old = Date.now() - st.lastBackup > 48 * 3600000;
@@ -2951,6 +2984,14 @@ details.ab-lv[open] .ab-strip { display: none; }
   // ---------- settings ----------
   const ST = { loaded: false };
   function stFill(s) {
+    ST.person = !!s.person;
+    if (s.person) {
+      $("stMain").value = s.character || ""; $("stAlts").value = (s.alts || []).join("\n");
+      $("stMyDevices").textContent = s.devices ? `Device tokens set up for you: ${s.devices}.` : "No device token set up for you yet: ask the hub's owner for one.";
+      ST.loaded = true; return;
+    }
+    ST.people = (s.users || []).map((u) => ({ email: u.email, character: u.character, alts: u.alts, tokens: (u.tokens || []).join("\n") }));
+    renderPeople(s.canEditAccess);
     $("stClientId").value = s.blizzard.clientId; $("stClientSecret").value = "";
     $("stClientSecret").placeholder = s.blizzard.hasSecret ? "Saved. Leave blank to keep it" : "Not set yet";
     $("stCharacter").value = s.blizzard.character; $("stSyncEvery").value = s.syncEveryHours;
@@ -2983,7 +3024,31 @@ details.ab-lv[open] .ab-strip { display: none; }
     catch { $("stNote").textContent = "Couldn't load settings."; }
     stWatch(); loadUpdate(false);
   }
+  // the owner's list of people with their own ledger: email, their characters so far, their device tokens
+  function renderPeople(canEdit) {
+    const box = $("stPeople"); if (!box) return;
+    box.replaceChildren(...(ST.people || []).map((u, i) => {
+      const row = el("div", "st-person");
+      const who = el("div", "st-person-who"); who.append(el("b", null, u.email), el("span", "muted", u.character ? ` · main ${slugName(u.character)}${u.alts ? ` + ${u.alts} more` : ""}` : " · no characters yet"));
+      const tk = el("textarea"); tk.rows = 1; tk.spellcheck = false; tk.placeholder = "Their device token Client IDs, one per line"; tk.value = u.tokens || ""; tk.disabled = !canEdit;
+      tk.setAttribute("aria-label", `Device tokens for ${u.email}`); tk.oninput = () => { u.tokens = tk.value; };
+      const rm = el("button", "ghost", "Remove"); rm.type = "button"; rm.disabled = !canEdit;
+      rm.onclick = () => { if (!confirm(`Remove ${u.email}?\n\nThey can no longer sign in, and their devices can no longer send data. Their ledger is kept, so adding them back restores it. Save settings to apply.`)) return; ST.people.splice(i, 1); renderPeople(canEdit); };
+      row.append(who, tk, rm); return row;
+    }), ...(!(ST.people || []).length ? [el("p", "muted", "Nobody yet.")] : []));
+    $("stPeopleEmail").disabled = $("stPeopleAdd").disabled = !canEdit;
+    // like the other remote-access settings: changed only on the PC running the ledger
+    if (!canEdit) box.append(el("p", "notice", "Shown read-only: people can only be added, removed or given devices on the PC running the ledger (open it at http://localhost there)."));
+  }
+  $("stPeopleAdd").onclick = () => {
+    const e = $("stPeopleEmail").value.trim().toLowerCase(); if (!e) return;
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e)) { toast("That isn't an email address."); return; }
+    if ((ST.people || []).some((u) => u.email === e)) { toast("Already on the list."); return; }
+    (ST.people = ST.people || []).push({ email: e, tokens: "" }); $("stPeopleEmail").value = ""; renderPeople(ST.canEditAccess);
+    toast("Added: save settings to apply.");
+  };
   function stBody() {
+    if (ST.person) return { character: $("stMain").value, alts: $("stAlts").value };
     const b = {
       blizzard: { clientId: $("stClientId").value, character: $("stCharacter").value },
       syncEveryHours: $("stSyncEvery").value, backupDays: $("stBackupDays").value,
@@ -2991,7 +3056,8 @@ details.ab-lv[open] .ab-strip { display: none; }
       alts: $("stAlts").value,
     };
     if ($("stClientSecret").value.trim()) b.blizzard.clientSecret = $("stClientSecret").value;
-    if (ST.canEditAccess) b.access = { teamDomain: $("stTeam").value, aud: $("stAud").value, allowedEmails: $("stEmails").value, serviceTokens: $("stTokens").value };
+    if (ST.canEditAccess) b.access = { teamDomain: $("stTeam").value, aud: $("stAud").value, allowedEmails: $("stEmails").value, serviceTokens: $("stTokens").value,
+      users: (ST.people || []).map((u) => ({ email: u.email, tokens: u.tokens || "" })) };
     return b;
   }
   async function saveSettings() {

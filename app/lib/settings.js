@@ -2,6 +2,8 @@
 const fs = require("fs");
 
 const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[a-z]{2,}$/i;
+const { userId } = require("./tenants");
+const TOKEN = /^[a-f0-9]{32}\.access$/;
 
 // What the page sees. The Blizzard secret is never sent, only whether one is saved.
 function publicView(config, isLocal) {
@@ -15,6 +17,8 @@ function publicView(config, isLocal) {
     port: config.port || 8787,
     alts: config.alts || [],
     access: { teamDomain: a.teamDomain || "", aud: a.aud || "", allowedEmails: a.allowedEmails || [], serviceTokens: a.serviceTokens || [] },
+    // people with a ledger of their own on this hub
+    users: (config.users || []).map((u) => ({ email: u.email, character: u.character || "", alts: (u.alts || []).length, tokens: u.tokens || [] })),
     canEditAccess: isLocal,
   };
 }
@@ -102,6 +106,27 @@ function applyUpdate(config, body, isLocal) {
         const list = (Array.isArray(na.serviceTokens) ? na.serviceTokens : String(na.serviceTokens).split(/[\s,;]+/)).map((x) => String(x).trim().toLowerCase()).filter(Boolean);
         if (list.length > 20 || list.some((x) => !/^[a-f0-9]{32}\.access$/.test(x))) errors.serviceTokens = 'A service token\'s Client ID looks like "0123456789abcdef0123456789abcdef.access", one per line.';
         else if (JSON.stringify(a.serviceTokens || []) !== JSON.stringify(list)) { a.serviceTokens = list; changed.push("device tokens"); }
+      }
+      if (na.users != null) {
+        // [{ email, tokens }]: a person gets their own ledger; what they set up themselves (characters) is kept
+        const list = Array.isArray(na.users) ? na.users : [];
+        const owners = new Set((na.allowedEmails != null ? String([].concat(na.allowedEmails).join(" ")).split(/[\s,;]+/) : a.allowedEmails || []).map((e) => String(e).trim().toLowerCase()));
+        const out = [], seen = new Set();
+        for (const x of list) {
+          const email = String((x && x.email) || "").trim().toLowerCase();
+          if (!email) continue;
+          if (!EMAIL.test(email)) { errors.users = `"${email}" isn't an email address.`; break; }
+          if (owners.has(email)) { errors.users = `${email} already shares your own ledger (Allowed emails); take it out there first.`; break; }
+          if (seen.has(email)) continue; seen.add(email);
+          const tokens = (Array.isArray(x.tokens) ? x.tokens : String(x.tokens || "").split(/[\s,;]+/)).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+          if (tokens.some((t) => !TOKEN.test(t))) { errors.users = `A device token's Client ID looks like "0123456789abcdef0123456789abcdef.access" (${email}).`; break; }
+          const prev = (config.users || []).find((u) => u.email === email) || {};
+          out.push({ email, id: prev.id || userId(email), character: prev.character || "", alts: prev.alts || [], altsRemoved: prev.altsRemoved || [], tokens });
+        }
+        const all = out.flatMap((u) => u.tokens), mine = new Set((na.serviceTokens != null ? [].concat(na.serviceTokens).join(" ").split(/[\s,;]+/) : a.serviceTokens || []).map((t) => String(t).trim().toLowerCase()));
+        if (!errors.users && out.length > 20) errors.users = "Up to 20 people.";
+        else if (!errors.users && (new Set(all).size !== all.length || all.some((t) => mine.has(t)))) errors.users = "Each device token belongs to one person (and not to your own devices).";
+        else if (!errors.users && JSON.stringify(config.users || []) !== JSON.stringify(out)) { config.users = out; changed.push("people with their own ledger"); }
       }
       if (na.allowedEmails != null) {
         const list = (Array.isArray(na.allowedEmails) ? na.allowedEmails : String(na.allowedEmails).split(/[\s,;]+/))

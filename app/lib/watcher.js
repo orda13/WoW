@@ -32,7 +32,8 @@ const DEFAULT_ROOTS = [
   "D:\\World of Warcraft", "D:\\Games\\World of Warcraft", "E:\\World of Warcraft",
 ];
 
-// targets(): [{ store, hint }] for every tracked character (hint = its Blizzard name, e.g. "talwyn-orda")
+// targets(file): [{ store, hint, plainOk }] for every tracked character of the person the file belongs to
+// (hint = its Blizzard name, e.g. "talwyn-orda")
 function startWatcher({ targets, publicDir, config, log, onImported, onFile, extraFiles }) {
   const roots = () => [].concat(config.wowFolder || [], config.wowFolder ? [] : DEFAULT_ROOTS);
   const watched = new Map(); // file -> last mtime handled
@@ -47,7 +48,7 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile, ext
     for (const c of Object.values(data.chars || {})) if (c && c.name) { const n = [c.name, c.surname].filter(Boolean).join(" "); status.seen[n.toLowerCase()] = { name: n, level: c.level || null, cls: c.class || "", file }; }
     if (onFile) { try { onFile(data, file); } catch (e) { log("Couldn't read characters from " + file + ": " + e.message); } }
     let any = false;
-    for (const t of targets()) {
+    for (const t of targets(file)) {
       if (!pickChar(data, t.store, t.hint, t)) continue; // this file has no data for that character
       // each PC's file is judged on its own (an older file from one PC doesn't block another's)
       const a = t.store.get("state/addon") || {}, key = sourceKey(file);

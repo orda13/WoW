@@ -23,6 +23,12 @@
   - Characters the add-on records are tracked automatically (`newAlts` in `lib/settings.js`, as `first-surname`, up to 10). Ones removed in Settings go to `config.altsRemoved` and aren't added again.
   - Settings → General → Characters lists every tracked character with Open, Reset data (`POST /api/char/reset?char=`: a backup, then every imported or synced document goes and is read again; to-do list, talent picks, ticks, quest marks and skipped recipes stay) and Stop tracking (out of `alts`, into `altsRemoved`). Old-format inventory rows (first name only) drop out once a full-name row with that first name exists.
   - The Ledger tab's Your characters table removes a character with its ×: it goes in `shared/hiddenchars` (keyed `<account>/<key>`), drops out of the page, `Shared.lua` and auto-tracking, and leaves Settings' list (re-added on "bring back").
+- People with their own ledger (`lib/tenants.js`):
+  - The owner (this PC, `access.allowedEmails`, `access.serviceTokens`) keeps plain paths. Each person added in Settings (`config.users`: `email`, `id` = `u` + 8 hex of the email, `character`, `alts`, `altsRemoved`, `tokens`) gets the prefix `u<id>~` on every document, through `tenantStore`; `shared/ahprices`, `shared/items` and `shared/journal` are pooled (`POOLED`).
+  - `server.js` works out who a request is (`tenantFor`: their email, or their device token) and uses `t.store` everywhere: documents, collections, live updates (`viewPath`), export, reset, status, settings, Blizzard sync and the relay summary. Hub-wide endpoints (backups, updates, journal check, import-now, the owner's settings) refuse people.
+  - Their relays upload into `data/users/<id>/relay/...`; `fileTenant` sends each watched file to its person's ledgers, and the first character a person's add-on reports becomes their main.
+  - People are added, removed and given device tokens only on the PC running the hub (like the other remote-access settings). The sign-in check accepts the owner's emails and devices plus everyone's (`accessConfig`).
+  - When testing access, check every new endpoint as a person too: they must see only their own data.
 - Relays (`app/relay.js`; installers `scripts/install-relay.ps1` and `scripts/install-relay.sh`):
   - Other PCs and the Steam Deck send their SavedVariables to the hub's `/api/relay/upload` with a Cloudflare service token.
   - The hub stores each file under `data/relay/<device>/<account>/` and imports it like its own.

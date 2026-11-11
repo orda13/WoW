@@ -25,6 +25,16 @@ A leveling companion for **World of Warcraft: Forever**. It tracks play sessions
   After that, updates are one click: **Settings → Updates → Update now**. That updates the app and the add-on, and it can be undone. Your data and settings in `C:\LevelingLedger` are kept.
 - **Add-on:** copy `addon/LevelingLedger` into your Forever game folder's `Interface\AddOns`, then enable it at character select.
 
+## Friends with their own ledger
+
+The hub can give other people a ledger of their own. Their characters, sessions, bags, plans and history are theirs alone; only auction prices and item names are pooled.
+
+1. **On the PC running the hub**, open Settings → General → **People with their own ledger** and add their Google address.
+2. **In Cloudflare Zero Trust**, add the same address to your Access policy, and create a service token for each of their PCs (Access → Service Auth). Paste each token's Client ID next to their name in Settings and save.
+3. **On their PC**, they install the add-on and the relay (the relay installer is in [`app/README.md`](app/README.md)) with your hub's address and their token's Client ID and secret.
+
+When they sign in, they see only their own ledger. The first character their add-on reports becomes their main, and the rest are tracked as they play. Hub settings, backups and updates stay yours.
+
 ## What is never committed
 
 `.gitignore` keeps these out of the repository:
