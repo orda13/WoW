@@ -1,4 +1,4 @@
--- Talent plan reminders: the plan you picked on the Leveling Ledger page's Talents tab (LevelingLedgerShared.talents,
+-- Talent plan reminders: the plan you picked on the Leveling Ledger page (Character, Talents) (LevelingLedgerShared.talents,
 -- written into Shared.lua by the app) names the talent to take when you level up, and at login if points are waiting.
 --   /ledger talents     the next picks from your plan
 local ADDON, ns = ...
@@ -37,7 +37,7 @@ end
 
 function ns.talentsCommand()
   local p = plan()
-  if not p then print(TAG .. "no talent plan for this character. Pick one on the Talents tab of the Leveling Ledger page, then /reload once the app has written it.") return end
+  if not p then print(TAG .. "no talent plan for this character. Pick one on the Leveling Ledger page (Character, then Talents), then /reload once the app has written it.") return end
   local level = UnitLevel("player") or 0
   local n = unspent()
   if n and n > 0 then remind(level, n) end

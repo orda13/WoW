@@ -767,16 +767,15 @@ body { margin: 0; }
 .topsearch input:focus { outline: 2px solid color-mix(in srgb, var(--class) 60%, transparent); outline-offset: 0; }
 
 /* the panel grid */
-.wrap { max-width: 1640px; width: 100%; margin: 0 auto; padding: 24px 32px 56px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.wrap { max-width: 3400px; width: 100%; margin: 0 auto; padding: 24px 32px 56px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .wrap > * { grid-column: 1 / -1; min-width: 0; }
 .board { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
 .board .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 @media (min-width: 1280px) {
-  #impPanel { grid-column: span 7; } #bkPanel { grid-column: span 5; }
+  #bkPanel, #exportPanel { grid-column: span 6; }
   #qlogPanel { grid-column: 1 / span 4; position: sticky; top: 92px; max-height: calc(100vh - 112px); overflow: auto; }
   #questPanel { grid-column: 5 / -1; }
   #wornPanel, #amrPanel { grid-column: span 6; }
-  #skillsPanel { grid-column: span 7; } #repPanel { grid-column: span 5; }
 }
 .panel { border-top-color: color-mix(in srgb, var(--class) 40%, var(--brass)); }
 .panel > header, .panel > .tal-head { padding-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--brass) 18%, transparent); }
@@ -814,6 +813,37 @@ body { margin: 0; }
 }
 .st-form > .row:has(#stSave) { position: sticky; bottom: 0; z-index: 5; padding: 12px 0; margin-bottom: -12px;
   background: linear-gradient(0deg, var(--surface) 70%, transparent); }
+/* big screens (4K): more side by side, and larger text when the screen isn't scaled up */
+@media (min-width: 1900px) {
+  :root { --side-w: 300px; }
+  .wrap { padding: 28px 40px 64px; gap: 24px; }
+  .topbar { padding: 12px 40px; grid-template-columns: minmax(0, 1fr) 420px; }
+  #lvlReport, #histPanel { grid-column: span 6; }
+  #qlogPanel { grid-column: 1 / span 3; } #questPanel { grid-column: 4 / -1; }
+  #skillsPanel { grid-column: span 5; } #favorPanel { grid-column: span 7; }
+  .st-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* talents: the trees, with the talent you pick and the leveling plan beside them */
+  #talPanel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 28%); gap: 16px 24px; align-items: start; }
+  #talPanel > * { grid-column: 1 / -1; }
+  #talPanel > .tal-trees { grid-column: 1; grid-row: 3 / span 3; }
+  #talPanel > .tal-detail { grid-column: 2; grid-row: 3; position: sticky; top: 100px; }
+  #talPanel > .tal-plan { grid-column: 2; grid-row: 4; margin-top: 0; }
+  #talPanel > .tal-plan ol { grid-template-columns: minmax(0, 1fr); }
+  #talPanel > #talSource { grid-row: 6; }
+  /* abilities: the training budget beside the list, the levels in two columns */
+  #abPanel { display: grid; grid-template-columns: minmax(340px, 26%) minmax(0, 1fr); gap: 16px 24px; align-items: start; }
+  #abPanel > * { grid-column: 1 / -1; }
+  #abPanel > .ab-sum { grid-column: 1; position: sticky; top: 100px; }
+  #abPanel > .ab-list { grid-column: 2; grid-row: span 2; columns: 2 460px; column-gap: 28px; display: block; }
+  #abPanel > .ab-list > * { break-inside: avoid; margin-bottom: 12px; }
+}
+@media (min-width: 2300px) {
+  #wornPanel { grid-column: span 7; } #amrPanel { grid-column: span 5; }
+}
+@media (min-width: 2700px) { html { font-size: 112.5%; } body { font-size: 1rem; } :root { --side-w: 330px; } }
+@media (min-width: 3000px) { #board { grid-column: 1 / span 7; } #invPanel { grid-column: 8 / -1; } }
+@media (min-width: 3300px) { html { font-size: 125%; } :root { --side-w: 360px; } }
+
 /* narrow windows: the sidebar becomes a header */
 @media (max-width: 1000px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -843,8 +873,8 @@ body { margin: 0; }
     <a href="#ledger" data-icon="inv_misc_book_09">Ledger</a>
     <a href="#quests" data-icon="inv_misc_note_01">Quests</a>
     <a href="#dungeons" data-icon="inv_misc_head_dragon_01">Dungeons</a>
-    <a href="#talents" data-icon="ability_marksmanship">Talents</a>
-    <a href="#skills" data-icon="trade_alchemy">Skills</a>
+    <a href="#talents" data-icon="inv_chest_leather_09">Character</a>
+    <a href="#skills" data-icon="trade_alchemy">Professions</a>
     <a href="#collectables" data-icon="inv_misc_bag_10">Collectables</a>
     <a href="#settings" data-icon="inv_misc_gear_01">Settings</a>
   </nav>
@@ -1064,7 +1094,7 @@ body { margin: 0; }
     </div>
   </div>
 
-  <section class="panel" id="impPanel" data-view="ledger">
+  <section class="panel" id="impPanel" data-view="settings">
     <div class="tal-head"><h2>Add-on</h2><span class="hint" id="impStatus">Not imported yet.</span></div>
     <p class="muted">The Leveling Ledger add-on records exact XP for each play session, training costs, vendor and Merchant's Favor prices, and what drops for you. When you log out or type <code>/reload</code>, the game saves its file and this PC imports it within a few seconds.</p>
     <p class="hint imp-watch" id="impWatch">Checking which file is being watched…</p>
@@ -1091,14 +1121,14 @@ body { margin: 0; }
     <div id="invResults" class="inv-results"></div>
   </section>
 
-  <section class="panel" id="bkPanel" data-view="ledger">
+  <section class="panel" id="bkPanel" data-view="settings">
     <div class="tal-head"><h2>Backups</h2><span class="hint" id="bkNote"></span></div>
     <p class="muted">Your ledger data is copied once a day into the <code>data\backups</code> folder of the app, and the last two weeks are kept. Restoring saves your current data first, so a restore can be undone.</p>
     <div class="row"><button id="bkNow">Back up now</button></div>
     <ul class="bk-list" id="bkList"></ul>
   </section>
 
-  <section class="panel" id="exportPanel" data-view="ledger">
+  <section class="panel" id="exportPanel" data-view="settings">
     <div class="tal-head"><h2>Export</h2><span class="hint" id="exportNote"></span></div>
     <p class="muted">Download this character's data. The CSV files open in Excel, Google Sheets or Numbers; the JSON file is everything, for safekeeping.</p>
     <ul class="ex-list" id="exportList"></ul>
@@ -1128,7 +1158,7 @@ body { margin: 0; }
         <div class="meters wide" id="skills"></div>
       </section>
 
-  <section class="panel" id="repPanel" data-view="skills">
+  <section class="panel" id="repPanel" data-view="talents">
         <header><h2>Reputation</h2></header>
         <div class="meters wide" id="reps"></div>
       </section>
@@ -1244,12 +1274,12 @@ body { margin: 0; }
     <p class="hint" id="qSource"></p>
   </section>
 
-  <section class="panel" id="wornPanel" data-view="quests">
+  <section class="panel" id="wornPanel" data-view="talents">
     <div class="tal-head"><h2>Your gear</h2><span class="hint" id="wornSync"></span></div>
     <div class="worn-list" id="wornList"></div>
   </section>
 
-  <section class="panel" id="amrPanel" data-view="quests">
+  <section class="panel" id="amrPanel" data-view="talents">
     <div class="tal-head"><h2>Ask Mr. Robot</h2><span class="hint" id="amrAt"></span></div>
     <div id="amrBody"></div>
   </section>
@@ -2302,7 +2332,7 @@ body { margin: 0; }
     return d;
   }
 
-  // ---------- class abilities by level (Talents page) ----------
+  // ---------- class abilities by level (Character page) ----------
   const AB = { data: null, loading: false, all: false, costs: {}, fromAddon: {}, saveT: null, dirty: false };
   // "1g 2s 3c", "2s50", "1.5g" or a plain number of copper → copper
   function parseMoney(txt) {
@@ -2668,11 +2698,11 @@ body { margin: 0; }
     // add-on
     const a = S.addon;
     if (st && !(st.files && st.files.length)) add("warn", "Add-on file not found", st.lastError || "", "settings");
-    else if (!a) add("warn", "No add-on data yet", "Log out or /reload in game with the add-on enabled", "ledger", "impPanel");
+    else if (!a) add("warn", "No add-on data yet", "Log out or /reload in game with the add-on enabled", "settings", "impPanel");
     else {
       const errs = (a.errors || []).filter((e) => e.at && e.at * 1000 >= (a.savedAt || 0) - 6 * 3600 * 1000);
-      if (errs.length) add("warn", `Add-on reported ${errs.length} error${errs.length === 1 ? "" : "s"}`, errs[errs.length - 1].err, "ledger", "impPanel");
-      else add("good", `Add-on imported ${ago(a.importedAt)}`, a.message || "", "ledger", "impPanel");
+      if (errs.length) add("warn", `Add-on reported ${errs.length} error${errs.length === 1 ? "" : "s"}`, errs[errs.length - 1].err, "settings", "impPanel");
+      else add("good", `Add-on imported ${ago(a.importedAt)}`, a.message || "", "settings", "impPanel");
     }
     // Blizzard
     const sy = S.sync || {};
@@ -2685,12 +2715,12 @@ body { margin: 0; }
     } else add("warn", "Not synced with Blizzard yet", "", "settings");
     // backups
     if (st) {
-      if (!st.lastBackup) add("warn", "No backup yet", "", "ledger", "bkPanel");
+      if (!st.lastBackup) add("warn", "No backup yet", "", "settings", "bkPanel");
       else {
         const old = Date.now() - st.lastBackup > 48 * 3600000;
         const d = new Date(st.lastBackup), today = new Date().toDateString(), yest = new Date(Date.now() - 86400000).toDateString();
         const when = d.toDateString() === today ? "today" : d.toDateString() === yest ? "yesterday" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        add(old ? "warn" : "good", `Backed up ${when}`, old ? "The daily backup hasn't run for over two days" : "", "ledger", "bkPanel");
+        add(old ? "warn" : "good", `Backed up ${when}`, old ? "The daily backup hasn't run for over two days" : "", "settings", "bkPanel");
       }
       if (st.updateAvailable) add("good", "Update available", "A newer version is on GitHub", "settings", "stUpdates");
       add("", st.via === "cloudflare" ? `Signed in as ${st.user || "you"}` : "On this PC", st.via === "cloudflare" ? "Through Cloudflare with Google sign-in" : "");
@@ -3067,7 +3097,7 @@ body { margin: 0; }
     for (const [id, n, f] of FAVOR.other) if (!f || !fac || f === fac) ob.append(whA("item", id, n));
   }
 
-  // ---------- recipe book (Skills page) ----------
+  // ---------- recipe book (Professions page) ----------
   const RC = { data: null, loading: false, shown: 30 };
   function knownRecipes() {
     const k = new Map();
@@ -3671,7 +3701,7 @@ body { margin: 0; }
   for (const id of ["rCat", "rSrc", "rShow", "rSkill", "rFac", "rUp"]) $(id).onchange = () => { RC.shown = 30; renderRecipes(); };
   $("rMore").onclick = () => { RC.shown += 30; renderRecipes(); };
 
-  // ---------- materials: where to get crafting reagents (Skills page) ----------
+  // ---------- materials: where to get crafting reagents (Professions page) ----------
   const MAT = { data: null, byName: new Map(), shown: 30, recipeById: new Map() };
   const HOW_LABEL = { Vendor: "Vendor", Herbalism: "Herbalism", Mining: "Mining", Skinning: "Skinning", Fishing: "Fishing", Gathering: "Gather", Drop: "Creature drop", Crafted: "Crafted", Container: "Chests and containers", Disenchanting: "Disenchanting" };
   function loadMaterials() {
@@ -4220,12 +4250,13 @@ body { margin: 0; }
   const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables", "settings"];
   // ---------- section buttons: each tab shows one group of its sections at a time, or all (remembered per tab) ----------
   const SECTIONS = {
-    ledger: [["📜", "Overview", ["dash", "board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel", "exportPanel"]]],
-    quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
-    talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
+    ledger: [["📜", "Overview", ["dash", "board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]]],
+    quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
+    talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]], ["🛡️", "Gear", ["wornPanel", "amrPanel"]], ["🤝", "Reputation", ["repPanel"]]],
     collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🗝️", "Secrets", ["secretPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
-    skills: [["📊", "Overview", ["skillsPanel", "repPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
+    skills: [["📊", "Overview", ["skillsPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
       ["📖", "Recipes", ["recipePanel"]], ["🧱", "Materials", ["matPanel"]]],
+    settings: [["⚙️", "General", ["settingsPanel"]], ["🔌", "Add-on", ["impPanel"]], ["💾", "Backups & export", ["bkPanel", "exportPanel"]]],
   };
   const secKey = (v) => "ledger.sec." + v;
   function secPick(v) { let k = null; try { k = localStorage.getItem(secKey(v)); } catch {} return k === "all" || (SECTIONS[v] || []).some(([, l]) => l === k) ? k : SECTIONS[v] ? SECTIONS[v][0][1] : "all"; }
@@ -4354,7 +4385,7 @@ body { margin: 0; }
     if (v === "skills") { loadRecipes(); renderFavor(); }
     if (v === "dungeons") loadDungeons();
     if (v === "talents") loadAbilities();
-    if (v === "quests") renderGearWorn();
+    if (v === "talents") renderGearWorn();
     if (v === "settings") loadSettings();
     if (curView && curView !== v) window.scrollTo({ top: 0 });
     curView = v;
