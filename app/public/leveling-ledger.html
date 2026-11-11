@@ -1,9 +1,10 @@
 <title>Leveling Ledger</title>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem("ll-theme") || "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one column field journal. A full-width XP bar opens the page, then a two-column board of working panels (session, log XP, checklist, level log, ask) that stacks on phones. Dark-first: it sits beside a game at night. */
+/* Layout: a desktop app. A sidebar holds the character card (class colour, faction crest, level), the pages and their sections, and the status line; a sticky top bar holds the XP bar and a Wowhead search; panels sit in a 12-column grid. Dark stone by default, parchment on request (the sidebar button). */
 :root {
   /* World of Warcraft: Forever: dark stone, bronze trim and gold lettering */
   --bg: #0e0b08;
@@ -89,12 +90,6 @@ textarea { resize: vertical; min-height: 64px; }
 a { color: var(--brass); }
 
 /* Header */
-.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-.ident { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ident h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); line-height: 1.05; }
-.ident .sub { color: var(--muted); }
-.levelbadge { display: flex; align-items: baseline; gap: 8px; }
-.levelbadge .big { font-family: var(--display); font-size: clamp(2.4rem, 7vw, 3.4rem); line-height: 1; color: var(--brass); }
 
 /* XP bar: 20 bubbles, like the in-game bar */
 .xpbar { display: flex; flex-direction: column; gap: 8px; }
@@ -665,15 +660,12 @@ details.ab-lv[open] .ab-names { display: none; }
 .bar { border: 1px solid var(--line); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5); }
 .bar .fill { background: linear-gradient(180deg, color-mix(in srgb, var(--xp) 70%, #fff) 0, var(--xp) 45%, color-mix(in srgb, var(--xp) 70%, #000) 100%); }
 .bar .rest { background: color-mix(in srgb, var(--rested) 60%, transparent); }
-.levelbadge .big { text-shadow: 0 1px 0 rgba(0, 0, 0, .7), var(--glow); }
 a.wh { color: inherit; }
 /* icons (Blizzard's icon images, by name) */
 img.ico { width: 1.2em; height: 1.2em; vertical-align: -.25em; margin-right: .32em; border-radius: 3px; border: 1px solid #000;
   box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); background: #000; object-fit: cover; }
 .iname img.ico, .dg-bh img.ico { width: 1.7em; height: 1.7em; vertical-align: -.5em; }
 .meter .nm img.ico { width: 1.6em; height: 1.6em; vertical-align: -.45em; }
-.char-ico { width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 2px solid var(--brass); box-shadow: var(--glow); vertical-align: -.35em; margin-right: .45rem; background: #000; }
-.ident h1 { display: flex; align-items: center; }
 /* class colours */
 .cls-druid { color: #ff7c0a; } .cls-hunter { color: #aad372; } .cls-mage { color: #3fc7eb; } .cls-paladin { color: #f48cba; }
 .cls-priest { color: #ffffff; } .cls-rogue { color: #fff468; } .cls-shaman { color: #2e8de0; } .cls-warlock { color: #8788ee; } .cls-warrior { color: #c69b6d; }
@@ -683,35 +675,207 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 /* coins */
 .coin { font-family: var(--mono); white-space: nowrap; }
 .coin .g { color: #f2c12e; } .coin .s { color: #c7c7cf; } .coin .c { color: #c9773b; }
+:root[data-theme="light"] .coin .g { color: #9a6c00; } :root[data-theme="light"] .coin .s { color: #66666f; } :root[data-theme="light"] .coin .c { color: #9a4f1c; }
 .coin .g::after, .coin .s::after, .coin .c::after { content: ""; display: inline-block; width: .62em; height: .62em; border-radius: 50%; margin: 0 .28em 0 .1em; vertical-align: .02em; background: currentColor; box-shadow: inset -1px -1px 0 rgba(0, 0, 0, .35); }
+
+/* ======================================================================================================
+   Desktop app shell: a sidebar (character card, pages and their sections, status), a sticky top bar (XP bar,
+   Wowhead search) and a 12-column grid of panels. The character's class colour (--class) runs through it.
+   ====================================================================================================== */
+:root { --class: var(--brass); --side-w: 276px; --side-a: #171009; --side-b: #0b0805; --frame: #000; }
+:root[data-theme="light"] { --side-a: #dcc795; --side-b: #cdb27c; --frame: #6b4f22; }
+:root[data-cls="druid"] { --class: #ff7c0a; } :root[data-cls="hunter"] { --class: #aad372; } :root[data-cls="mage"] { --class: #3fc7eb; }
+:root[data-cls="paladin"] { --class: #f48cba; } :root[data-cls="priest"] { --class: #f2f2f2; } :root[data-cls="rogue"] { --class: #fff468; }
+:root[data-cls="shaman"] { --class: #2e8de0; } :root[data-cls="warlock"] { --class: #8788ee; } :root[data-cls="warrior"] { --class: #c69b6d; }
+:root[data-theme="light"][data-cls="druid"] { --class: #c25400; } :root[data-theme="light"][data-cls="hunter"] { --class: #4f7d1f; }
+:root[data-theme="light"][data-cls="mage"] { --class: #137f9e; } :root[data-theme="light"][data-cls="paladin"] { --class: #b8457d; }
+:root[data-theme="light"][data-cls="priest"] { --class: #5a5a5a; } :root[data-theme="light"][data-cls="rogue"] { --class: #8f8200; }
+:root[data-theme="light"][data-cls="shaman"] { --class: #0a5cb0; } :root[data-theme="light"][data-cls="warlock"] { --class: #5a4fc2; }
+:root[data-theme="light"][data-cls="warrior"] { --class: #8a5f2e; }
+body { margin: 0; }
+.shell { display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); min-height: 100vh; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+
+/* sidebar */
+.side { position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; gap: 16px;
+  padding: 16px 14px 14px; z-index: 30;
+  background: radial-gradient(ellipse 140% 34% at 50% 0, color-mix(in srgb, var(--class) 16%, transparent), transparent 70%),
+              linear-gradient(180deg, var(--side-a), var(--side-b));
+  border-right: 1px solid var(--line);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--brass) 22%, transparent), 6px 0 22px rgba(0, 0, 0, .35); }
+.brand { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--display); color: var(--brass);
+  letter-spacing: .14em; text-transform: uppercase; font-size: .78rem; }
+.brand::before, .brand::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brass) 60%, transparent)); }
+.brand::after { transform: scaleX(-1); }
+.brand-mark { width: 9px; height: 9px; background: var(--brass); transform: rotate(45deg); box-shadow: var(--glow); }
+.charcard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 6px 4px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--brass) 25%, transparent); }
+.portrait { position: relative; width: 104px; height: 104px; margin: 4px 0 14px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--class) 35%, #000), #000 75%);
+  border: 3px solid var(--class); box-shadow: 0 0 0 2px var(--frame), 0 0 0 4px color-mix(in srgb, var(--brass) 70%, #000), 0 0 26px color-mix(in srgb, var(--class) 45%, transparent); }
+.portrait-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.portrait .crest { position: absolute; top: -4px; right: -10px; width: 34px; height: 34px; border-radius: 6px; border: 2px solid var(--frame);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 60%, transparent); background: #000; }
+.lvl-badge { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); min-width: 34px; height: 30px; padding: 0 6px;
+  display: grid; place-items: center; border-radius: 15px; font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: #ffd75e;
+  background: radial-gradient(circle at 50% 30%, #6a1712, #2a0605); border: 2px solid #d4a94f; text-shadow: 0 1px 0 #000; box-shadow: 0 2px 6px rgba(0, 0, 0, .6); }
+.charcard h1 { font-size: 1.7rem; line-height: 1.1; color: var(--class); text-shadow: 0 1px 0 rgba(0, 0, 0, .8), 0 0 18px color-mix(in srgb, var(--class) 35%, transparent); }
+.charcard .sub { color: var(--fg); font-size: .98rem; }
+.charcard .where { color: var(--muted); font-size: .86rem; }
+.charcard #verLabel { font-size: .66rem; margin-top: 2px; }
+.charcard .char-pick { margin-top: 8px; flex-direction: column; gap: 3px; width: 100%; }
+.charcard .char-pick select { width: 100%; padding: 5px 8px; }
+
+/* pages and their sections */
+.side .views { display: flex; flex-direction: column; gap: 2px; border: 0; overflow: visible; }
+.side .views a { display: flex; align-items: center; gap: 11px; padding: 7px 10px; border: 0; border-left: 3px solid transparent; border-radius: 6px;
+  color: color-mix(in srgb, var(--fg) 82%, var(--muted)); font-family: var(--display); font-size: .98rem; letter-spacing: .03em; text-decoration: none; }
+.side .views a:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); color: var(--fg); }
+.side .views a[aria-current="page"] { color: var(--brass); border-left-color: var(--class); text-shadow: var(--glow);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--class) 20%, transparent), transparent 85%); }
+.nav-ic { width: 28px; height: 28px; border-radius: 5px; border: 1px solid var(--frame); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 45%, transparent); flex: none; }
+.side .views a:not([aria-current="page"]) .nav-ic { filter: saturate(.75) brightness(.9); }
+.side .secbar { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 6px 26px; padding-left: 10px; border-left: 1px solid color-mix(in srgb, var(--brass) 30%, transparent); }
+.side .secbar button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 5px 8px; border: 0; border-radius: 5px;
+  background: transparent; color: var(--muted); font-size: .9rem; box-shadow: none; }
+.side .secbar button:hover { color: var(--fg); background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.side .secbar button[aria-pressed="true"] { color: var(--fg); background: color-mix(in srgb, var(--class) 14%, transparent); font-weight: 600; }
+.side .secbar button[aria-pressed="true"]::after { content: ""; margin-left: auto; width: 6px; height: 6px; transform: rotate(45deg); background: var(--class); }
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--brass) 25%, transparent); }
+.side .health { flex-direction: column; align-items: stretch; gap: 4px; margin: 0; }
+.side .health .chip { border: 0; padding: 2px 4px; border-radius: 4px; font-size: .8rem; justify-content: flex-start; }
+.side .health a.chip:hover { background: color-mix(in srgb, var(--surface-2) 60%, transparent); color: var(--fg); }
+.themebtn { font-size: .8rem; padding: 4px 8px; align-self: flex-start; }
+
+/* top bar: the XP bar like the game's, and a Wowhead search */
+.topbar { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 28px; align-items: center;
+  padding: 12px 32px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
+.topbar .xpbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.xp-lv { display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 44px; }
+.xp-lv .label { font-size: .62rem; }
+.xp-lv .num { font-family: var(--display); font-size: 1.55rem; color: var(--brass); text-shadow: var(--glow); }
+.xp-lv.next .num { color: var(--muted); text-shadow: none; }
+.xp-mid { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.topbar .bar { height: 20px; border-radius: 3px; border: 2px solid var(--frame); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 55%, transparent), inset 0 2px 4px rgba(0, 0, 0, .6); background: #120c1c; }
+:root[data-theme="light"] .topbar .bar { background: #3a2c44; }
+.bar .ticks span { border-right: 1px solid rgba(0, 0, 0, .55); }
+.bar-text { position: absolute; inset: 0; display: grid; place-items: center; font-size: .78rem; color: #fff; text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 3px #000; z-index: 2; white-space: nowrap; overflow: hidden; }
+.topbar .barmeta { justify-content: space-between; font-size: .8rem; min-height: 1.3em; }
+.topsearch { display: flex; gap: 6px; }
+.topsearch input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.topsearch input:focus { outline: 2px solid color-mix(in srgb, var(--class) 60%, transparent); outline-offset: 0; }
+
+/* the panel grid */
+.wrap { max-width: 1640px; width: 100%; margin: 0 auto; padding: 24px 32px 56px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.wrap > * { grid-column: 1 / -1; min-width: 0; }
+.board { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
+.board .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+@media (min-width: 1280px) {
+  #impPanel { grid-column: span 7; } #bkPanel { grid-column: span 5; }
+  #qlogPanel { grid-column: 1 / span 4; position: sticky; top: 92px; max-height: calc(100vh - 112px); overflow: auto; }
+  #questPanel { grid-column: 5 / -1; }
+  #wornPanel, #amrPanel { grid-column: span 6; }
+  #skillsPanel { grid-column: span 7; } #repPanel { grid-column: span 5; }
+}
+.panel { border-top-color: color-mix(in srgb, var(--class) 40%, var(--brass)); }
+.panel > header, .panel > .tal-head { padding-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--brass) 18%, transparent); }
+.panel > header h2, .panel > .tal-head h2 { display: flex; align-items: center; gap: 10px; }
+.panel > header h2::before, .panel > .tal-head h2::before { content: ""; width: 7px; height: 7px; flex: none; transform: rotate(45deg); background: var(--class); box-shadow: 0 0 8px color-mix(in srgb, var(--class) 60%, transparent); }
+.about-btn { width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: .78rem; font-weight: 700; line-height: 1; color: var(--muted); margin: 0 auto 0 -2px; flex: none; }
+.about-btn[aria-expanded="true"] { color: var(--brass); border-color: var(--brass); }
+.about { padding: 8px 12px; border-left: 3px solid var(--class); border-radius: 0 6px 6px 0; background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+.about p { margin: 0 0 6px; } .about p:last-child { margin: 0; }
+
+/* at a glance */
+.dash { display: grid; grid-template-columns: repeat(auto-fit, minmax(186px, 1fr)); gap: 14px; }
+#sessionPanel .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#sessionPanel .sess-lines p { margin: 0 0 4px; }
+.edit-char { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+.dash:empty { display: none; }
+.tile { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 8px; cursor: pointer;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--brass)) 0, var(--surface) 70%); border: 1px solid var(--line);
+  border-left: 3px solid color-mix(in srgb, var(--class) 70%, var(--line)); box-shadow: 0 3px 10px rgba(0, 0, 0, .25); transition: transform .12s, border-color .12s; }
+.tile:hover { transform: translateY(-2px); border-color: var(--brass); }
+.tile-ic img { width: 42px; height: 42px; margin: 0; border-radius: 6px; border: 2px solid var(--frame); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 50%, transparent); vertical-align: middle; }
+.tile-tx { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.tile-tx .label { font-size: .66rem; }
+.tile-v { font-family: var(--display); font-size: 1.22rem; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile-v .coin { font-size: 1.05rem; }
+.tile-sub { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.rested .tile-v { color: var(--rested); } .tile.warn { border-left-color: var(--warn); } .tile.warn .tile-sub { color: var(--warn); }
+.tile.good { border-left-color: var(--good); } .tile.good .tile-sub { color: var(--good); }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+
+/* settings: the groups side by side, the save buttons always in reach */
+@media (min-width: 1280px) {
+  .st-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+  .st-form > :not(.st-group) { grid-column: 1 / -1; }
+}
+.st-form > .row:has(#stSave) { position: sticky; bottom: 0; z-index: 5; padding: 12px 0; margin-bottom: -12px;
+  background: linear-gradient(0deg, var(--surface) 70%, transparent); }
+/* narrow windows: the sidebar becomes a header */
+@media (max-width: 1000px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; }
+  .side .views { flex-direction: row; flex-wrap: wrap; }
+  .side .secbar { margin-left: 0; flex-direction: row; flex-wrap: wrap; border-left: 0; padding-left: 0; }
+  .side .secbar button { width: auto; }
+  .topbar { grid-template-columns: minmax(0, 1fr); padding: 10px 16px; gap: 10px; }
+  .wrap { padding: 16px; }
+  .board { grid-template-columns: minmax(0, 1fr); }
+}
 </style>
 
-<div class="wrap" id="app">
-  <section class="top">
-    <div class="ident">
-      <span class="label" id="verLabel">Leveling Ledger</span>
-      <h1 id="charName">Your character</h1>
-      <label class="char-pick" id="charPickWrap" hidden><span class="label">Character</span><select id="charPick" aria-label="Switch character"></select></label>
-      <span class="sub" id="charSub">Loading your ledger…</span>
-    </div>
-    <div class="levelbadge">
-      <span class="label">Level</span>
-      <span class="big num" id="lvl">–</span>
-      <span class="muted num" id="lvlMax"></span>
-    </div>
+<div class="shell">
+<aside class="side" aria-label="Your character and the ledger's pages">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">Leveling Ledger</span></div>
+  <section class="charcard" id="hero" aria-label="Character">
+    <div class="portrait" id="portrait"><span class="lvl-badge num" id="lvl" title="Level">–</span></div>
+    <h1 id="charName">Your character</h1>
+    <span class="sub" id="charSub">Loading your ledger…</span>
+    <span class="where" id="charWhere"></span>
+    <span class="label" id="verLabel"></span>
+    <button type="button" class="linkish edit-char" id="editChar">Edit character</button>
+    <label class="char-pick" id="charPickWrap" hidden><span class="label">Switch character</span><select id="charPick" aria-label="Switch character"></select></label>
   </section>
-
-  <div class="health" id="health" role="status" aria-label="How the ledger is running"></div>
-
   <nav class="views" aria-label="Pages" id="views">
-    <a href="#ledger">Ledger</a>
-    <a href="#quests">Quests</a>
-    <a href="#dungeons">Dungeons</a>
-    <a href="#talents">Talents</a>
-    <a href="#skills">Skills</a>
-    <a href="#collectables">Collectables</a>
-    <a href="#settings">Settings</a>
+    <a href="#ledger" data-icon="inv_misc_book_09">Ledger</a>
+    <a href="#quests" data-icon="inv_misc_note_01">Quests</a>
+    <a href="#dungeons" data-icon="inv_misc_head_dragon_01">Dungeons</a>
+    <a href="#talents" data-icon="ability_marksmanship">Talents</a>
+    <a href="#skills" data-icon="trade_alchemy">Skills</a>
+    <a href="#collectables" data-icon="inv_misc_bag_10">Collectables</a>
+    <a href="#settings" data-icon="inv_misc_gear_01">Settings</a>
   </nav>
+  <div class="secbar" id="secBar" role="toolbar" aria-label="Sections on this page" hidden></div>
+  <div class="side-foot">
+    <div class="health" id="health" role="status" aria-label="How the ledger is running"></div>
+    <button type="button" class="themebtn" id="themeBtn"></button>
+  </div>
+</aside>
+<main class="main">
+  <header class="topbar" aria-label="Experience">
+    <div class="xpbar">
+      <div class="xp-lv"><span class="label">Level</span><span class="num" id="lvlNow">–</span></div>
+      <div class="xp-mid">
+        <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="fill" id="barFill" style="width:0%"></div>
+          <div class="rest" id="barRest" style="left:0%;width:0%"></div>
+          <div class="ticks"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <span class="bar-text num" id="xpText"></span>
+        </div>
+        <div class="barmeta"><span class="row" id="barChips"></span><span class="muted" id="lvlMax"></span></div>
+      </div>
+      <div class="xp-lv next"><span class="label">Next</span><span class="num" id="lvlNext">–</span></div>
+    </div>
+    <form id="whForm" class="topsearch" role="search">
+      <input id="whIn" placeholder="Search Wowhead: quest, item, NPC…" aria-label="Search Wowhead">
+      <button type="submit" aria-label="Search Wowhead">Search</button>
+      <span class="hint" id="whVer" hidden></span>
+    </form>
+  </header>
+<div class="wrap" id="app">
 
   <section class="panel" id="settingsPanel" data-view="settings">
     <header><h2>Settings</h2><span class="hint" id="stNote"></span></header>
@@ -777,18 +941,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     </form>
   </section>
 
-  <section class="xpbar" aria-label="Experience" data-view="ledger quests dungeons talents skills collectables">
-    <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div class="fill" id="barFill" style="width:0%"></div>
-      <div class="rest" id="barRest" style="left:0%;width:0%"></div>
-      <div class="ticks"></div>
-    </div>
-    <div class="barmeta">
-      <span class="num" id="xpText">0 / 0 XP</span>
-      <span class="row" id="barChips"></span>
-    </div>
-  </section>
-  <div class="secbar" id="secBar" role="toolbar" aria-label="Sections on this page" hidden></div>
+  <section class="dash" id="dash" data-view="ledger" aria-label="At a glance"></section>
 
   <section class="panel" id="collPanel" data-view="collectables">
         <header><h2>Your collection</h2><span class="hint" id="collSync"></span></header>
@@ -883,22 +1036,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
         <div class="row">
           <button class="ghost" id="syncBtn" hidden>Sync from Blizzard</button>
         </div>
-        <p class="hint" id="syncNote" hidden>Pulls Talwyn's level, XP and gear from Blizzard. Blizzard updates after you log out of the game.</p>
+        <p class="hint" id="syncNote" hidden>Blizzard updates your level, XP and gear after you log out.</p>
         <p class="syncstat" id="syncStat" hidden></p>
       </section>
 
-      <section class="panel">
-        <header><h2>Look it up</h2><span class="hint" id="whVer"></span></header>
-        <form id="whForm" class="row">
-          <input class="grow" id="whIn" placeholder="Quest, item, NPC or zone" aria-label="Search Wowhead">
-          <button type="submit">Search Wowhead</button>
-        </form>
-        <p class="hint">Opens Wowhead in a new tab, matched to your game version.</p>
-      </section>
     </div>
 
     <div class="col">
-      <section class="panel">
+      <section class="panel" id="taskPanel">
         <header><h2>To do</h2><span class="hint num" id="taskCount"></span></header>
         <form id="taskForm" class="row">
           <input class="grow" id="taskIn" maxlength="140" placeholder="Train new skills at level 10" aria-label="New task">
@@ -910,13 +1055,12 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 
       
 
-      <section class="panel">
+      <section class="panel" id="logPanel">
         <header><h2>Level log</h2><span class="hint" id="logSummary"></span></header>
         <div class="loglist" id="loglist"></div>
         <details id="pastWrap"><summary>Past sessions</summary><div class="loglist" id="pastSessions" style="margin-top:10px"></div></details>
       </section>
 
-      <div class="row"><button class="ghost" id="editChar">Edit character</button></div>
     </div>
   </div>
 
@@ -961,7 +1105,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   </section>
 
   <section class="panel" id="lvlReport" data-view="ledger">
-    <h2>Leveling report</h2>
+    <header><h2>Leveling report</h2></header>
     <p class="hint">From the add-on's sessions: your pace, where you level fastest, and whether it's getting better. Zone and level figures start with add-on 1.0.26.</p>
     <div id="repBody"><p class="empty">No sessions from the add-on yet.</p></div>
   </section>
@@ -1014,14 +1158,14 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   </section>
 
   <section class="panel" id="profPlanPanel" data-view="skills">
-    <h2>Profession guide</h2>
+    <header><h2>Profession guide</h2></header>
     <p class="hint" id="ppDiscount"></p>
     <p class="hint">The most effective way from your skill to 300 for each of this character's professions, worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: the cheapest recipe for each point (orange always gives one, yellow sometimes), using materials on any of your characters first; Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way. Prices are ones you've seen at vendors or the auction house, else the published vendor price.</p>
     <div id="profPlan"><p class="empty">Loading recipes…</p></div>
   </section>
 
   <section class="panel" id="gatherPanel" data-view="skills">
-    <h2>Gathering</h2>
+    <header><h2>Gathering</h2></header>
     <p class="hint">Where herbs, ore and skinnable beasts spawn (QuestieDB's Forever data; beasts are picked by name, since the data has no creature type, so a few may be wrong), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Map images: Wowhead.</p>
     <div class="row g-controls">
       <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option><option>Skinning</option></select></label>
@@ -1073,7 +1217,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
 
 
   <section class="panel" id="qlogPanel" data-view="quests">
-    <h2>In progress</h2>
+    <header><h2>In progress</h2></header>
     <p class="hint">Your quest log, from the add-on: each objective's progress, and how long you've had the quest. With Questie installed, progress is saved the moment it changes; it reaches this page when you /reload or log out.</p>
     <div id="qlogList"><p class="empty">Nothing yet. Update the add-on, then /reload with your quest log open or not.</p></div>
     <div id="qlogTook"></div>
@@ -1172,6 +1316,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <p class="hint" id="talSource"></p>
   </section>
 </div>
+</main>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -1268,19 +1414,30 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     if (S.loaded && !c && S.canWrite && !window.LL_CHAR) { $("setup").hidden = false; $("setupCancel").hidden = true; }
     else if (!editing) $("setup").hidden = true;
     document.body.classList.toggle("needs-setup", !!(S.loaded && !c && S.canWrite));
+    $("editChar").hidden = !S.canWrite || !c;
 
     if (!c) {
-      $("charName").textContent = "Your character";
+      $("charName").textContent = "Your character"; $("charWhere").textContent = ""; $("lvlNow").textContent = "–"; $("lvlNext").textContent = "–";
       $("charSub").textContent = S.loaded ? (window.LL_CHAR ? "Setting up this character from Blizzard. This takes a few seconds; if it doesn't appear, check its name on the Settings tab." : S.canWrite ? "Set up your character below to start tracking." : "This ledger has no character yet.") : "Loading your ledger…";
       $("lvl").textContent = "–"; $("lvlMax").textContent = ""; $("xpText").textContent = "";
       $("barFill").style.width = "0%"; $("barRest").style.width = "0%"; $("barChips").replaceChildren();
     } else {
-      $("verLabel").textContent = c.version || "Leveling Ledger";
+      const maxLv = c.maxLevel || MAXLV[c.version] || 60;
+      $("verLabel").textContent = [c.version || "World of Warcraft: Forever", c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ");
       $("charName").textContent = c.name || "Your character";
-      if (classKey(c.cls)) { const ci = iconImg("classicon_" + classKey(c.cls), "char-ico"); ci.className = "char-ico"; ci.title = c.cls; $("charName").prepend(ci); }
-      $("charSub").textContent = [c.race, c.cls, c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ") + (c.zone ? `  —  ${c.zone}${c.subzone && c.subzone !== c.zone ? ", " + c.subzone : ""}` : "") + (c.equippedItemLevel ? `  ·  ilvl ${c.equippedItemLevel}` : "") + (c.syncedAt ? `  ·  synced from Blizzard ${shortDate(c.syncedAt)}` : "");
-      $("lvl").textContent = c.level; $("lvlMax").textContent = `/ ${c.maxLevel}`;
-      const atMax = c.level >= c.maxLevel;
+      // the class shows everywhere: its colour (--class) on the card, the page's accents and the XP bar's frame
+      const ck = classKey(c.cls), fac = myFaction();
+      document.documentElement.dataset.cls = ck || "";
+      document.documentElement.dataset.fac = fac ? fac.toLowerCase() : "";
+      const pt = $("portrait"); for (const im of pt.querySelectorAll("img")) im.remove();
+      if (ck) { const ci = iconImg("classicon_" + ck); ci.className = "portrait-img"; ci.title = c.cls; pt.prepend(ci); }
+      if (fac) { const fi = iconImg(fac === "Horde" ? "inv_bannerpvp_01" : "inv_bannerpvp_02"); fi.className = "crest"; fi.title = fac; pt.append(fi); }
+      $("charSub").textContent = [c.race, c.cls].filter(Boolean).join(" ");
+      $("charWhere").textContent = (c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? " · " + c.subzone : "") : "") + (c.equippedItemLevel ? (c.zone ? "  ·  " : "") + `item level ${c.equippedItemLevel}` : "");
+      $("charWhere").title = c.syncedAt ? `Synced from Blizzard ${shortDate(c.syncedAt)}` : "";
+      $("lvl").textContent = c.level; $("lvlMax").textContent = `Level cap ${maxLv}`;
+      $("lvlNow").textContent = c.level; $("lvlNext").textContent = c.level >= maxLv ? "max" : c.level + 1;
+      const atMax = c.level >= maxLv;
       const pct = atMax ? 100 : Math.min(100, c.xpMax ? c.xp / c.xpMax * 100 : 0);
       const rpct = atMax ? 0 : Math.min(100 - pct, c.xpMax ? (c.rested || 0) / c.xpMax * 100 : 0);
       $("barFill").style.width = pct + "%";
@@ -1293,7 +1450,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       $("barChips").replaceChildren(...chips);
       $("whVer").textContent = c.version || "";
     }
-    renderSession(); renderTasks(); renderLog(); renderInv(); renderCollections(); renderTalents(); renderQuests(); renderGear();
+    renderSession(); renderTasks(); renderLog(); renderInv(); renderCollections(); renderTalents(); renderQuests(); renderGear(); renderDash();
     for (const el of document.querySelectorAll("#board button, #board input, #board textarea, #board select"))
       if (!el.closest("#whForm")) el.disabled = !S.canWrite;
   }
@@ -2231,6 +2388,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   // you typed), against the gold this character carries.
   function renderAbilitySum() {
     if (!AB.data) return;
+    renderDash();
     const cls = ((S.char && S.char.cls) || "Druid").split(/[ (]/)[0];
     const lv = (S.char && S.char.level) || 1;
     const all = (AB.data.classes[cls] || []).filter((e) => !e.auto);
@@ -4062,7 +4220,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables", "settings"];
   // ---------- section buttons: each tab shows one group of its sections at a time, or all (remembered per tab) ----------
   const SECTIONS = {
-    ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel", "exportPanel"]]],
+    ledger: [["📜", "Overview", ["dash", "board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel", "exportPanel"]]],
     quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
     talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
     collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🗝️", "Secrets", ["secretPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
@@ -4074,6 +4232,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function applySections(v) {
     const bar = $("secBar"), groups = SECTIONS[v];
     for (const e of document.querySelectorAll(".sec-off")) e.classList.remove("sec-off");
+    // the sections sit under the page's link in the sidebar
+    const link = $("views").querySelector(`a[href="#${v}"]`);
+    if (link) link.after(bar);
     if (!groups) { bar.hidden = true; return; }
     const pick = secPick(v);
     for (const [, label, ids] of groups) for (const id of ids) { const e = $(id); if (e) e.classList.toggle("sec-off", pick !== "all" && pick !== label); }
@@ -4085,7 +4246,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       bar.append(b);
     };
     for (const [icon, label] of groups) btn(icon, label, label);
-    btn("☰", "All", "all");
+    btn("☰", "Everything", "all");
     bar.hidden = false;
   }
   // show the group holding a section (for links that jump to it), then the caller scrolls to it
@@ -4096,6 +4257,94 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
       return;
     }
   }
+  // ---------- at a glance (Ledger overview): the numbers that matter most, each linking to where it comes from ----------
+  function go(view, target) {
+    if (target) showSection(target);
+    if (location.hash !== "#" + view) location.hash = view; else setView();
+    if (target) setTimeout(() => { const t = $(target); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
+  }
+  function renderDash() {
+    const box = $("dash"); if (!box) return;
+    const c = S.char; if (!c) { box.replaceChildren(); return; }
+    const tiles = [];
+    const tile = (icon, label, value, sub, view, target, cls) => {
+      const t = el("button", "tile" + (cls ? " " + cls : "")); t.type = "button"; t.onclick = () => go(view, target);
+      const ic = el("span", "tile-ic"); ic.append(iconImg(icon)); t.append(ic);
+      const tx = el("span", "tile-tx"); tx.append(el("span", "label", label));
+      const v = el("span", "tile-v"); if (value instanceof Node) v.append(value); else v.textContent = value; tx.append(v);
+      if (sub) tx.append(el("span", "tile-sub", sub));
+      t.append(tx); tiles.push(t);
+    };
+    // next level: at your recent pace
+    const r = rate(), maxLv = c.maxLevel || 60, atMax = c.level >= maxLv;
+    const eta = r && !atMax && !c.needsXpMax && c.xpMax ? dur((c.xpMax - c.xp) / r.v * 3600000) : null;
+    tile("spell_holy_borrowedtime", atMax ? "Level" : `Level ${c.level + 1} in`, atMax ? "Max level" : eta || "–",
+      r ? `at ${fmt(Math.round(r.v))} XP an hour` : "after your first session with the add-on", "ledger", "sessionPanel");
+    // rested
+    const restPct = c.xpMax ? Math.round((c.rested || 0) / c.xpMax * 100) : 0;
+    tile("spell_nature_sleep", "Rested", c.rested ? `${fmt(c.rested)} XP` : "None", c.rested ? `${restPct}% of this level${c.resting ? " · resting now" : ""}` : (c.resting ? "resting now" : "rest in an inn or city"), "ledger", "invPanel", c.rested ? "rested" : "");
+    // gold: this character, and everyone
+    const chars = invChars(), me = chars.find(isMe);
+    const all = chars.reduce((a, x) => a + (x.money || 0), 0);
+    tile("inv_misc_coin_01", "Gold", me && me.money != null ? moneyEl(me.money) : "–", chars.length > 1 ? `${moneyEl(all).textContent} across ${chars.length} characters` : "", "ledger", "invPanel");
+    // training: the next visit and whether you can afford it
+    if (AB.data) {
+      const cls = (c.cls || "Druid").split(/[ (]/)[0], lv = c.level || 1;
+      const list = (AB.data.classes[cls] || []).filter((e) => !e.auto);
+      const st = (e) => (AB.fromAddon[e.id] || {}).state;
+      const now = list.filter((e) => e.lv <= lv && st(e) === "available");
+      let next = now.length ? { lv, es: now } : null;
+      for (let L = lv + 1; !next && L <= Math.min(60, lv + 10); L++) { const es = list.filter((e) => e.lv === L); if (es.length) next = { lv: L, es }; }
+      if (next) {
+        const cost = next.es.reduce((a, e) => a + (AB.costs[e.id] || 0), 0), money = me && me.money;
+        const short = money != null && cost > money;
+        tile("inv_misc_book_11", next.lv === lv ? "Train now" : `Training at ${next.lv}`, cost ? moneyEl(cost) : `${next.es.length} abilit${next.es.length === 1 ? "y" : "ies"}`,
+          short ? `you're ${moneyEl(cost - money).textContent} short` : `${next.es.length} abilit${next.es.length === 1 ? "y" : "ies"}`, "talents", "abPanel", short ? "warn" : "");
+      }
+    }
+    // quests in your log
+    const ql = (S.qlog && S.qlog.quests) || [];
+    if (S.qlog) { const ready = ql.filter((q) => q.done).length; tile("inv_misc_note_01", "Quest log", `${ql.length} quest${ql.length === 1 ? "" : "s"}`, ready ? `${ready} ready to turn in` : "none ready yet", "quests", "qlogPanel", ready ? "good" : ""); }
+    // who to play next
+    const best = chars.filter((x) => !isMe(x)).map((x) => ({ x, r: restedNow(x) })).filter((y) => y.r && y.r.pct >= 0.25).sort((a, b) => b.r.pct - a.r.pct)[0];
+    if (best) tile("achievement_character_nightelf_female", "Best to play next", best.x.name, `${Math.round(best.r.pct * 100)}% of a level rested`, "ledger", "invPanel");
+    // collections
+    if (BOOKS.data) {
+      const fac = (myFaction() || "")[0], col = BOOKS.data.collections[0];
+      const items = col.items.filter((b) => !b.fac || !fac || b.fac === fac), have = items.filter((b) => bookState(b) === "done").length;
+      const nextTier = col.milestones.find((m) => m.at > have);
+      tile("inv_misc_book_09", "Library Books", `${have} / ${items.length}`, nextTier ? `${nextTier.at - have} to the ${nextTier.at}-book reward` : "every reward reached", "collectables", "booksPanel");
+    }
+    box.replaceChildren(...tiles);
+  }
+  // ---------- long explanations: behind an "about" toggle in the panel's heading, so panels open on their content ----------
+  function tidyIntros() {
+    for (const panel of document.querySelectorAll("section.panel")) {
+      const head = panel.querySelector(":scope > header, :scope > .tal-head");
+      if (!head || head.querySelector(".about-btn")) continue;
+      const intro = [];
+      for (let n = head.nextElementSibling; n && n.tagName === "P" && (n.classList.contains("muted") || n.classList.contains("hint")) && !n.id; n = n.nextElementSibling) intro.push(n);
+      if (!intro.length || intro.reduce((a, p) => a + p.textContent.length, 0) < 90) continue;
+      const box = el("div", "about"); box.hidden = true; box.id = (panel.id || "p" + Math.random().toString(36).slice(2, 7)) + "-about";
+      intro[0].before(box); box.append(...intro);
+      const b = el("button", "about-btn", "?"); b.type = "button"; b.title = "What is this?"; b.setAttribute("aria-label", "About this section");
+      b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", box.id);
+      b.onclick = () => { box.hidden = !box.hidden; b.setAttribute("aria-expanded", String(!box.hidden)); };
+      const h2 = head.querySelector("h2"); if (h2) h2.after(b); else head.prepend(b);
+    }
+  }
+  // ---------- theme: World of Warcraft dark stone (default) or parchment ----------
+  function renderThemeBtn() {
+    const dark = document.documentElement.dataset.theme !== "light";
+    $("themeBtn").textContent = dark ? "☀ Parchment" : "☾ Dark stone"; $("themeBtn").title = dark ? "Switch to the light parchment look" : "Switch to the dark stone look";
+  }
+  $("themeBtn").onclick = () => {
+    const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = t; try { localStorage.setItem("ll-theme", t); } catch {}
+    renderThemeBtn(); if (typeof renderHistory === "function") renderHistory();
+  };
+  renderThemeBtn();
+  for (const a of $("views").querySelectorAll("a[data-icon]")) { const im = iconImg(a.dataset.icon); im.className = "nav-ic"; a.prepend(im); }
   let curView = null;
   function setView() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
@@ -4117,7 +4366,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   function loadBooks() {
     if (BOOKS.data || BOOKS.loading) { renderBooks(); renderChains(); renderSecrets(); return; }
     BOOKS.loading = true;
-    fetch("collections-forever.json").then((r) => r.json()).then((d) => { BOOKS.data = d; renderBooks(); renderChains(); renderSecrets(); }).catch(() => { $("booksBody").replaceChildren(el("p", "empty", "Couldn't load the book list. Reload the page to try again.")); });
+    fetch("collections-forever.json").then((r) => r.json()).then((d) => { BOOKS.data = d; renderBooks(); renderChains(); renderSecrets(); renderDash(); }).catch(() => { $("booksBody").replaceChildren(el("p", "empty", "Couldn't load the book list. Reload the page to try again.")); });
   }
   function bookState(b) {
     const got = S.books || {};
@@ -4488,7 +4737,10 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   let cT; $("cText").oninput = () => { clearTimeout(cT); cT = setTimeout(renderCollect, 200); };
   for (const id of ["cShow", "cSrc", "cFac"]) $(id).onchange = renderCollect;
   window.addEventListener("hashchange", setView);
+  tidyIntros();
   setView();
+  // the dashboard's training and book tiles need these; fetched once the page has settled
+  setTimeout(() => { loadAbilities(); loadBooks(); }, 1200);
 
   // ---------- talent planner ----------
   const TAL = { data: null, ranks: {}, sel: null, remove: false, saveT: null, plans: [], cls: null, unsub: null };
@@ -4980,7 +5232,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
-    db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
+    db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) { renderBooks(); renderDash(); } }, () => {});
     db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("shared/journal").onSnapshot((s) => { S.journal = s.exists ? s.data() : null; renderJournalStatus(); if (DG.data) renderDungeons(); }, () => {});
@@ -4990,7 +5242,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/gathers").onSnapshot((s) => { S.gathers = s.exists ? s.data() : null; try { renderGather(); } catch {} }, () => {});
     db.doc("shared/ahprices").onSnapshot((s) => { S.ah = s.exists ? s.data() : null; renderRecipes(); renderMaterials(); }, () => {});
     db.doc("shared/questplan").onSnapshot((s) => { S.plan = s.exists ? s.data() : null; renderQuests(); renderQuestLog(); }, () => {});
-    db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); }, () => {});
+    db.doc("state/questlog").onSnapshot((s) => { S.qlog = s.exists ? s.data() : null; renderQuestLog(); renderDash(); }, () => {});
     db.doc("state/quests").onSnapshot((s) => { QD.done = new Set((s.exists && s.data().completed) || []); renderQuests(); renderGear(); }, () => {});
     db.doc("state/questmarks").onSnapshot((s) => { if (s.metadata.hasPendingWrites) return; const d = (s.exists && s.data()) || {}; QD.marks = { done: { ...(d.done || {}) }, hidden: { ...(d.hidden || {}) } }; renderQuests(); renderGear(); }, () => {});
     db.doc("shared/talentplans").onSnapshot((s) => { S.tplan = s.exists ? s.data() : null; renderTalPlan(); }, () => {});
@@ -4998,7 +5250,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/collections").onSnapshot((s) => { S.coll = s.exists ? s.data() : null; renderCollections(); renderCollect(); renderRecipes(); renderMaterials(); renderFavor(); }, () => {});
     db.collection("dings").orderBy("at", "asc").limit(500).onSnapshot((q) => { S.dings = q.docs.map((d) => ({ id: d.id, data: d.data() })); renderLog(); }, () => {});
     db.collection("sessions").orderBy("startedAt", "desc").limit(200).onSnapshot((q) => { S.sessions = q.docs.map((d) => ({ ...d.data(), _id: d.id })); S.sessionsLoaded = true; renderSession(); renderLog(); reconcileSessions(); renderHistory(); renderReport(); }, () => {});
-    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
+    db.doc("shared/inventories").onSnapshot((s) => { S.inv = s.exists ? s.data() : null; renderInv(); renderDash(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
     db.doc("shared/hiddenchars").onSnapshot((s) => { S.hidden = s.exists ? s.data() : null; renderInv(); renderRecipes(); renderAbilitySum(); renderReport(); if (BAGS.data) renderBags(); }, () => {});
     db.doc("shared/items").onSnapshot((s) => { S.invItems = s.exists ? s.data() : null; renderInv(); renderRecipes(); }, () => {});
     db.doc("state/addonreps").onSnapshot((s) => { S.areps = s.exists ? s.data() : null; renderCollections(); }, () => {});
