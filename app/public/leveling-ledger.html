@@ -826,8 +826,7 @@ body { margin: 0; }
   #abPanel { display: grid; grid-template-columns: minmax(340px, 26%) minmax(0, 1fr); gap: 16px 24px; align-items: start; }
   #abPanel > * { grid-column: 1 / -1; }
   #abPanel > .ab-sum { grid-column: 1; position: sticky; top: 100px; }
-  #abPanel > .ab-list { grid-column: 2; grid-row: span 2; columns: 2 460px; column-gap: 28px; display: block; }
-  #abPanel > .ab-list > * { break-inside: avoid; margin-bottom: 12px; }
+  #abPanel > .ab-list { grid-column: 2; grid-row: span 2; }
 }
 @media (min-width: 2300px) {
   #wornPanel { grid-column: span 7; } #amrPanel { grid-column: span 5; }
@@ -871,6 +870,48 @@ body { margin: 0; }
   #talPanel > .tal-plan { grid-column: 2; grid-row: 4; }
   #talPanel > #talSource { grid-row: 5; }
 }
+
+/* ---------- abilities: a bar per level, then a card per ability ---------- */
+.ab-list { gap: 14px; }
+.ab-lv { border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 8px; padding: 0; gap: 0; background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+.ab-lv.now { border-left-color: var(--class); background: color-mix(in srgb, var(--class) 7%, var(--surface)); }
+.ab-lv.next { border-left-color: var(--brass); }
+.ab-lv.past { opacity: .62; }
+details.ab-lv > summary.ab-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; list-style: none; }
+details.ab-lv > summary.ab-h::-webkit-details-marker { display: none; }
+details.ab-lv > summary.ab-h::before { content: "▸"; color: var(--brass); width: 1em; transition: transform .15s; }
+details.ab-lv[open] > summary.ab-h::before { transform: rotate(90deg); }
+details.ab-lv[open] > summary.ab-h { border-bottom: 1px solid color-mix(in srgb, var(--brass) 18%, transparent); }
+.ab-lvn { font-family: var(--display); font-size: 1.1rem; color: var(--brass); min-width: 5.2em; }
+.ab-count { font-family: var(--body); font-weight: 400; font-size: .88rem; }
+.ab-total { font-family: var(--body); font-weight: 500; font-size: .9rem; }
+.ab-strip { display: flex; gap: 3px; margin-left: auto; flex-wrap: wrap; }
+.ab-strip img.ico { width: 24px; height: 24px; margin: 0; border-radius: 4px; }
+details.ab-lv[open] .ab-strip { display: none; }
+.ab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; padding: 12px 14px 14px; }
+.ab-card { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+.ab-card:hover { border-color: color-mix(in srgb, var(--brass) 60%, var(--line)); }
+.ab-ic img.ico { width: 44px; height: 44px; margin: 0; border-radius: 6px; border: 2px solid var(--frame); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 45%, transparent); }
+.ab-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.ab-top { display: flex; align-items: baseline; gap: 6px 8px; flex-wrap: wrap; }
+.ab-name { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--fg); text-decoration: none; }
+.ab-name:hover { color: var(--brass); text-decoration: underline; }
+.ab-rank { font-size: .8rem; color: var(--muted); }
+.ab-tree { font-size: .7rem; padding: 1px 7px; border-radius: 999px; border: 1px solid; margin-left: auto; white-space: nowrap; color: var(--muted); }
+.ab-tree.t0 { color: #7fb2ff; border-color: color-mix(in srgb, #7fb2ff 45%, transparent); }
+.ab-tree.t1 { color: #ff9a6b; border-color: color-mix(in srgb, #ff9a6b 45%, transparent); }
+.ab-tree.t2 { color: #79d98b; border-color: color-mix(in srgb, #79d98b 45%, transparent); }
+:root[data-theme="light"] .ab-tree.t0 { color: #1f5fb8; } :root[data-theme="light"] .ab-tree.t1 { color: #a8431a; } :root[data-theme="light"] .ab-tree.t2 { color: #237a35; }
+.ab-meta { display: flex; flex-wrap: wrap; gap: 4px; font-family: var(--body); opacity: 1; }
+.ab-meta span { font-size: .74rem; padding: 0 7px; border-radius: 4px; background: var(--surface-2); color: var(--fg); white-space: nowrap; }
+.ab-d { font-size: .84rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.ab-d.full { display: block; }
+.ab-cost { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: .86rem; }
+.ab-cost input { width: 8.5rem; padding: 3px 8px; font-size: .84rem; font-family: var(--mono); }
+.ab-src { font-size: .74rem; color: var(--good); }
+.ab-edit { font-size: .8rem; color: var(--muted); text-decoration: none; }
+.ab-edit:hover { color: var(--brass); text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { details.ab-lv > summary.ab-h::before { transition: none; } }
 /* narrow windows: the sidebar becomes a header */
 @media (max-width: 1000px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -2395,47 +2436,78 @@ body { margin: 0; }
     const levels = [...by].sort((a, b) => a[0] - b[0]);
     const nextL = (levels.find(([L]) => L > lv) || [])[0];
     AB.open = AB.open || new Map();
+    AB.editing = AB.editing || new Set();
+    // each spec tree gets its own tint, in the order the class's trees appear
+    const trees = TAL.data && TAL.cls === cls ? TAL.data.trees.map((t) => t.spec) : [...new Set(list.map((e) => e.t).filter(Boolean))];
+    const treeCls = (t) => trees.includes(t) ? "ab-tree t" + trees.indexOf(t) % 3 : "ab-tree";
     for (const [L, es] of levels) {
-      const g = el("details", "ab-lv" + (L === lv ? " now" : L < lv ? " past" : ""));
+      const g = el("details", "ab-lv" + (L === lv ? " now" : L < lv ? " past" : L === nextL ? " next" : ""));
       g.open = AB.open.has(L) ? AB.open.get(L) : (L === lv || L === nextL);
       g.addEventListener("toggle", () => AB.open.set(L, g.open));
-      const sm = el("summary", "ab-h", L === lv ? `Level ${L} (you)` : `Level ${L}`);
-      sm.append(el("span", "muted ab-names", " · " + es.map((e) => e.n + (e.r ? " " + e.r.replace(/^Rank\s*/i, "") : "")).join(", ")));
+      // the level bar: level, where you stand, how many and what it costs; closed, a strip of the abilities' icons
+      const sm = el("summary", "ab-h");
+      sm.append(el("span", "ab-lvn", `Level ${L}`));
+      if (L === lv) sm.append(el("span", "pill go", "You're here"));
+      else if (L === nextL) sm.append(el("span", "pill wait", "Next"));
+      else if (L < lv) sm.append(el("span", "pill", "Behind you"));
+      const trainable = es.filter((e) => !e.auto), known = trainable.filter((e) => AB.costs[e.id] != null);
+      sm.append(el("span", "muted ab-count", `${es.length} abilit${es.length === 1 ? "y" : "ies"}`));
+      if (known.length) { const c = el("span", "ab-total"); c.append(moneyEl(known.reduce((a, e) => a + AB.costs[e.id], 0))); if (known.length < trainable.length) c.append(el("span", "muted", ` + ${trainable.length - known.length} unknown`)); sm.append(c); }
+      const strip = el("span", "ab-strip");
+      for (const e of es.slice(0, 16)) { const ic = iconFor("spell", e.id); if (ic) { const im = iconImg(ic); im.title = e.n + (e.r ? " " + e.r : ""); strip.append(im); } }
+      sm.append(strip);
       g.append(sm);
+      const grid = el("div", "ab-grid");
       for (const e of es) {
-        const r = el("div", "ab-row");
-        r.append(whA("spell", e.id, e.n, "who"));
-        if (e.r) r.append(el("span", "muted", " " + e.r));
-        if (e.auto) r.append(el("span", "pill kind", "Known from the start"));
-        r.append(el("span", "muted ab-t", ` · ${e.t}`));
+        const card = el("div", "ab-card");
+        const ic = iconFor("spell", e.id), icw = el("span", "ab-ic");
+        if (ic) icw.append(iconImg(ic)); card.append(icw);
+        const body = el("div", "ab-body");
+        const top = el("div", "ab-top");
+        const a = el("a", "wh ab-name", e.n); a.href = whHref("spell", e.id); a.target = "_blank"; a.rel = "noopener"; a.title = "Open on Wowhead";
+        top.append(a);
+        if (e.r) top.append(el("span", "ab-rank", e.r));
+        if (e.t) top.append(el("span", treeCls(e.t), e.t));
+        if (e.auto) top.append(el("span", "pill kind", "Known from the start"));
+        body.append(top);
         const meta = [e.cost, e.cast, e.range, e.cd ? `${e.cd} cooldown` : "", e.form ? `needs ${e.form}` : ""].filter(Boolean);
-        if (meta.length) r.append(el("div", "ab-meta", meta.join(" · ")));
-        if (e.d) r.append(el("div", "ab-d", e.d));
+        if (meta.length) { const m = el("div", "ab-meta"); for (const x of meta) m.append(el("span", null, x)); body.append(m); }
+        if (e.d) { const d = el("div", "ab-d", e.d); d.title = "Click to read it all"; d.onclick = () => d.classList.toggle("full"); body.append(d); }
+        // training cost: read at the trainer (locked), typed by you, or a small "set cost" until you know it
         const fa = !e.auto && AB.fromAddon[e.id] && AB.costs[e.id] != null ? AB.fromAddon[e.id] : null;
         if (fa) {
-          // read at the trainer by the add-on: shown as recorded, not editable
           const cw = el("div", "ab-cost");
-          const p = el("span", "pill go", "From the trainer");
-          p.title = `Recorded by the add-on${fa.by ? " at " + fa.by : ""}${fa.at ? ", " + new Date(fa.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}. It changes only when the add-on sees a different price.`;
-          cw.append(el("span", "label", "Cost"), moneyEl(AB.costs[e.id]), document.createTextNode(" "), p);
-          if (fa.by) cw.append(el("span", "muted", ` at ${fa.by}`));
-          r.append(cw);
+          cw.append(moneyEl(AB.costs[e.id]));
+          const p2 = el("span", "ab-src", "✓ trainer"); p2.title = `Recorded by the add-on${fa.by ? " at " + fa.by : ""}${fa.at ? ", " + new Date(fa.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}. It changes only when the add-on sees a different price.`;
+          cw.append(p2); body.append(cw);
         } else if (!e.auto) {
-          const cw = el("label", "ab-cost");
-          const inp = el("input"); inp.id = "cost-" + e.id; inp.placeholder = "cost"; inp.setAttribute("aria-label", `Training cost for ${e.n} ${e.r || ""}`);
-          const cur = AB.costs[e.id]; inp.value = cur != null ? money(cur) || "0c" : "";
-          inp.disabled = !S.canWrite || !db;
-          const show = el("span", "muted");
-          inp.onchange = () => {
-            const v = parseMoney(inp.value);
-            if (inp.value.trim() && v == null) { show.textContent = "Use e.g. 1s 80c"; return; }
-            if (v == null) delete AB.costs[e.id]; else AB.costs[e.id] = v;
-            show.textContent = ""; inp.value = v != null ? money(v) || "0c" : ""; saveCosts(); renderAbilitySum();
-          };
-          cw.append(el("span", "label", "Cost"), inp, show); r.append(cw);
+          const cw = el("div", "ab-cost"), cur = AB.costs[e.id], editable = S.canWrite && !!db;
+          if (!AB.editing.has(e.id) && (cur != null || !editable)) {
+            if (cur != null) cw.append(moneyEl(cur)); else cw.append(el("span", "muted", "cost unknown"));
+            if (editable) { const b = el("button", "linkish ab-edit", "edit"); b.type = "button"; b.onclick = () => { AB.editing.add(e.id); renderAbilities(); setTimeout(() => { const i = $("cost-" + e.id); if (i) i.focus(); }, 0); }; cw.append(b); }
+          } else if (!AB.editing.has(e.id)) {
+            const b = el("button", "linkish ab-edit", "+ set cost"); b.type = "button"; b.title = "Type what your trainer charges, or let the add-on read it when you visit";
+            b.onclick = () => { AB.editing.add(e.id); renderAbilities(); setTimeout(() => { const i = $("cost-" + e.id); if (i) i.focus(); }, 0); };
+            cw.append(b);
+          } else {
+            const inp = el("input"); inp.id = "cost-" + e.id; inp.placeholder = "e.g. 1s 80c"; inp.setAttribute("aria-label", `Training cost for ${e.n} ${e.r || ""}`);
+            inp.value = cur != null ? money(cur) || "0c" : "";
+            const show = el("span", "muted");
+            const done = () => {
+              const v = parseMoney(inp.value);
+              if (inp.value.trim() && v == null) { show.textContent = "Use e.g. 1s 80c"; return; }
+              if (v == null) delete AB.costs[e.id]; else AB.costs[e.id] = v;
+              AB.editing.delete(e.id); saveCosts(); renderAbilities();
+            };
+            inp.onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(); } else if (ev.key === "Escape") { AB.editing.delete(e.id); renderAbilities(); } };
+            inp.onblur = done;
+            cw.append(inp, show);
+          }
+          body.append(cw);
         }
-        g.append(r);
+        card.append(body); grid.append(card);
       }
+      g.append(grid);
       box.append(g);
     }
     $("abMore").textContent = AB.all ? "Show levels near me" : "Show all levels";
@@ -4948,6 +5020,7 @@ body { margin: 0; }
       if (TAL.cls !== cls) return;
       TAL.data = d; $("talSource").textContent = `${cls} talent trees from Blizzard's World of Warcraft: Forever game data, fetched ${d.fetched}. Background art and icons are shown from Wowhead's image server.`;
       renderTalents();
+      if (AB.data) renderAbilities(); // the abilities' spec tags take their colours from the tree order
     }).catch(() => { $("talTrees").replaceChildren(el("p", "empty", "Couldn't load the talent trees. Reload the page to try again.")); });
     fetch(`talentplans-${f}.json`).then((r) => r.ok ? r.json() : null).then((d) => { if (TAL.cls === cls) { TAL.plans = (d && d.plans) || []; renderTalPlan(); } }).catch(() => {});
     if (TAL.unsub) { TAL.unsub(); TAL.unsub = null; }
