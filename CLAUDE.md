@@ -9,7 +9,7 @@
   - `store.js`: JSON document store
   - `watcher.js`: SavedVariables watcher
   - `addon-import.js`: add-on import
-  - `blizzard.js`: Blizzard sync
+  - `blizzard.js`: Blizzard sync. It also stores the armory pictures (`character-media`: face shot and full-body render, links to render.worldofwarcraft.com) in `state/media`; the Gear section hotlinks the render with the slots around it
   - `access.js`: Cloudflare Access JWT check
   - `export.js`: `/api/export?char=&what=` downloads, for the Ledger tab's Export panel: CSV (sessions, levels, quests, characters, items; cells that look like formulas get a leading apostrophe) or JSON (the character's documents plus the shared ones)
 - Characters (`lib/characters.js`):

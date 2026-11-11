@@ -1,6 +1,6 @@
 // Syncs the character from Blizzard's API into the store (same steps the claude.ai scheduled task used).
 const SECTIONS = ["", "professions", "collections/mounts", "collections/pets", "collections/toys", "collections/heirlooms",
-  "collections/transmogs", "achievements", "reputations", "titles", "quests/completed", "equipment"];
+  "collections/transmogs", "achievements", "reputations", "titles", "quests/completed", "equipment", "character-media"];
 const QUAL = { POOR: 0, COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 4, LEGENDARY: 5 };
 
 let token = null, tokenExp = 0;
@@ -65,6 +65,16 @@ function build(sec, now) {
   return { collections, quests: { completed: quests, syncedAt: now }, gear: { items: gear, syncedAt: now } };
 }
 
+// The armory pictures: a face shot and a full-body render in the gear worn at the last logout (Blizzard's render
+// server, hotlinked by the page). null when Blizzard has none.
+function mediaOf(sec, now) {
+  const m = sec["character-media"];
+  if (!m || m.status !== 200 || !m.json) return null;
+  const a = {}; for (const x of m.json.assets || []) if (x && x.key && /^https:\/\/render\.worldofwarcraft\.com\//.test(String(x.value))) a[x.key] = x.value;
+  if (!a["main-raw"] && !a.avatar) return null;
+  return { avatar: a.avatar || null, main: a["main-raw"] || null, syncedAt: now };
+}
+
 // One short line naming what changed, e.g. "Level 13 → 14, +9 quests, Alchemy 67 → 82"
 function summarize(old, nw, oldLevel, newLevel) {
   const bits = [];
@@ -109,6 +119,10 @@ function syncBlizzard(store, cfg, log) {
         store.set("dings/start-" + pr.level, { level: pr.level, at: Date.now(), trackedMs: 0 });
         log(`Set up the ledger for ${pr.name || cfg.character}`);
       }
+      // the armory pictures, whenever Blizzard has new ones (even when nothing else changed)
+      const media = mediaOf(sec, now), om = store.get("state/media") || {};
+      if (media && (media.main !== om.main || media.avatar !== om.avatar || pr.last_login_timestamp !== om.lastLogin))
+        store.set("state/media", { ...media, lastLogin: pr.last_login_timestamp || null });
       const c = store.get("state/character") || {};
       const old = { collections: store.get("state/collections"), quests: store.get("state/quests"), gear: store.get("state/gear") };
       if (pr.last_login_timestamp === c.lastLogin && pr.level === c.level && pr.experience === c.xp && old.collections && old.quests && old.gear) {
@@ -143,4 +157,4 @@ function syncBlizzard(store, cfg, log) {
 // after new API keys are saved
 function resetToken() { token = null; tokenExp = 0; }
 
-module.exports = { syncBlizzard, build, summarize, resetToken, getToken };
+module.exports = { syncBlizzard, build, summarize, resetToken, getToken, mediaOf };

@@ -384,6 +384,28 @@ div.qc-red { border: 0; }
 .worn { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0 8px; font-size: .88rem; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .worn > .muted, .worn > .pill { grid-column: 2; font-size: .8rem; }
 .worn .label { font-size: .66rem; align-self: center; }
+/* the armory render beside the gear: a column next to the list, or the in-game character sheet when there's room */
+#wornPanel { container-type: inline-size; }
+.doll { display: grid; grid-template-columns: minmax(170px, 240px) minmax(0, 1fr); gap: 4px 18px; align-items: start; }
+.doll-l, .doll-r, .doll-w { grid-column: 2; display: grid; gap: 0; align-content: start; min-width: 0; }
+.doll-pic { grid-column: 1; grid-row: 1 / span 3; position: relative; height: 360px; border-radius: 10px; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--class, var(--brass)) 35%, var(--line));
+  background: radial-gradient(ellipse 55% 45% at 50% 58%, color-mix(in srgb, var(--class, var(--brass)) 30%, transparent), transparent 75%),
+    linear-gradient(#0f0c09, #050403); box-shadow: inset 0 0 40px rgba(0, 0, 0, .7); }
+.doll-fig { position: absolute; inset: 0; background-repeat: no-repeat; background-size: auto 168%; background-position: 47% 61%; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .65)); }
+.doll-cap { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: .72rem; color: #cbbfa6; text-shadow: 0 1px 2px #000; }
+@container (min-width: 860px) {
+  .doll { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) minmax(0, 1fr); }
+  .doll-l { grid-column: 1; grid-row: 1; }
+  .doll-pic { grid-column: 2; grid-row: 1; height: auto; min-height: 420px; align-self: stretch; }
+  .doll-r { grid-column: 3; grid-row: 1; }
+  .doll-w { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 18px; align-items: start; }
+}
+@container (max-width: 520px) {
+  .doll { grid-template-columns: minmax(0, 1fr); }
+  .doll-pic, .doll-l, .doll-r, .doll-w { grid-column: 1; grid-row: auto; }
+  .doll-pic { height: 300px; order: -1; }
+}
 .up-pill { margin-left: 6px; font-size: .7rem; }
 .setb { font-size: .82rem; }
 .setb summary { color: var(--brass); cursor: pointer; }
@@ -2399,19 +2421,34 @@ details.ab-lv[open] .ab-strip { display: none; }
     box.replaceChildren();
     if (!S.gear || !S.gear.items || !S.gear.items.length) { box.append(el("p", "empty", "Your equipped gear shows up here after the next sync from Blizzard.")); return; }
     const by = new Map(S.gear.items.map((g) => [g.slot, g]));
-    for (const s of SLOT_ORDER) {
-      if (s === "SHIRT" || s === "TABARD") continue;
-      const g = by.get(s); const row = el("div", "worn");
-      row.append(el("span", "label", SLOT_NAME[s]));
-      if (!g) { row.append(el("span", "muted", "Empty")); box.append(row); continue; }
-      row.append(whA("item", g.id, g.n, "iname q" + g.q));
+    const row = (s) => {
+      const g = by.get(s), r = el("div", "worn");
+      r.append(el("span", "label", SLOT_NAME[s]));
+      if (!g) { r.append(el("span", "muted", "Empty")); return r; }
+      r.append(whA("item", g.id, g.n, "iname q" + g.q));
       const bits = [`ilvl ${g.il}`];
       if (g.w) bits.push(`${g.w[3]} DPS`);
       if (g.ar) bits.push(`${g.ar} armor`);
       for (const [k, v] of g.st || []) bits.push(`+${v} ${k}`);
-      row.append(el("span", "muted", bits.join(" · ")));
-      const set = setFor(g.id); if (set) row.append(el("span", "pill kind", set.n));
-      box.append(row);
+      r.append(el("span", "muted", bits.join(" · ")));
+      const set = setFor(g.id); if (set) r.append(el("span", "pill kind", set.n));
+      return r;
+    };
+    const m = S.media && S.media.main;
+    if (!m) {
+      box.className = "worn-list";
+      for (const s of SLOT_ORDER) if (s !== "SHIRT" && s !== "TABARD") box.append(row(s));
+    } else {
+      // the armory render, with the slots around it as on the in-game character sheet
+      box.className = "doll";
+      const col = (cls, slots) => { const d = el("div", cls); for (const s of slots) d.append(row(s)); return d; };
+      const pic = el("div", "doll-pic"), fig = el("div", "doll-fig");
+      fig.style.backgroundImage = `url("${String(m).replace(/["\\]/g, "")}${S.media.lastLogin ? "?t=" + Number(S.media.lastLogin) : ""}")`;
+      fig.setAttribute("role", "img"); fig.setAttribute("aria-label", `${(S.char && S.char.name) || "Your character"} in the gear worn at the last logout`);
+      pic.append(fig, el("span", "doll-cap", S.media.lastLogin ? `As of your logout ${shortDate(S.media.lastLogin)}` : "From the Armory"));
+      pic.title = "Blizzard's armory picture, updated after you log out";
+      box.append(col("doll-l", ["HEAD", "NECK", "SHOULDER", "BACK", "CHEST", "WRIST"]), pic,
+        col("doll-r", ["HANDS", "WAIST", "LEGS", "FEET", "FINGER_1", "FINGER_2", "TRINKET_1", "TRINKET_2"]), col("doll-w", ["MAIN_HAND", "OFF_HAND", "RANGED"]));
     }
     $("wornSync").textContent = S.gear.syncedAt ? `synced ${shortDate(S.gear.syncedAt)}` : "";
   }
@@ -5658,6 +5695,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); renderAmr(); if (DG.data) renderDungeons(); }, () => {});
+    db.doc("state/media").onSnapshot((s) => { S.media = s.exists ? s.data() : null; renderGearWorn(); }, () => {});
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
