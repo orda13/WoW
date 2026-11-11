@@ -912,6 +912,42 @@ details.ab-lv[open] .ab-strip { display: none; }
 .ab-edit { font-size: .8rem; color: var(--muted); text-decoration: none; }
 .ab-edit:hover { color: var(--brass); text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { details.ab-lv > summary.ab-h::before { transition: none; } }
+
+/* ---------- profession guide: a tab per profession, materials you hold on every step ---------- */
+.pp-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.pp-tab { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; min-width: 190px; text-align: left; border-radius: 8px; }
+.pp-tab img.ico { width: 34px; height: 34px; margin: 0; border-radius: 6px; border: 2px solid var(--frame); }
+.pp-tab-tx { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.pp-tab-tx b { font-family: var(--display); font-size: .98rem; }
+.pp-tab-tx .num { font-size: .78rem; }
+.pp-tab-bar { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.pp-tab-bar > span { display: block; height: 100%; background: var(--brass); }
+.pp-tab[aria-selected="true"] { border-color: var(--class); background: linear-gradient(180deg, color-mix(in srgb, var(--class) 18%, var(--btn-a)), var(--btn-b)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--class) 50%, transparent); }
+.pp-tab[aria-selected="true"] b { color: var(--brass); }
+.pp-sum { margin: 0 0 14px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+.pp-sum > summary { cursor: pointer; }
+.pp-sum-t { margin-top: 8px; }
+.pp-sum-t tr.got td { color: var(--muted); }
+.pp-sum-t td.pp-have, .pp-have { color: var(--good); }
+.pp-sum-t td.pp-get, .pp-get { color: var(--warn); }
+.pp-alt { color: var(--rested); }
+.pp-mats { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; font-size: .86rem; }
+.pp-mat { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.pp-mat.have { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+.pp-mat.alt { border-color: color-mix(in srgb, var(--rested) 45%, var(--line)); }
+.pp-mat.get { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.pp-q { color: var(--muted); font-size: .8rem; }
+.pp-st { display: inline-flex; gap: 8px; font-size: .8rem; }
+.pp-stages { margin-left: 22px; }
+#ppDiscount:empty { display: none; }
+/* desktop: the steps on the left, the whole path's materials beside them (kept in view) */
+@media (min-width: 1400px) {
+  .pp-prof.craft { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(400px, 1fr); gap: 0 24px; align-items: start; }
+  .pp-prof.craft > * { grid-column: 1; }
+  .pp-prof.craft > .pp-sum { grid-column: 2; grid-row: 1 / span 12; position: sticky; top: 96px; max-height: calc(100vh - 116px); overflow: auto; margin: 0; }
+  .pp-sum-t td, .pp-sum-t th { padding-left: 6px; padding-right: 6px; }
+}
+.pp-stages li { margin: 10px 0; padding-bottom: 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
 /* narrow windows: the sidebar becomes a header */
 @media (max-width: 1000px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -1257,8 +1293,8 @@ details.ab-lv[open] .ab-strip { display: none; }
 
   <section class="panel" id="profPlanPanel" data-view="skills">
     <header><h2>Profession guide</h2></header>
+    <p class="hint">The most effective way from your skill to 300, one profession at a time (pick it from the tabs), worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: the cheapest recipe for each point (orange always gives one, yellow sometimes), using materials on any of your characters first; each step shows which materials you already have, which another character holds, and what's left to get. Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way. Prices are ones you've seen at vendors or the auction house, else the published vendor price.</p>
     <p class="hint" id="ppDiscount"></p>
-    <p class="hint">The most effective way from your skill to 300 for each of this character's professions, worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: the cheapest recipe for each point (orange always gives one, yellow sometimes), using materials on any of your characters first; Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way. Prices are ones you've seen at vendors or the auction house, else the published vendor price.</p>
     <div id="profPlan"><p class="empty">Loading recipes…</p></div>
   </section>
 
@@ -3507,12 +3543,14 @@ details.ab-lv[open] .ab-strip { display: none; }
       }
       if (!best) { stop = skill; break; }
       const e = best.e, crafts = Math.ceil(1 / best.chance);
-      if (!cur || cur.e !== e) { cur = { e, from: skill, to: skill, crafts: 0, buy: new Map(), alts: new Map(), how: learned.has(e.n) ? null : best.how }; stages.push(cur); }
+      if (!cur || cur.e !== e) { cur = { e, from: skill, to: skill, crafts: 0, need: new Map(), mine: new Map(), buy: new Map(), alts: new Map(), how: learned.has(e.n) ? null : best.how }; stages.push(cur); }
       if (best.how) learned.add(e.n);
       cur.crafts += crafts; cur.to = skill + 1;
       for (const [n, q] of e.rg) {
         const key = n.toLowerCase(); let left = q * crafts;
+        cur.need.set(n, (cur.need.get(n) || 0) + left);
         const a = Math.min(left, mine.get(key) || 0); mine.set(key, (mine.get(key) || 0) - a); left -= a;
+        if (a > 0) cur.mine.set(n, (cur.mine.get(n) || 0) + a);
         const b = Math.min(left, alts.get(key) || 0); alts.set(key, (alts.get(key) || 0) - b); left -= b;
         if (b > 0) cur.alts.set(n, (cur.alts.get(n) || 0) + b);
         if (left > 0) cur.buy.set(n, (cur.buy.get(n) || 0) + left);
@@ -3571,16 +3609,70 @@ details.ab-lv[open] .ab-strip { display: none; }
     by[who] = mine; S.recipeNeeds = { byChar: by, updatedAt: Date.now() };
     clearTimeout(needsT); needsT = setTimeout(() => write(() => db.doc("shared/recipeneeds").set(S.recipeNeeds)), 1500);
   }
+  // a material by name: Wowhead link with its icon when the materials data knows its id
+  function matLink(n) { const m = MAT.byName && MAT.byName.get(String(n).toLowerCase()); return m ? whA("item", m.id, n, "who") : el("span", null, n); }
+  // which other characters hold a material
+  function altNames(n) { const l = heldBy(n).filter((h) => !isMe(h.c)).map((h) => h.c.name); return l.length ? l.slice(0, 2).join(", ") + (l.length > 2 ? " +" + (l.length - 2) : "") : "your other characters"; }
+  // every material on the path: needed, what this character and the others hold, what's left to get and its cost
+  function matSummary(stages) {
+    const tot = new Map();
+    for (const g of stages) if (g.need) for (const [n, q] of g.need) {
+      const t = tot.get(n) || { need: 0, left: 0 }; t.need += q; t.left += g.buy.get(n) || 0; tot.set(n, t);
+    }
+    const wrap = el("details", "pp-sum"); wrap.open = true;
+    const rows = [...tot].sort((a, b) => b[1].need - a[1].need);
+    let cost = 0, unknown = 0;
+    const t = el("table", "htable pp-sum-t"); const hr = el("tr");
+    for (const h of ["Material", "Need", "Have", "To get", "Cost"]) hr.append(el("th", null, h));
+    t.append(hr);
+    for (const [n, x] of rows) {
+      const h = heldBy(n), mine = h.filter((y) => isMe(y.c)).reduce((a, y) => a + y.bags + y.bank, 0);
+      const others = h.filter((y) => !isMe(y.c)).sort((a, b) => (b.bags + b.bank) - (a.bags + a.bank));
+      const pr = x.left ? matPrice(n) : null; if (pr) cost += x.left * pr.p; else if (x.left) unknown++;
+      const tr = el("tr", x.left ? null : "got");
+      const c1 = el("td"); c1.append(matLink(n)); tr.append(c1);
+      tr.append(el("td", "num", fmt(x.need)));
+      // what this character holds (bags and bank), then other characters, by name
+      const c3 = el("td", "num" + (mine >= x.need ? " pp-have" : ""));
+      c3.append(document.createTextNode(mine ? fmt(mine) + (mine >= x.need ? " ✓" : "") : (others.length ? "" : "–")));
+      if (others.length) c3.append(el("span", "pp-alt", (mine ? " · " : "") + others.slice(0, 2).map((y) => `${y.c.name} ${y.bags + y.bank}`).join(" · ") + (others.length > 2 ? ` +${others.length - 2}` : "")));
+      const mm = h.filter((y) => isMe(y.c))[0];
+      c3.title = [mm ? `You: bags ${mm.bags}, bank ${mm.bank}` : "", ...others.map((y) => `${y.c.name}: bags ${y.bags}, bank ${y.bank}`)].filter(Boolean).join("\n");
+      tr.append(c3);
+      tr.append(el("td", "num" + (x.left ? " pp-get" : " pp-have"), x.left ? fmt(x.left) : "✓"));
+      const c6 = el("td", "num"); if (pr) c6.append(moneyEl(x.left * pr.p)); else c6.append(el("span", "muted", x.left ? "gather or loot" : "")); tr.append(c6);
+      t.append(tr);
+    }
+    const covered = rows.filter(([, x]) => !x.left).length;
+    const s = el("summary"); s.append(el("b", null, "Materials for the whole path"),
+      el("span", "muted", ` · ${rows.length} kinds · ${covered} covered by your characters`));
+    if (cost) { s.append(el("span", "muted", " · about "), moneyEl(cost), el("span", "muted", unknown ? ` to buy, + ${unknown} to gather` : " to buy")); }
+    wrap.append(s, el("div", "tablewrap", null)); wrap.lastChild.append(t);
+    return rows.length ? wrap : document.createTextNode("");
+  }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
     const needs = recipeNeeds(); saveRecipeNeeds(needs);
     const r = priceRatio(); $("ppDiscount").textContent = r < 0.995 ? `Vendors sell to you at about ${Math.round(r * 100)}% of their listed price (your reputation discount, from ${ratioCache.n} prices you've seen), so listed prices here are adjusted.` : "";
     if (!GA.data) loadGather();
     const kn = knownRecipes(), out = [], skip = profSkip();
+    // one profession at a time, picked from tabs (remembered); gathering ones and ones with recipes to follow
+    const tabs = [...kn].filter(([prof]) => ["Herbalism", "Mining", "Skinning"].includes(prof) || RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length));
+    let pick = null; try { pick = localStorage.getItem("ll-pp-prof"); } catch {}
+    if (!tabs.some(([p2]) => p2 === pick)) pick = (tabs.find(([, k]) => k.skill != null && k.skill < 300) || tabs[0] || [null])[0];
+    const bar = el("div", "pp-tabs"); bar.setAttribute("role", "tablist");
+    for (const [prof, k] of tabs) {
+      const b = el("button", "pp-tab"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(prof === pick));
+      if (PROF_ICON[prof]) b.append(iconImg(PROF_ICON[prof]));
+      const t = el("span", "pp-tab-tx"); t.append(el("b", null, prof), el("span", "num muted", k.skill != null ? `${k.skill} / ${k.max || 300}` : "–"));
+      const m = el("span", "pp-tab-bar"); const f = el("span"); f.style.width = Math.min(100, (k.skill || 0) / 300 * 100) + "%"; m.append(f); t.append(m);
+      b.append(t); b.onclick = () => { try { localStorage.setItem("ll-pp-prof", prof); } catch {} renderProfPlan(); };
+      bar.append(b);
+    }
     for (const [prof, k] of kn) {
-      if (k.skill == null || k.skill >= 300) continue;
+      if (prof !== pick) continue;
+      if (k.skill == null || k.skill >= 300) { out.push(el("p", "empty", k.skill >= 300 ? `${prof} is at 300: nothing left to level.` : `No skill recorded for ${prof} yet.`)); continue; }
       const sec = el("div", "pp-prof");
-      sec.append(el("h3", null, `${prof} ${k.skill}${k.max ? "/" + k.max : ""}`));
       const isGather = ["Herbalism", "Mining", "Skinning"].includes(prof);
       const hasRecipes = RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length);
       if (isGather) {
@@ -3602,21 +3694,27 @@ details.ab-lv[open] .ab-strip { display: none; }
       }
       if (!hasRecipes) continue;
       const { stages, stop, later } = craftPath(prof, k, skip);
+      sec.classList.add("craft"); sec.append(matSummary(stages));
       const ol = el("ol", "pp-stages"); let total = 0, shown = 0, crafted = 0;
       for (const g of stages) {
         if (g.milestone) { ol.append(el("li", "pp-mile", g.milestone)); continue; }
         const li = el("li", crafted === 0 ? "now" : null); crafted++; li.value = crafted;
         li.append(el("b", null, `${g.from}–${g.to}: ${g.crafts}× ${g.e.n}`));
         if (g.how) { li.append(el("span", "muted", g.how.kind === "trainer" ? " · learn at your trainer" : ` · buy ${g.how.item || "the recipe"} from ${g.how.v ? `${g.how.v.n}, ${g.how.v.z}${g.how.v.xy ? ` (${g.how.v.xy[0]}, ${g.how.v.xy[1]})` : ""}` : "a vendor"}`)); if (g.how.cost != null) { li.append(document.createTextNode(" ")); li.append(moneyEl(g.how.cost)); total += g.how.cost; } }
-        // what you can buy (a price is known) and what you gather or loot yourself
-        let cost = 0; const buy = [], get = [];
-        for (const [n, q] of g.buy) { const pr = matPrice(n); if (pr) { cost += q * pr.p; buy.push(`${q} ${n}`); } else get.push(`${q} ${n}`); }
+        // each material: how many this step uses, how many come from your bags, from other characters, and what's left to get
+        let cost = 0; const d = el("div", "pp-mats");
+        for (const [n, q] of g.need) {
+          const fromMe = g.mine.get(n) || 0, fromAlt = g.alts.get(n) || 0, left = g.buy.get(n) || 0, pr = left ? matPrice(n) : null;
+          if (pr) cost += left * pr.p;
+          const c = el("span", "pp-mat " + (left ? "get" : fromAlt ? "alt" : "have"));
+          c.append(matLink(n), el("span", "num pp-q", ` ×${q}`));
+          const st = el("span", "pp-st");
+          if (fromMe) st.append(el("span", "pp-have", `✓ ${fromMe === q ? "you have them" : fromMe + " in your bags"}`));
+          if (fromAlt) st.append(el("span", "pp-alt", `${fromAlt} from ${altNames(n)}`));
+          if (left) { const g2 = el("span", "pp-get", `get ${left}`); if (pr) { g2.append(document.createTextNode(" · ")); g2.append(moneyEl(left * pr.p)); } else g2.title = "No vendor or auction price seen: gather, loot or buy it"; st.append(g2); }
+          c.append(st); d.append(c);
+        }
         total += cost;
-        const d = el("div", "pp-mats");
-        if (buy.length) d.append(el("span", "label", "Buy "), document.createTextNode(buy.join(", ") + " · about "), moneyEl(cost));
-        if (get.length) d.append(document.createTextNode(buy.length ? " · " : ""), el("span", "label", "Gather or loot "), document.createTextNode(get.join(", ")));
-        if (!buy.length && !get.length) d.append(el("span", "bud-ok", "You have the materials."));
-        if (g.alts.size) d.append(el("span", "muted", ` · from your other characters: ${[...g.alts].map(([n, q]) => `${q} ${n}`).join(", ")}`));
         li.append(d);
         const sb = el("button", "ghost", "Skip"); sb.type = "button"; sb.title = "Leave this recipe out; the plan works around it"; sb.onclick = () => setSkip(g.e.n, true);
         li.append(sb);
@@ -3648,7 +3746,7 @@ details.ab-lv[open] .ab-strip { display: none; }
       }
       out.push(sec);
     }
-    box.replaceChildren(...(out.length ? out : [el("p", "empty", "No professions to level on this character (or they're all at 300).")]));
+    box.replaceChildren(...(tabs.length ? [bar] : []), ...(out.length ? out : [el("p", "empty", "No professions to level on this character.")]));
   }
   // ---------- gathering map: node spawns coloured for your skill, best zones, a loop route, your own gathers ----------
   const GA = { data: null, loading: false, zone: null };
