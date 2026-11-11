@@ -325,6 +325,12 @@ body.needs-setup [data-view], body.needs-setup .views { display: none !important
 .ccross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .ctip { position: fixed; z-index: 30; pointer-events: none; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: .84rem; box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 1px; max-width: 260px; }
 .tablewrap { overflow-x: auto; margin-top: 8px; }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--brass) 45%, var(--line)) transparent; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--brass) 40%, var(--line)); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--brass); }
+::-webkit-scrollbar-corner { background: transparent; }
 .htable { border-collapse: collapse; width: 100%; font-size: .88rem; font-variant-numeric: tabular-nums; }
 .htable th, .htable td { text-align: left; padding: 5px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .htable th { color: var(--muted); font-weight: 500; font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; }
@@ -494,7 +500,12 @@ label.btnlike:hover { border-color: var(--muted); }
 .up-list { margin: 6px 0; padding-left: 1.2em; font-size: .9rem; }
 .up-list:empty { display: none; }
 .up-list code { font-size: .8em; color: var(--muted); }
+/* the characters table fits the panel: no sideways scrolling; long cells wrap */
+#invPanel .tablewrap { overflow-x: visible; }
+.inv-table { width: 100%; }
 .inv-table td, .inv-table th { white-space: nowrap; }
+.inv-table td:nth-child(4), .inv-table td:nth-child(5) { white-space: normal; min-width: 8rem; }
+.inv-table th .sr-gap { visibility: hidden; }
 .inv-table tr.me td:first-child { font-weight: 600; }
 .inv-results { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
 .inv-results .row-i { overflow-wrap: anywhere; }
@@ -648,7 +659,7 @@ button:disabled { opacity: .55; }
 #chainBody .pp-list li.taken { color: var(--muted); }
 #chainBody .pp-list li.taken .muted { display: none; }
 .bk-table td:nth-child(5) { white-space: nowrap; }
-.inv-x { color: var(--muted); font-size: 1.1rem; padding: 0 4px; }
+.inv-x { color: var(--muted); font-size: .82rem; padding: 0 4px; text-decoration: none; }
 .inv-x:hover, .inv-x:focus-visible { color: var(--danger, #c0392b); }
 .inv-tog { width: 1.4em; text-align: center; color: var(--brass); }
 tr.inv-open > td { background: var(--surface-2); padding: 8px 12px 12px; }
@@ -1225,7 +1236,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   <section class="panel" id="invPanel" data-view="ledger">
     <div class="tal-head"><h2>Your characters</h2><span class="hint" id="invNote"></span></div>
     <p class="muted">Every character the add-on has seen, on all your WoW accounts, with gold, bags and bank. Bags update whenever you play a character; the bank updates when you open it.</p>
-    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Rested</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th><th aria-label="Remove"></th></tr></thead><tbody id="invRows"></tbody></table></div>
+    <div class="tablewrap"><table class="htable inv-table"><thead><tr><th>Character</th><th>Level</th><th>Gold</th><th>Rested</th><th>Where</th><th>Last played</th><th>Bags</th><th>Bank</th><th><span class="sr-gap">Remove</span></th></tr></thead><tbody id="invRows"></tbody></table></div>
     <p class="hint" id="invHidden" hidden></p>
     <label class="field"><span class="label">Find an item across your characters</span><input id="invSearch" placeholder="Linen Cloth" autocomplete="off"></label>
     <div id="invResults" class="inv-results"></div>
@@ -2637,8 +2648,13 @@ details.ab-lv[open] .ab-strip { display: none; }
   // with that first name exists, since it's one of those characters recorded the old way
   const invAll = () => {
     const all = Object.values((S.inv && S.inv.chars) || {});
-    const full = new Set(all.filter((c) => c.first).map((c) => String(c.first).toLowerCase()));
-    return all.filter((c) => c.first || !full.has(String(c.name || "").toLowerCase())).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+    const isFull = (c) => !!c.first || /\s/.test(String(c.name || "").trim());
+    const full = new Set(all.filter(isFull).map((c) => String(c.first || c.name).trim().split(/\s+/)[0].toLowerCase()));
+    // and one row per full name (the newest), however many files or accounts it came from
+    const newest = new Map();
+    for (const c of all) { const k = String(c.name || "").trim().toLowerCase(); const o = newest.get(k); if (!o || (c.at || 0) > (o.at || 0)) newest.set(k, c); }
+    return all.filter((c) => newest.get(String(c.name || "").trim().toLowerCase()) === c)
+      .filter((c) => isFull(c) || !full.has(String(c.name || "").trim().toLowerCase())).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
   };
   const invChars = () => { const h = hiddenIds(); return invAll().filter((c) => !h[invId(c)]); };
   // this ledger's character: by full name where both sides have one, else by first name (an add-on before 1.0.46)
@@ -2738,15 +2754,16 @@ details.ab-lv[open] .ab-strip { display: none; }
       tr.append(nameTd, el("td", null, c.level ? `${c.level} ${c.cls ? c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""}` : "–"), goldTd, restTd);
       for (const v of [c.zone ? c.zone + (c.subzone && c.subzone !== c.zone ? ", " + c.subzone : "") : "–", lastPlayed(c.at)]) tr.append(el("td", null, v));
       // bags and bank: click to open the lists
-      for (const [has, text] of [[c.bagsAt, c.bagsAt ? `${Object.keys(c.bags || {}).length} kinds · ${count(c.bags)} items` : "–"],
-        [c.bankAt, c.bankAt ? `${Object.keys(c.bank || {}).length} kinds · ${count(c.bank)} items` : "open the bank once"]]) {
+      for (const [has, text, kinds] of [[c.bagsAt, c.bagsAt ? `${fmt(count(c.bags))} items` : "–", Object.keys(c.bags || {}).length],
+        [c.bankAt, c.bankAt ? `${fmt(count(c.bank))} items` : "not seen yet", Object.keys(c.bank || {}).length]]) {
         const td = el("td");
-        if (has) { const b = el("button", "linkish", text); b.type = "button"; b.onclick = toggle; td.append(b); } else td.textContent = text;
+        if (has) { const b = el("button", "linkish", text); b.type = "button"; b.title = `${kinds} kinds of item · click to list them`; b.onclick = toggle; td.append(b); }
+        else { td.textContent = text; td.className = "muted"; if (!c.bankAt) td.title = "Open the bank with this character once"; }
         tr.append(td);
       }
       tr.title = c.account ? "WoW account " + c.account : "";
       const xTd = el("td");
-      if (!isMe(c)) { const x = el("button", "linkish inv-x", "×"); x.type = "button"; x.title = `Remove ${c.name} from the ledger`; x.setAttribute("aria-label", x.title); x.onclick = () => hideChar(c); xTd.append(x); }
+      if (!isMe(c)) { const x = el("button", "linkish inv-x", "Remove"); x.type = "button"; x.title = `Remove ${c.name} from the ledger (for a character you deleted, or one you don't want here)`; x.setAttribute("aria-label", x.title); x.onclick = () => hideChar(c); xTd.append(x); }
       tr.append(xTd);
       if (!open) return [tr];
       const dtr = el("tr", "inv-open"); const td = el("td"); td.colSpan = 9;
