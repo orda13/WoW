@@ -140,7 +140,11 @@ function autoAlts(data) {
   log("Now tracking " + add.join(", ") + " (seen by the add-on)");
   setTimeout(() => sync("characters added"), 1000);
 }
-const watcher = startWatcher({ targets: () => chars().map((c) => ({ store: storeFor(c.id), hint: c.character })), publicDir: PUBLIC, config, log, onImported: syncAfterPlay,
+// an add-on entry without a surname (before 1.0.46) goes to the main ledger, or to a character whose first name no
+// other tracked character shares
+const firstOf = (c) => String(c.character || "").split("-")[0];
+const watcher = startWatcher({ targets: () => { const cs = chars(); return cs.map((c) => ({ store: storeFor(c.id), hint: c.character,
+  plainOk: c.main || cs.filter((x) => firstOf(x) === firstOf(c)).length === 1 })); }, publicDir: PUBLIC, config, log, onImported: syncAfterPlay,
   onFile: (data, file) => { mergeInventories(store, data, file); autoAlts(data); }, // every character on every account: gold, bags, bank
   extraFiles: relayFiles });
 
@@ -209,6 +213,27 @@ const server = http.createServer(async (req, res) => {
       if (!out) return send(res, 400, { error: "unknown export" });
       res.writeHead(200, { "Content-Type": out.type, "Content-Disposition": `attachment; filename="${out.filename}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       return res.end(out.body);
+    }
+    // start a character's ledger over: a backup first, then everything imported or synced goes and is read again from
+    // the add-on and Blizzard; what you set yourself stays (to-do list, talent picks, ticks, quest marks, skipped recipes)
+    if (p === "/api/char/reset" && req.method === "POST") {
+      const c = findChar(url.searchParams.get("char"));
+      if (!c) return send(res, 404, { error: "unknown character" });
+      const backup = backups.now();
+      const pre = c.id ? c.id + "." : "";
+      const KEEP = /^(tasks\/|state\/talents(-[a-z]+)?$|state\/bookticks$|state\/profprefs$|state\/questmarks$)/;
+      let n = 0;
+      for (const k of Object.keys(store.docs)) {
+        if (k.startsWith("shared/")) continue;
+        const mine = pre ? k.startsWith(pre) : !/^c[0-9a-f]{8}\./.test(k);
+        if (!mine) continue;
+        const rel = pre ? k.slice(pre.length) : k;
+        if (KEEP.test(rel)) continue;
+        store.delete(k); n++;
+      }
+      log(`Reset ${c.character}'s ledger: ${n} documents removed (backup ${backup})`);
+      watcher.importNow(); setTimeout(() => syncOne(c, "reset"), 1500);
+      return send(res, 200, { ok: true, removed: n, backup });
     }
     if (p === "/api/backups" && req.method === "GET") return send(res, 200, { backups: backups.list(), keepDays: config.backupDays || 14 });
     if (p === "/api/backups/now" && req.method === "POST") return send(res, 200, { name: backups.now() });

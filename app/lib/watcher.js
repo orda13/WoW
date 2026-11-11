@@ -48,7 +48,7 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile, ext
     if (onFile) { try { onFile(data, file); } catch (e) { log("Couldn't read characters from " + file + ": " + e.message); } }
     let any = false;
     for (const t of targets()) {
-      if (!pickChar(data, t.store, t.hint)) continue; // this file has no data for that character
+      if (!pickChar(data, t.store, t.hint, t)) continue; // this file has no data for that character
       // each PC's file is judged on its own (an older file from one PC doesn't block another's)
       const a = t.store.get("state/addon") || {}, key = sourceKey(file);
       const have = a.sources ? ((a.sources[key] || {}).savedAt || 0) : (key.startsWith("This PC/") ? a.savedAt || 0 : 0);
@@ -56,7 +56,7 @@ function startWatcher({ targets, publicDir, config, log, onImported, onFile, ext
       let mtime = 0; try { mtime = fs.statSync(file).mtimeMs; } catch {}
       if ((data.savedAt || 0) * 1000 <= have && mtime <= ((a.sources && a.sources[key] && a.sources[key].importedAt) || a.importedAt || 0) && why !== "manual") continue;
       try {
-        const r = importAddon(text, t.store, publicDir, file, t.hint);
+        const r = importAddon(text, t.store, publicDir, file, t.hint, t);
         log(`Imported ${file} (${why}): ${r.message}`);
         status.lastError = ""; any = true;
       } catch (e) { status.lastError = `Import of ${file} failed: ${e.message}`; log(status.lastError); }

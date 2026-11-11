@@ -15,7 +15,10 @@ const fullName = (x) => [x && x.name, x && x.surname].filter(Boolean).join(" ");
 
 // Returns the character table for the ledger's character, or null if the file has none.
 // hint: the character from the settings, as Blizzard spells it: first name and surname ("talwyn-orda")
-function pickChar(data, store, hint) {
+// opts.plainOk: whether an entry without a surname (an add-on before 1.0.46) may be taken: the main ledger, or a
+// character no other tracked character shares a first name with. Otherwise a new alt "Talwyn Bank" would take the
+// main's old "Talwyn" entry.
+function pickChar(data, store, hint, opts) {
   if (!data || !data.chars) return null;
   const chars = Object.values(data.chars);
   const c = store.get("state/character");
@@ -29,6 +32,7 @@ function pickChar(data, store, hint) {
   // two characters can share a first name: the surname tells them apart (add-on 1.0.46 and later)
   if (surname) { const exact = same.filter((x) => String(x.surname || "").toLowerCase() === surname); if (exact.length) return newest(exact); }
   // older add-ons recorded no surname; never take one recorded under another surname
+  if (opts && opts.plainOk === false) return null;
   let plain = same.filter((x) => !x.surname);
   // and keep to this character's class, so a namesake of another class can't land here
   const cls = c && c.cls ? String(c.cls).split(/[ (]/)[0].toUpperCase() : "";
@@ -79,16 +83,22 @@ function splitOf(s) {
   return o;
 }
 
-function importAddon(text, store, publicDir, source, hint) {
+function importAddon(text, store, publicDir, source, hint, opts) {
   const data = readSaved(text);
   if (!data || !data.chars) throw new Error("That file has no Leveling Ledger data.");
-  const ch = pickChar(data, store, hint);
+  const ch = pickChar(data, store, hint, opts);
   if (!ch) throw new Error("That file has no data for this ledger's character.");
   // 0. A character Blizzard doesn't serve yet (under level 10, or not synced): start its ledger from the add-on,
   //    and keep its level and XP current from the add-on whenever that's newer. A Blizzard sync later fills in the rest.
   const nice = (t) => String(t || "").toLowerCase().replace(/(^|_)(\w)/g, (m, a, b) => (a ? " " : "") + b.toUpperCase());
   const spaced = (t) => String(t || "").replace(/([a-z])([A-Z])/g, "$1 $2");
   let have = store.get("state/character");
+  // the add-on's character is this one by full name, but the ledger says another class: it was set up from a namesake
+  // (before 1.0.46), so the add-on's class, race and faction win
+  if (have && ch.surname && ch.class && nice(ch.class) !== String(have.cls || "").split(/[ (]/)[0]) {
+    have = { ...have, cls: nice(ch.class), race: spaced(ch.race) || have.race, faction: ch.faction || have.faction, level: ch.level || have.level };
+    store.update("state/character", { cls: have.cls, race: have.race, faction: have.faction, level: have.level });
+  }
   if (!have && ch.name) {
     have = { name: ch.name, version: "World of Warcraft: Forever", maxLevel: 60, level: ch.level || 1, xp: ch.lastXP || 0,
       xpMax: (ch.xpMax && ch.xpMax[ch.level]) || 0, needsXpMax: !(ch.xpMax && ch.xpMax[ch.level]), rested: ch.rested || 0, zone: ch.zone || "",

@@ -631,6 +631,11 @@ button:disabled { opacity: .55; }
 .bk-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin: 22px 0 8px; }
 .bk-goal { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
 .bk-goal.reached { outline: 1px solid var(--brass); }
+.st-chars { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; }
+.st-char { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.st-char-n img.ico { border-radius: 50%; }
+.st-char .row { gap: 8px; align-items: center; }
+.st-char button { font-size: .82rem; padding: 3px 10px; }
 .ex-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
 .ex-list li { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
 .ex-list a { font-weight: 600; }
@@ -1030,6 +1035,7 @@ details.ab-lv[open] .ab-strip { display: none; }
         <div class="form-grid">
           <label class="field wide"><span class="label">Other characters</span><textarea id="stAlts" rows="3" spellcheck="false" placeholder="bob-smith"></textarea><span class="st-err" data-for="alts"></span></label>
         </div>
+        <div class="st-chars" id="stCharList"></div>
         <p class="hint" id="stSeen"></p>
       </fieldset>
       <fieldset class="st-group">
@@ -2603,7 +2609,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     try {
       const st = await (await fetch("/api/status")).json();
       const before = myFullName();
-      S.status = st; renderHealth(); renderCharPick();
+      S.status = st; renderHealth(); renderCharPick(); renderCharList();
       // the ledger's full name comes with the status: redraw what depends on knowing which character is this one
       if (myFullName() !== before) { render(); if (typeof BOOKS !== "undefined" && BOOKS.data) renderSecrets(); if (typeof renderRecipes === "function") renderRecipes(); }
       const w = $("impWatch");
@@ -2627,7 +2633,13 @@ details.ab-lv[open] .ab-strip { display: none; }
   const mySlug = () => { const l = (S.status && S.status.characters) || []; const m = l.find((c) => c.id === (window.LL_CHAR || "")); return m ? m.character : ""; };
   function myFullName() { const f = slugName(mySlug()); return f.includes(" ") ? f : ((S.char && S.char.name) || f || ""); }
   const hiddenIds = () => (S.hidden && S.hidden.ids) || {};
-  const invAll = () => Object.values((S.inv && S.inv.chars) || {}).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  // every character; an old-format entry (first name only, add-on before 1.0.46) drops out once a full-name entry
+  // with that first name exists, since it's one of those characters recorded the old way
+  const invAll = () => {
+    const all = Object.values((S.inv && S.inv.chars) || {});
+    const full = new Set(all.filter((c) => c.first).map((c) => String(c.first).toLowerCase()));
+    return all.filter((c) => c.first || !full.has(String(c.name || "").toLowerCase())).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
+  };
   const invChars = () => { const h = hiddenIds(); return invAll().filter((c) => !h[invId(c)]); };
   // this ledger's character: by full name where both sides have one, else by first name (an add-on before 1.0.46)
   const isMe = (c) => {
@@ -2821,6 +2833,42 @@ details.ab-lv[open] .ab-strip { display: none; }
   }
   $("invSearch").oninput = renderInvSearch;
 
+  // ---------- Settings: the tracked characters, each with Open, Reset data and Stop tracking ----------
+  function renderCharList() {
+    const box = $("stCharList"); if (!box) return;
+    const list = (S.status && S.status.characters) || [];
+    box.replaceChildren(...list.map((c) => {
+      const row = el("div", "st-char");
+      const nm = el("span", "st-char-n"); const ck = classKey(c.cls);
+      if (ck) nm.append(iconImg("classicon_" + ck)); nm.append(el("b", ck ? "cls-" + ck : null, slugName(c.character) || c.name));
+      nm.append(el("span", "muted", ` · ${c.level ? "level " + c.level + " " : ""}${c.cls || ""}${c.main ? " · main" : ""}${c.id === (window.LL_CHAR || "") ? " · open now" : ""}`));
+      const acts = el("span", "row");
+      if (c.id !== (window.LL_CHAR || "")) { const o = el("a", "linkish", "Open"); o.href = location.pathname + "?char=" + c.id + "#ledger"; acts.append(o); }
+      const rs = el("button", "ghost", "Reset data"); rs.type = "button";
+      rs.title = "Start this character's ledger over from the add-on and Blizzard (a backup is made first). Your to-do list, talent picks, ticks and quest marks stay.";
+      rs.onclick = async () => {
+        if (!confirm(`Reset ${slugName(c.character)}'s ledger?\n\nIts sessions, levels, gold, bags and everything imported or synced are removed and read again from the add-on and Blizzard. Your to-do list, talent picks, ticks and quest marks stay. A backup is made first, so it can be undone from Settings, Backups.`)) return;
+        try {
+          const r = await fetch("/api/char/reset?char=" + encodeURIComponent(c.id), { method: "POST", headers: { "X-Ledger": "1" } });
+          const j = await r.json(); if (!r.ok) throw new Error(j.error || "failed");
+          toast(`Reset: ${j.removed} items removed, re-reading from the add-on. Backup: ${j.backup}.`);
+          if (c.id === (window.LL_CHAR || "")) setTimeout(() => location.reload(), 2500); else renderWatch();
+        } catch (e) { toast("Couldn't reset: " + e.message); }
+      };
+      acts.append(rs);
+      if (!c.main) {
+        const st = el("button", "ghost", "Stop tracking"); st.type = "button"; st.title = "Remove it from the ledger's characters; it won't be added again. Its data is kept.";
+        st.onclick = async () => {
+          if (!confirm(`Stop tracking ${slugName(c.character)}?\n\nIt leaves the character menu and won't be added again automatically. Its data is kept, so adding it back restores it.`)) return;
+          const alts = await altsList(); if (!alts) { toast("Couldn't read the character list."); return; }
+          if (await putAlts(alts.filter((a) => a !== c.character))) { toast(`${slugName(c.character)} is no longer tracked.`); if (c.id === (window.LL_CHAR || "")) { try { localStorage.setItem("ll-char", ""); } catch {} location.href = location.pathname + "#settings"; } else renderWatch(); }
+          else toast("Couldn't update the character list.");
+        };
+        acts.append(st);
+      }
+      row.append(nm, acts); return row;
+    }));
+  }
   // ---------- character switcher ----------
   function renderCharPick() {
     const list = (S.status && S.status.characters) || [];

@@ -18,8 +18,12 @@ function mergeInventories(store, data, file) {
   const cur = store.get("shared/inventories") || { chars: {} };
   const chars = { ...cur.chars };
   let changed = false;
+  // first names that have a full-name entry (add-on 1.0.46+): an old entry under that first name alone is stale
+  const fullFirsts = new Set([...Object.values(chars).filter((x) => x && x.first).map((x) => String(x.first).toLowerCase()),
+    ...Object.values(data.chars).filter((c) => c && c.surname && c.name).map((c) => String(c.name).toLowerCase())]);
   for (const [key, c] of Object.entries(data.chars)) {
     if (!c || !c.name) continue;
+    if (!c.surname && fullFirsts.has(String(c.name).toLowerCase())) continue;
     const id = `${account}/${key}`;
     const prev = chars[id];
     const at = (c.stateAt || c.bagsAt || 0) * 1000;
@@ -42,11 +46,8 @@ function mergeInventories(store, data, file) {
   }
   // add-ons before 1.0.46 filed WoW Forever characters by first name and realm ("Talwyn-Normal"), one entry for every
   // character with that first name; once the full names arrive from that account, the old entry goes
-  for (const c of Object.values(data.chars)) {
-    if (!c || !c.surname || !c.name) continue;
-    for (const [id, x] of Object.entries(chars)) {
-      if (x.account === account && !x.first && String(x.name || "").toLowerCase() === String(c.name).toLowerCase() && String(x.key || "").startsWith(c.name + "-")) { delete chars[id]; changed = true; }
-    }
+  for (const [id, x] of Object.entries(chars)) {
+    if (x && !x.first && fullFirsts.has(String(x.name || "").toLowerCase())) { delete chars[id]; changed = true; }
   }
   if (changed) store.set("shared/inventories", { chars, updatedAt: Date.now() });
   // auction prices (whole account): the newest price seen per item wins, across every account and device
