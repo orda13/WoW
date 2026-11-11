@@ -98,13 +98,16 @@ LevelingLedgerDB = { chars = { ["Bob-Normal"] = { name = "Bob", level = 12, clas
 -- your bags and bank (C_Container, as modern clients have it)
 CONTAINERS = { [0] = { { 2589, 4, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" }, { 2447, 1, "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r" } },
   [1] = { { 3371, 5, "|cffffffff|Hitem:3371::::::::13:::::|h[Empty Vial]|h|r" }, { 2592, 10, "|cffffffff|Hitem:2592::::::::13:::::|h[]|h|r" } },
-  [-1] = { { 2450, 7, "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r" } }, [5] = { { 2589, 10, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" } } }
+  [-1] = { { 2450, 7, "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r" } }, [5] = { { 2447, 3, "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r" } },
+  [6] = { { 2589, 10, "|cffffffff|Hitem:2589::::::::13:::::|h[Linen Cloth]|h|r" } } }
 C_Container = { GetContainerNumSlots = function(b) return CONTAINERS[b] and #CONTAINERS[b] or 0 end,
   GetContainerItemInfo = function(b, s) local x = CONTAINERS[b] and CONTAINERS[b][s]; if x then return { itemID = x[1], stackCount = x[2], hyperlink = x[3] } end end }
 NUM_BAG_SLOTS, NUM_BANKBAGSLOTS, BANK_CONTAINER = 4, 6, -1
--- the bags in the bag slots: a Linen Bag (4245) in bag 1 and a Small Brown Pouch (4496) in the first bank bag slot
+-- the modern engine's bag numbering: the reagent bag is bag 5 (here holding Peacebloom), the bank bags start at 6
+Enum = Enum or {}; Enum.BagIndex = { Backpack = 0, Bag_1 = 1, Bag_4 = 4, ReagentBag = 5, BankBag_1 = 6, Bank = -1, Reagentbank = -3 }
+-- the bags in the bag slots: a Linen Bag (4245) in bag 1, a reagent bag (4498 here) in the reagent slot and a Small Brown Pouch (4496) in the first bank bag slot
 function C_Container.ContainerIDToInventoryID(bag) return 30 + bag end
-function GetInventoryItemID(unit, slot) if slot == 31 then return 4245 elseif slot == 35 then return 4496 end end
+function GetInventoryItemID(unit, slot) if slot == 31 then return 4245 elseif slot == 35 then return 4498 elseif slot == 36 then return 4496 end end
 -- tooltips
 local function tooltip(name)
   local tt = { lines = {}, hooks = {} }

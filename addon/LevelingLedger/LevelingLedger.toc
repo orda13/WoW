@@ -2,7 +2,7 @@
 ## Title: Leveling Ledger
 ## Notes: Records your play sessions, XP, trainer costs, vendor prices and loot so the Leveling Ledger web page can import them.
 ## Author: Leveling Ledger
-## Version: 1.0.46
+## Version: 1.0.47
 ## SavedVariables: LevelingLedgerDB
 ## OptionalDeps: Questie, AskMrRobotClassic
 

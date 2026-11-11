@@ -292,25 +292,30 @@ local function scanBags()
   local n = NUM_BAG_SLOTS or 4
   local list = {}
   for b = 0, n do list[#list + 1] = b end
+  -- the reagent bag, where this client has one: its own bag index (5), after the four bag slots
+  local BI = Enum and Enum.BagIndex
+  local rb = BI and BI.ReagentBag
+  if rb and rb > n then list[#list + 1] = rb end
   local got = scanContainers(list)
   char.bags = got
   char.bagsAt = now()
-  -- the reagent bag slot, where this client has one (its own bag index)
-  local BI = Enum and Enum.BagIndex
   local eq = bagItemsIn(1, n)
-  local rb = BI and BI.ReagentBag
   if rb then local ok, id = pcall(bagItemIn, rb); if ok and id then eq[#eq + 1] = id end end
   char.bagItems = eq
 end
 local function scanBank()
   if not bankOpen then return end
   local n, nb = NUM_BAG_SLOTS or 4, NUM_BANKBAGSLOTS or 6
-  local list = { BANK_CONTAINER or -1 }
-  for b = n + 1, n + nb do list[#list + 1] = b end
-  char.bank = scanContainers(list)
-  char.bankAt = now()
+  -- bank bags start after the reagent bag on clients that have one (BankBag_1 = 6), right after the bags otherwise
   local BI = Enum and Enum.BagIndex
   local first = (BI and BI.BankBag_1) or (n + 1)
+  local list = { BANK_CONTAINER or (BI and BI.Bank) or -1 }
+  for b = first, first + nb - 1 do list[#list + 1] = b end
+  -- the reagent bank, where the client has one
+  local rbank = BI and (BI.Reagentbank or BI.ReagentBank)
+  if rbank and pcall(slotCount, rbank) then list[#list + 1] = rbank end
+  char.bank = scanContainers(list)
+  char.bankAt = now()
   char.bankBagItems = bagItemsIn(first, first + nb - 1)
 end
 
