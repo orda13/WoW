@@ -544,7 +544,7 @@ a.whi:hover { color: var(--brass); text-decoration: none; }
 .cnode.some { border-color: #3fd23f; }
 .cnode.full { border-color: #f2c14e; }
 .cnode.sel { box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.8); }
-.cnode .rk { position: absolute; right: -8px; bottom: -8px; min-width: 22px; padding: 0 3px; font: 700 11px/16px var(--mono); text-align: center; color: #ccc; background: #111; border: 1px solid #555; border-radius: 4px; }
+.cnode .rk { position: absolute; right: -6px; bottom: -6px; min-width: 24px; padding: 0 4px; font: 700 11px/16px var(--mono); text-align: center; color: #ccc; background: #0b0b0b; border: 1px solid #4a4a4a; border-radius: 8px; box-shadow: 0 1px 3px #000; }
 .cnode.some .rk, .cnode.open .rk { color: #3fd23f; }
 .cnode.full .rk { color: #f2c14e; }
 .cnode.locked .rk { color: #888; }
@@ -822,14 +822,6 @@ body { margin: 0; }
   #qlogPanel { grid-column: 1 / span 3; } #questPanel { grid-column: 4 / -1; }
   #skillsPanel { grid-column: span 5; } #favorPanel { grid-column: span 7; }
   .st-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  /* talents: the trees, with the talent you pick and the leveling plan beside them */
-  #talPanel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 28%); gap: 16px 24px; align-items: start; }
-  #talPanel > * { grid-column: 1 / -1; }
-  #talPanel > .tal-trees { grid-column: 1; grid-row: 3 / span 3; }
-  #talPanel > .tal-detail { grid-column: 2; grid-row: 3; position: sticky; top: 100px; }
-  #talPanel > .tal-plan { grid-column: 2; grid-row: 4; margin-top: 0; }
-  #talPanel > .tal-plan ol { grid-template-columns: minmax(0, 1fr); }
-  #talPanel > #talSource { grid-row: 6; }
   /* abilities: the training budget beside the list, the levels in two columns */
   #abPanel { display: grid; grid-template-columns: minmax(340px, 26%) minmax(0, 1fr); gap: 16px 24px; align-items: start; }
   #abPanel > * { grid-column: 1 / -1; }
@@ -844,6 +836,41 @@ body { margin: 0; }
 @media (min-width: 3000px) { #board { grid-column: 1 / span 7; } #invPanel { grid-column: 8 / -1; } }
 @media (min-width: 3300px) { html { font-size: 125%; } :root { --side-w: 360px; } }
 
+
+/* ---------- talents: a toolbar, the three trees, then the picked talent beside the leveling plan ---------- */
+#talPanel { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: 18px 24px; align-items: start; }
+#talPanel > * { grid-column: 1 / -1; }
+#talPanel > .tal-detail { grid-column: 1; position: sticky; top: 96px; }
+#talPanel > .tal-plan { grid-column: 2; margin-top: 0; }
+#talPanel > .tal-head { justify-content: flex-start; gap: 12px 16px; }
+#talPanel > .tal-head > .row { margin-left: auto; }
+#talPanel > .tal-head .about-btn { margin-right: 4px; }
+#talClass { width: auto; min-width: 170px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font-family: var(--display); }
+#talPoints { padding: 3px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--class) 50%, var(--line)); color: var(--fg); background: color-mix(in srgb, var(--class) 10%, transparent); font-size: .9rem; }
+.tal-trees { gap: 20px; }
+.ctree { display: flex; flex-direction: column; border: 2px solid #000; box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass) 45%, transparent), 0 6px 18px rgba(0, 0, 0, .45); }
+.ctree header { padding: 10px 14px; background: linear-gradient(180deg, rgba(0, 0, 0, .82), rgba(0, 0, 0, .6)); }
+.ctree header h3 { font-size: 1.15rem; letter-spacing: .04em; }
+.ctree .tpts { font: 600 .82rem/1 var(--body); color: #f5e6c4; padding: 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, .55); border: 1px solid #5a4a2c; }
+.ctgrid { margin: 22px auto 26px; }
+.carrow { stroke-width: 5; }
+.cnode { border-width: 2px; border-radius: 8px; }
+.cnode img, .cnode img.ico { border-radius: 6px; }
+.cnode.open { box-shadow: 0 0 8px rgba(63, 210, 63, .45), 0 1px 4px rgba(0, 0, 0, .8); }
+.cnode.full { box-shadow: 0 0 10px rgba(242, 193, 78, .55), 0 1px 4px rgba(0, 0, 0, .8); }
+.cnode:hover { filter: brightness(1.15); }
+.tal-detail { min-height: 7rem; border-left: 3px solid var(--class); }
+.tal-detail p { margin: 8px 0 0; }
+.tal-plan ol { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 18px; }
+@media (max-width: 1100px) { #talPanel { grid-template-columns: minmax(0, 1fr); } #talPanel > .tal-detail, #talPanel > .tal-plan { grid-column: 1; position: static; } }
+@media (min-width: 1900px) {
+  /* big screens: the trees no wider than they look good, the talent and the plan beside them */
+  #talPanel { grid-template-columns: minmax(0, 1500px) minmax(380px, 1fr); }
+  #talPanel > .tal-trees { grid-column: 1; grid-row: 3 / span 2; }
+  #talPanel > .tal-detail { grid-column: 2; grid-row: 3; }
+  #talPanel > .tal-plan { grid-column: 2; grid-row: 4; }
+  #talPanel > #talSource { grid-row: 5; }
+}
 /* narrow windows: the sidebar becomes a header */
 @media (max-width: 1000px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -4816,12 +4843,17 @@ body { margin: 0; }
     const avail = talAvail(), spent = talSpent();
     $("talPoints").textContent = `${spent} / ${avail} points spent` + (avail - spent > 0 ? ` · ${avail - spent} to spend` : "");
     const wrap = $("talTrees"); wrap.replaceChildren();
-    const CELL = 62, PAD = 9, NS = "http://www.w3.org/2000/svg";
+    // icons sized to the room each tree has (4 columns of talents), so the trees fill their frames at any width
+    const cols = Math.max(1, getComputedStyle(wrap).gridTemplateColumns.split(" ").filter(Boolean).length);
+    const treeW = ((wrap.clientWidth || 1200) - 20 * (cols - 1)) / cols;
+    const CELL = Math.max(58, Math.min(100, Math.floor((treeW - 48) / 4)));
+    const ICON = Math.round(CELL * 0.66), PAD = Math.round((CELL - ICON) / 2), NS = "http://www.w3.org/2000/svg";
+    TAL.cell = CELL;
     const reqMet = (n) => !n.req || (() => { const [, p] = nodeById(n.req); return !p || (TAL.ranks[p.id] || 0) >= p.max; })();
     for (const tree of TAL.data.trees) {
       const box = el("div", "ctree");
       if (tree.bg) box.style.backgroundImage = `url("https://wow.zamimg.com/images/wow/talents/backgrounds/classic/${tree.bg}.jpg")`;
-      const h = el("header"); h.append(el("h3", null, tree.spec), el("span", "num", String(treeSpent(tree))));
+      const h = el("header"); h.append(el("h3", null, tree.spec), el("span", "tpts", `${treeSpent(tree)} point${treeSpent(tree) === 1 ? "" : "s"}`));
       const rows = Math.max(...tree.nodes.map((n) => n.row));
       const grid = el("div", "ctgrid"); grid.style.width = 4 * CELL + "px"; grid.style.height = rows * CELL + "px";
       const at = (n) => ({ x: n.col * CELL + CELL / 2, y: (n.row - 1) * CELL + CELL / 2 });
@@ -4830,7 +4862,7 @@ body { margin: 0; }
       for (const n of tree.nodes) {
         if (!n.req) continue;
         const [, p] = nodeById(n.req); if (!p) continue;
-        const a = at(p), b = at(n), half = 22;
+        const a = at(p), b = at(n), half = ICON / 2 + 2;
         const pts = p.row === n.row ? [[a.x + Math.sign(b.x - a.x) * half, a.y], [b.x - Math.sign(b.x - a.x) * half, b.y]]
           : p.col === n.col ? [[a.x, a.y + half], [b.x, b.y - half]]
           : [[a.x + Math.sign(b.x - a.x) * half, a.y], [b.x, a.y], [b.x, b.y - half]];
@@ -4838,7 +4870,7 @@ body { margin: 0; }
         pl.setAttribute("points", pts.map((q) => q.join(",")).join(" ")); pl.setAttribute("class", "carrow" + (reqMet(n) ? " on" : ""));
         svg.append(pl);
         // the arrowhead
-        const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], ang = Math.atan2(y2 - y1, x2 - x1), L = 8;
+        const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], ang = Math.atan2(y2 - y1, x2 - x1), L = Math.round(ICON / 5);
         const head = document.createElementNS(NS, "polygon");
         head.setAttribute("points", [[x2, y2], [x2 - L * Math.cos(ang - 0.55), y2 - L * Math.sin(ang - 0.55)], [x2 - L * Math.cos(ang + 0.55), y2 - L * Math.sin(ang + 0.55)]].map((q) => q.join(",")).join(" "));
         head.setAttribute("class", "carrow" + (reqMet(n) ? " on" : "")); head.style.fill = reqMet(n) ? "#e8b64c" : "#8a8a8a";
@@ -4849,12 +4881,14 @@ body { margin: 0; }
         const r = TAL.ranks[n.id] || 0;
         const b = el("button", "cnode"); b.type = "button";
         b.style.left = n.col * CELL + PAD + "px"; b.style.top = (n.row - 1) * CELL + PAD + "px";
+        b.style.width = b.style.height = ICON + "px";
         const unlocked = treeSpent(tree, n.row) >= 5 * (n.row - 1) && reqMet(n);
         const canSpend = unlocked && talSpent() < talAvail();
         b.classList.add(r >= n.max ? "full" : r > 0 ? "some" : canSpend ? "open" : "locked");
         if (TAL.sel === n.id) b.classList.add("sel");
         if (n.icon) b.append(iconImg(n.icon));
-        b.append(el("span", "rk", `${r}/${n.max}`));
+        const rk = el("span", "rk", `${r}/${n.max}`); const fs = Math.max(11, Math.round(ICON * 0.19));
+        rk.style.fontSize = fs + "px"; rk.style.lineHeight = Math.round(fs * 1.45) + "px"; b.append(rk);
         b.setAttribute("aria-label", `${n.name}, ${r} of ${n.max}`);
         b.onclick = () => talChange(tree, n, TAL.remove ? -1 : 1);
         b.oncontextmenu = (e) => { e.preventDefault(); talChange(tree, n, -1); };
@@ -4876,6 +4910,8 @@ body { margin: 0; }
       if (r < n.max) det.append(el("p", "muted", (r ? "Next: " : "Rank 1: ") + n.desc[r]));
     }
   }
+  let talResizeT = null;
+  window.addEventListener("resize", () => { clearTimeout(talResizeT); talResizeT = setTimeout(() => { if (curView === "talents" && TAL.data) renderTalents(); }, 150); });
   // the in-game talent tooltip: name, rank, what this rank and the next do, and what it still needs
   let tipEl = null;
   function talTip(tree, n, anchor) {
