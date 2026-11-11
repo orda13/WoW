@@ -13,13 +13,17 @@ local function copy()
   if type(me) ~= "table" or type(db) ~= "table" or type(db.chars) ~= "table" then return end
   local c = db.chars[name .. "-" .. realm]
   if type(c) ~= "table" then return end
+  -- item names: the game often has none while you log out, so the ones saved before (and the add-on's item names) are kept
+  local before = type(c.amr) == "table" and type(c.amr.names) == "table" and c.amr.names or {}
+  local known = type(db.items) == "table" and db.items or {}
   local out = { at = time(), setups = {}, junk = {}, keep = {}, names = {} }
   -- the item's name when the game has it cached (your gear and bags always are), so the page can show it
   local id = function(it)
     local n = type(it) == "table" and tonumber(it.id) or nil
     if n and not out.names[n] then
       local nm = (C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(n)) or (GetItemInfo and GetItemInfo(n))
-      if type(nm) == "string" then out.names[n] = nm end
+      if not (type(nm) == "string" and nm ~= "") then nm = before[n] or (type(known[n]) == "table" and known[n].n) or nil end
+      if type(nm) == "string" and nm ~= "" then out.names[n] = nm end
     end
     return n
   end

@@ -45,6 +45,12 @@ local function refresh()
   if not char then return end
   local log = readLog()
   local old = char.questLog or {}
+  -- an empty log while several quests were in it is the game not answering (loading screens, logging out), not
+  -- every quest dropped at once: keep the last one seen
+  local n, was = 0, 0
+  for _ in pairs(log) do n = n + 1 end
+  for _ in pairs(old) do was = was + 1 end
+  if n == 0 and was > 1 then return end
   for id, q in pairs(log) do q.at = (old[id] and old[id].at) or now() end
   char.questLog = log
   char.questLogAt = now()

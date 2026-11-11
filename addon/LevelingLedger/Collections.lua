@@ -108,15 +108,27 @@ local function refresh()
 end
 
 -- ---------- what this character has, for the page ----------
-local function save()
+-- Saved while you play (after quests and bag changes) and again at logout. At logout the game often says no quest is
+-- completed and the bags are empty, so then nothing is dropped: handed-in books and completed chain quests only add
+-- up (a completed quest stays completed), and the bags and quest log keep what was last seen.
+local function keepList(now, before) local out, seen = {}, {}
+  for _, l in ipairs({ before or {}, now }) do for _, x in ipairs(l) do if not seen[x] then seen[x] = true; out[#out + 1] = x end end end
+  table.sort(out); return out
+end
+local function save(loggingOut)
   local db = ns.db and ns.db(); if not (db and db.chars) then return end
   local c = db.chars[(UnitName("player") or "?") .. "-" .. (GetRealmName() or "")]
   if type(c) ~= "table" then return end
+  local old, oldq = c.books or {}, c.chainq or {}
   local d, g = {}, {}
   for _, b in ipairs(books()) do
     if done(b) then d[#d + 1] = b.n elseif inBags(b) then g[#g + 1] = b.n end
   end
-  c.books = { done = d, bags = g, at = time() }
+  d = keepList(d, old.done)
+  if loggingOut and #g == 0 then g = old.bags or {} end
+  local held = {}; for _, n in ipairs(d) do held[n] = true end
+  local g2 = {}; for _, n in ipairs(g) do if not held[n] then g2[#g2 + 1] = n end end
+  c.books = { done = d, bags = g2, at = time() }
   -- the chains' quests this character has completed, or has in the quest log
   local qd, ql, seen = {}, {}, {}
   for _, ch in ipairs(ns.questChains or {}) do
@@ -128,7 +140,11 @@ local function save()
       end
     end
   end
-  c.chainq = { done = qd, log = ql, at = time() }
+  qd = keepList(qd, oldq.done)
+  if loggingOut and #ql == 0 then ql = oldq.log or {} end
+  local isDone = {}; for _, q in ipairs(qd) do isDone[q] = true end
+  local ql2 = {}; for _, q in ipairs(ql) do if not isDone[q] then ql2[#ql2 + 1] = q end end
+  c.chainq = { done = qd, log = ql2, at = time() }
 end
 
 -- ---------- /ledger books ----------
@@ -165,13 +181,13 @@ for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_LOGOUT", "QUEST_TURNED_IN", "QUEST_
 end
 local pending = false
 local function soon() if pending then return end pending = true
-  local go = function() pending = false; if ns.safe then ns.safe(refresh) else pcall(refresh) end end
+  local go = function() pending = false; if ns.safe then ns.safe(refresh); ns.safe(save) else pcall(refresh); pcall(save) end end
   if C_Timer and C_Timer.After then C_Timer.After(1, go) else go() end
 end
 f:SetScript("OnEvent", function(_, event)
   if event == "PLAYER_LOGIN" then
     local api = rawget(_G, "Questie") and Questie.API
     if api and type(api.RegisterOnReady) == "function" then pcall(api.RegisterOnReady, function() soon() end) end
-  elseif event == "PLAYER_LOGOUT" then pcall(save)
+  elseif event == "PLAYER_LOGOUT" then pcall(save, true)
   else soon() end
 end)

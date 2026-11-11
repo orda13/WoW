@@ -266,12 +266,25 @@ AskMrRobotDb5 = { char = { ["Talwyn - Normal"] = {
 C_Item = C_Item or {}
 C_Item.GetItemNameByID = function(id) return ({ [274155] = "Geomancer Headdress", [6681] = "Thornspike" })[id] end
 ''')
-# while logging out the game can report 0 gold and empty bags: the last real values are kept
-L.execute('_REAL_MONEY = state.money; state.money = 0; _REAL_BAGS = CONTAINERS; CONTAINERS = {}')
-L.execute('T = T + 600'); fire('PLAYER_LOGOUT')
-L.execute('state.money = _REAL_MONEY; CONTAINERS = _REAL_BAGS')
-_c = L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then local n = 0; for _ in pairs(c.bags or {}) do n = n + 1 end; return c.money, n end end end')()
-print('after a logout that reported 0 gold and empty bags: money', _c[0], 'bag kinds', _c[1])
+# while logging out the game can answer with nothing: no rested XP, zone, resting, gold, level, XP, bags, completed
+# quests, quest log or item names. Everything saved before must survive.
+fire('BAG_UPDATE_DELAYED'); fire('QUEST_LOG_UPDATE')
+_snap = 'function() local c = LevelingLedgerDB.chars["Talwyn-Normal"]; local n, q = 0, 0; for _ in pairs(c.bags or {}) do n = n + 1 end; for _ in pairs(c.questLog or {}) do q = q + 1 end; local s = c.sessions[#c.sessions]; return string.format("rested %s, zone %s/%s, resting %s, money %s, level %s, lastXP %s, bag kinds %d, bagItems %d, quest log %d, books %d, chain quests %d, session end level %s xp %s rested %s", tostring(c.rested), tostring(c.zone), tostring(c.subzone), tostring(c.resting), tostring(c.money), tostring(c.level), tostring(c.lastXP), n, #(c.bagItems or {}), q, #((c.books or {}).done or {}), #((c.chainq or {}).done or {}), tostring(s.endLevel), tostring(s.endXP), tostring(s.endRested)) end'
+fire('PLAYER_LOGOUT')  # an ordinary /reload first: Ask Mr. Robot's names are known then
+L.execute('LevelingLedgerDB.chars["Talwyn-Normal"].questLog = LevelingLedgerDB.chars["Talwyn-Normal"].questLog or {}; local ql = LevelingLedgerDB.chars["Talwyn-Normal"].questLog; ql[90001] = ql[90001] or { t = "x" }; ql[90002] = ql[90002] or { t = "y" }')
+before = L.eval(_snap)()
+L.execute('''_SAVE = { REST, ZONE, SUBZONE, RESTING, state.money, state.level, state.xp, CONTAINERS, QLOG, C_QuestLog.IsQuestFlaggedCompleted, C_Item.GetItemNameByID }
+REST = nil; ZONE = ""; SUBZONE = ""; RESTING = false; state.money = 0; state.level = 0; state.xp = 0; CONTAINERS = {}; QLOG = {}
+C_QuestLog.IsQuestFlaggedCompleted = function() return false end; C_Item.GetItemNameByID = function() return nil end
+GetRealZoneText = function() return ZONE end
+_GIID = GetInventoryItemID; GetInventoryItemID = function() return nil end''')
+L.execute('T = T + 600'); fire('QUEST_LOG_UPDATE'); fire('PLAYER_LOGOUT')
+after = L.eval(_snap)()
+print('before logout:', before); print('after a blank logout:', after)
+print('logout kept everything:', before.split(', session')[0] == after.split(', session')[0])
+print('Ask Mr. Robot names kept:', dict(L.globals().LevelingLedgerDB.chars['Talwyn-Normal'].amr.names))
+L.execute('''REST, ZONE, SUBZONE, RESTING, state.money, state.level, state.xp, CONTAINERS, QLOG, C_QuestLog.IsQuestFlaggedCompleted, C_Item.GetItemNameByID = unpack(_SAVE)
+GetRealZoneText = function() return ZONE or "Darkshore" end; GetInventoryItemID = _GIID''')
 # bags, bank, tooltip, profession window and /ledger alts
 fire('BAG_UPDATE_DELAYED'); fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
 me = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']

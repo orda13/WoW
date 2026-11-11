@@ -99,10 +99,25 @@ local function charKey()
   return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "")
 end
 
+-- While you log out the game often answers with nothing: no rested XP, no zone, not resting, 0 gold, level 0, 0 XP.
+-- So every reading goes through read(): while you play it's remembered, and at logout an empty answer gives the last
+-- one seen instead (then what was saved before). Everything here is also updated by events while you play.
+local EMPTY = { rested = 0, zone = "", subzone = "", resting = false, money = 0, level = 0, xp = 0, xpMax = 0 }
+local good, loggingOut = {}, false
+local function read(k, v)
+  if v == nil then v = EMPTY[k] end
+  if not loggingOut then good[k] = v; return v end
+  if v == EMPTY[k] and good[k] ~= nil then return good[k] end
+  return v
+end
+local function lvlNow() return read("level", UnitLevel("player")) end
+local function xpNow() return read("xp", UnitXP("player")) end
+local function xpMaxNow() return read("xpMax", UnitXPMax("player")) end
+
 local function snapshot()
   return {
-    level = UnitLevel("player"), xp = UnitXP("player"), xpMax = UnitXPMax("player"),
-    rested = GetXPExhaustion() or 0, money = GetMoney(), at = now(),
+    level = lvlNow(), xp = xpNow(), xpMax = xpMaxNow(),
+    rested = read("rested", GetXPExhaustion()), money = read("money", GetMoney and GetMoney()), at = now(),
   }
 end
 
@@ -142,11 +157,11 @@ local function tick(xp)
   end
   -- XP goes where you were until now (at a level-up that's the level you just finished)
   if xp and xp > 0 then
-    local zn, lv = tickZone or zone(), tickLevel or UnitLevel("player")
+    local zn, lv = tickZone or read("zone", zone()), tickLevel or lvlNow()
     if zn ~= "" then local z = session.byZone[zn] or { xp = 0, sec = 0 }; z.xp = z.xp + xp; session.byZone[zn] = z end
     local l = session.byLevel[lv] or { xp = 0, sec = 0 }; l.xp = l.xp + xp; session.byLevel[lv] = l
   end
-  tickAt, tickZone, tickLevel = t, zone(), UnitLevel("player")
+  tickAt, tickZone, tickLevel = t, read("zone", zone()), lvlNow()
 end
 local function closeSession()
   if not session then return end
@@ -157,19 +172,16 @@ local function closeSession()
 end
 
 -- What the character is on right now (the page shows rested XP and zone from this)
--- The game sometimes reports 0 gold while you log out; then the last amount seen this session is kept.
-local seenMoney = nil
-local function noteState(loggingOut)
+-- At logout empty answers fall back to the last ones seen (read() above).
+local function noteState()
   if not char then return end
-  char.rested = GetXPExhaustion() or 0
-  char.zone = zone()
-  char.subzone = GetSubZoneText and GetSubZoneText() or ""
-  char.resting = (IsResting and IsResting()) and true or false
-  local m = GetMoney and GetMoney() or 0
-  if loggingOut and m == 0 and seenMoney and seenMoney > 0 then m = seenMoney end
-  if not loggingOut then seenMoney = m end
-  char.money = m
-  char.level = UnitLevel("player")
+  char.rested = read("rested", GetXPExhaustion())
+  char.zone = read("zone", zone())
+  char.subzone = read("subzone", GetSubZoneText and GetSubZoneText())
+  char.resting = read("resting", (IsResting and IsResting()) and true or false)
+  char.money = read("money", GetMoney and GetMoney())
+  char.level = lvlNow()
+  xpNow(); xpMaxNow()
   char.stateAt = now()
 end
 
@@ -249,13 +261,12 @@ local function bagItemsIn(first, last)
   for b = first, last do local ok, id = pcall(bagItemIn, b); if ok and id then out[#out + 1] = id end end
   return out
 end
--- While you log out the game sometimes reports empty bags: then the last bags seen are kept.
-local function scanBags(loggingOut)
+-- Bags are read whenever they change, not at logout (the game often reports them empty then).
+local function scanBags()
   local n = NUM_BAG_SLOTS or 4
   local list = {}
   for b = 0, n do list[#list + 1] = b end
   local got = scanContainers(list)
-  if loggingOut and not next(got) and char.bags and next(char.bags) then return end
   char.bags = got
   char.bagsAt = now()
   -- the reagent bag slot, where this client has one (its own bag index)
@@ -263,7 +274,7 @@ local function scanBags(loggingOut)
   local eq = bagItemsIn(1, n)
   local rb = BI and BI.ReagentBag
   if rb then local ok, id = pcall(bagItemIn, rb); if ok and id then eq[#eq + 1] = id end end
-  if #eq > 0 or not loggingOut then char.bagItems = eq end
+  char.bagItems = eq
 end
 local function scanBank()
   if not bankOpen then return end
@@ -289,8 +300,9 @@ end
 
 -- ---------- XP ----------
 local function onXP()
-  local lvl, xp = UnitLevel("player"), UnitXP("player")
-  char.xpMax[lvl] = UnitXPMax("player")
+  local lvl, xp = lvlNow(), xpNow()
+  if lvl < 1 then return end
+  local mx = xpMaxNow(); if mx > 0 then char.xpMax[lvl] = mx end
   local gained
   if lvl == char.lastLevel then
     gained = xp - (char.lastXP or xp)
@@ -337,6 +349,7 @@ local function addMoney(dir, kind, amt)
   session[key][kind] = (session[key][kind] or 0) + amt
 end
 local function onMoney()
+  if loggingOut then return end
   local m = GetMoney()
   if lastMoney == nil then lastMoney = m; return end
   local d = m - lastMoney
@@ -917,7 +930,8 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "PLAYER_LOGOUT" then
     -- the save time first: the app only imports a file whose save time is newer, so a failing step below mustn't block it
     db.savedAt = now()
-    safe(onXP); safe(closeSession); safe(noteState, true); safe(scanBags, true); safe(function() char.level = UnitLevel("player") end)
+    loggingOut = true
+    safe(onXP); safe(closeSession); safe(noteState)
   elseif event == "PLAYER_XP_UPDATE" then safe(onXP); safe(noteState)
   elseif event == "UPDATE_EXHAUSTION" or event == "PLAYER_UPDATE_RESTING" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then safe(noteState)
   elseif event == "PLAYER_LEVEL_UP" then local lvl = ...; safe(onLevelUp, lvl)
