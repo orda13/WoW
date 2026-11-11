@@ -41,23 +41,45 @@ cp "$SRC"/lib/*.js "$DEST/app/lib/"
 
 # --- settings ---
 CFG="$DEST/relay.json"
-if [ ! -f "$CFG" ]; then
+# Asks for every setting; with saved ones, Enter keeps each (the secret is never shown)
+ask_settings() {
+  local cur_hub="" cur_id="" cur_sec="" cur_dev="" cur_wow="" HUB CID SEC DEV WOW KEEP
+  if [ -f "$CFG" ]; then
+    get() { "$NODE" -e 'const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); process.stdout.write(String(c[process.argv[2]] || ""))' "$CFG" "$1"; }
+    cur_hub="$(get hubUrl)"; cur_id="$(get clientId)"; cur_sec="$(get clientSecret)"; cur_dev="$(get device)"; cur_wow="$(get wowFolder)"
+  fi
   echo
   echo "Your hub's Cloudflare address, and the service token you made for this device (README: Other PCs and the Steam Deck)."
-  read -rp "  Hub address (like https://ledger.example.com): " HUB
+  [ -f "$CFG" ] && echo "Press Enter to keep what's in [brackets]."
+  read -rp "  Hub address (like https://ledger.example.com)${cur_hub:+ [$cur_hub]}: " HUB; HUB="${HUB:-$cur_hub}"
   # only visible ASCII: a paste can bring invisible characters that break every request
-  while :; do read -rp "  Service token Client ID (ends in .access): " CID; CID="$(printf '%s' "$CID" | LC_ALL=C tr -cd '\041-\176' | sed -E 's/^(CF-Access-Client-Id|ClientId|Id)[:=]//I; s/^["'"'"']+|["'"'"',;]+$//g')"
+  while :; do read -rp "  Service token Client ID (ends in .access)${cur_id:+ [$cur_id]}: " CID; CID="$(printf '%s' "$CID" | LC_ALL=C tr -cd '\041-\176' | sed -E 's/^(CF-Access-Client-Id|ClientId|Id)[:=]//I; s/^["'"'"']+|["'"'"',;]+$//g')"
+    CID="${CID:-$cur_id}"
     [[ "$CID" =~ ^[A-Za-z0-9]+\.access$ ]] && break; echo "  That doesn't look like a Client ID: letters and digits ending in .access. Paste it again."; done
-  while :; do read -rsp "  Service token Client Secret (hidden): " SEC; echo; SEC="$(printf '%s' "$SEC" | LC_ALL=C tr -cd '\041-\176' | sed -E 's/^(CF-Access-Client-Secret|ClientSecret|Secret)[:=]//I; s/^["'"'"']+|["'"'"',;]+$//g')"
-    [[ "$SEC" =~ ^[A-Za-z0-9]{32,}$ ]] && break; echo "  That doesn't look like a Client Secret (${#SEC} characters; it's a long string of letters and digits). Paste it again."; done
-  DEFAULT_NAME="$(hostname)"; [ "$DEFAULT_NAME" = "steamdeck" ] && DEFAULT_NAME="Steam Deck"
+  SEC=""
+  if [ -n "$cur_sec" ]; then read -rp "  Keep the saved Client Secret? [Y/n]: " KEEP; [[ "$KEEP" =~ ^[nN] ]] || SEC="$cur_sec"; fi
+  if [ -z "$SEC" ]; then
+    while :; do read -rsp "  Service token Client Secret (hidden): " SEC; echo; SEC="$(printf '%s' "$SEC" | LC_ALL=C tr -cd '\041-\176' | sed -E 's/^(CF-Access-Client-Secret|ClientSecret|Secret)[:=]//I; s/^["'"'"']+|["'"'"',;]+$//g')"
+      [[ "$SEC" =~ ^[A-Za-z0-9]{32,}$ ]] && break; echo "  That doesn't look like a Client Secret (${#SEC} characters; it's a long string of letters and digits). Paste it again."; done
+  fi
+  DEFAULT_NAME="${cur_dev:-$(hostname)}"; [ "$DEFAULT_NAME" = "steamdeck" ] && DEFAULT_NAME="Steam Deck"
   read -rp "  Name for this device [$DEFAULT_NAME]: " DEV; DEV="${DEV:-$DEFAULT_NAME}"
-  read -rp "  World of Warcraft folder (leave blank to find it automatically): " WOW
+  read -rp "  World of Warcraft folder (leave blank to find it automatically)${cur_wow:+ [$cur_wow]}: " WOW; WOW="${WOW:-$cur_wow}"
   umask 077
-  "$NODE" -e 'const [f, hub, id, sec, dev, wow] = process.argv.slice(1); const c = { hubUrl: hub.trim(), clientId: id.trim(), clientSecret: sec.trim(), device: dev }; if (wow) c.wowFolder = wow; require("fs").writeFileSync(f, JSON.stringify(c, null, 2) + "\n", { mode: 0o600 });' \
-    "$CFG" "$HUB" "$CID" "$SEC" "$DEV" "${WOW:-}"
+  # keep anything else already saved (autoUpdate)
+  "$NODE" -e 'const fs = require("fs"); const [f, hub, id, sec, dev, wow] = process.argv.slice(1); let c = {}; try { c = JSON.parse(fs.readFileSync(f, "utf8")); } catch {}
+    Object.assign(c, { hubUrl: hub.trim().replace(/\/+$/, ""), clientId: id.trim(), clientSecret: sec.trim(), device: dev }); if (wow) c.wowFolder = wow; else delete c.wowFolder;
+    fs.writeFileSync(f, JSON.stringify(c, null, 2) + "\n", { mode: 0o600 });' "$CFG" "$HUB" "$CID" "$SEC" "$DEV" "${WOW:-}"
+}
+if [ ! -f "$CFG" ]; then
+  ask_settings
 else
-  echo "Keeping your existing relay settings in $CFG"
+  echo
+  echo "Saved relay settings in $CFG:"
+  "$NODE" -e 'const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(`  Hub address:   ${c.hubUrl || ""}\n  Client ID:     ${c.clientId || ""}\n  Client Secret: ${c.clientSecret ? "(saved, hidden)" : "(none)"}\n  Device name:   ${c.device || ""}\n  WoW folder:    ${c.wowFolder || "(found automatically)"}`)' "$CFG"
+  CHANGE="${RECONFIGURE:-}"
+  if [ -z "$CHANGE" ]; then read -rp "Change any of these (for example a new service token)? [y/N]: " CHANGE; fi
+  if [[ "$CHANGE" =~ ^[yY1] ]]; then ask_settings; fi
 fi
 chmod 600 "$CFG"
 

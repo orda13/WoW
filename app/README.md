@@ -202,7 +202,7 @@ If an update ever leaves a relay unable to start, it goes back to the previous v
 
 To turn this off on a device, add `"autoUpdate": false` to its `relay.json`.
 
-Running the relay installer again still works, for example to change settings. Relays installed before self-updating existed need it once.
+Running the relay installer again shows the saved settings and asks whether to change them, for example to enter a new service token; press Enter at a question to keep what's there. On Windows, `-Reconfigure` goes straight to the questions. Relays installed before self-updating existed need it once.
 
 **Your other devices on the hub:** the hub's Settings tab lists each device and when it last sent data.
 

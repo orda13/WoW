@@ -1,15 +1,18 @@
 # Installs (or updates) the Leveling Ledger relay on another Windows PC: it sends this PC's add-on file to your hub.
 # Run from the downloaded project's app folder:  powershell -ExecutionPolicy Bypass -File .\scripts\install-relay.ps1
+# Running it again keeps the saved settings, after asking whether to change them; -Reconfigure asks straight away.
 param(
   [string]$Dest = "C:\LevelingLedgerRelay",
-  [string]$ServiceName = "LevelingLedgerRelay"
+  [string]$ServiceName = "LevelingLedgerRelay",
+  [switch]$Reconfigure
 )
 $ErrorActionPreference = "Stop"
 
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) {
   Write-Host "Asking for administrator rights to install the relay service..."
-  Start-Process powershell -Verb RunAs -ArgumentList "-NoExit -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Dest `"$Dest`" -ServiceName `"$ServiceName`""
+  $more = if ($Reconfigure) { " -Reconfigure" } else { "" }
+  Start-Process powershell -Verb RunAs -ArgumentList "-NoExit -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Dest `"$Dest`" -ServiceName `"$ServiceName`"$more"
   exit
 }
 $Src = Split-Path -Parent $PSScriptRoot
@@ -67,32 +70,64 @@ function Read-ClientSecret {
     Write-Host "  That doesn't look like a Client Secret ($(Describe-Bad $v)). It's one long string of letters and digits, about 64 characters; copy just that." -ForegroundColor Yellow
   }
 }
-if (-not (Test-Path $cfgPath)) {
+# Asks for every setting; with saved ones, Enter keeps each (the secret is never shown)
+function Ask-Settings($cur) {
   Write-Host ""
   Write-Host "Your hub's Cloudflare address, and the service token you made for this PC (README: Other PCs and the Steam Deck)."
-  $hub = Read-Host "  Hub address (like https://ledger.example.com)"
-  $cid = Read-ClientId
-  $secPlain = Read-ClientSecret
-  $dev = Read-Host "  Name for this PC [$env:COMPUTERNAME]"
-  if (-not $dev) { $dev = $env:COMPUTERNAME }
-  $guess = @("C:\Program Files (x86)\World of Warcraft", "C:\Program Files\World of Warcraft", "D:\World of Warcraft", "D:\Games\World of Warcraft") | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($cur) { Write-Host "Press Enter to keep what's in [brackets]." }
+  $h0 = if ($cur) { $cur.hubUrl } else { "" }
+  $hub = Read-Host ("  Hub address (like https://ledger.example.com)" + $(if ($h0) { " [$h0]" } else { "" }))
+  if (-not $hub) { $hub = $h0 }
+  $cid = $null
+  if ($cur -and $cur.clientId) {
+    $v = Clean-Token (Read-Host "  Service token Client ID (ends in .access) [$($cur.clientId)]")
+    if (-not $v) { $cid = $cur.clientId } elseif ($v -match '^[A-Za-z0-9]+\.access$') { $cid = $v } else { Write-Host "  That doesn't look like a Client ID." -ForegroundColor Yellow }
+  }
+  if (-not $cid) { $cid = Read-ClientId }
+  $sec = $null
+  if ($cur -and $cur.clientSecret) {
+    $k = Read-Host "  Keep the saved Client Secret? [Y/n]"
+    if ($k -notmatch '^[nN]') { $sec = $cur.clientSecret }
+  }
+  if (-not $sec) { $sec = Read-ClientSecret }
+  $d0 = if ($cur -and $cur.device) { $cur.device } else { $env:COMPUTERNAME }
+  $dev = Read-Host "  Name for this PC [$d0]"
+  if (-not $dev) { $dev = $d0 }
+  $guess = if ($cur -and $cur.wowFolder) { $cur.wowFolder } else { @("C:\Program Files (x86)\World of Warcraft", "C:\Program Files\World of Warcraft", "D:\World of Warcraft", "D:\Games\World of Warcraft") | Where-Object { Test-Path $_ } | Select-Object -First 1 }
   if (-not $guess) { $guess = "C:\Program Files (x86)\World of Warcraft" }
-  $wow = Read-Host "  World of Warcraft folder [$guess]"
+  $wow = Read-Host "  World of Warcraft folder, the one with _forever_ in it [$guess]"
   if (-not $wow) { $wow = $guess }
-  $cfg = [ordered]@{ hubUrl = $hub.Trim(); clientId = $cid.Trim(); clientSecret = $secPlain.Trim(); device = $dev; wowFolder = $wow }
-  [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json -Depth 3))
+  $out = [ordered]@{ hubUrl = $hub.Trim().TrimEnd("/"); clientId = $cid.Trim(); clientSecret = $sec.Trim(); device = $dev; wowFolder = $wow }
+  if ($cur) { foreach ($p in $cur.PSObject.Properties) { if (-not $out.Contains($p.Name)) { $out[$p.Name] = $p.Value } } } # keep anything else (autoUpdate)
+  [IO.File]::WriteAllText($cfgPath, ($out | ConvertTo-Json -Depth 3))
+  return $out
+}
+
+if (-not (Test-Path $cfgPath)) {
+  $cfg = Ask-Settings $null
 } else {
   $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
-  Write-Host "Keeping your existing relay settings in $cfgPath"
-  # repair a token saved with invisible characters, or ask again when it can't be right
-  $fixed = $false
-  $id = Clean-Token $cfg.clientId; $sc = Clean-Token $cfg.clientSecret
-  if ($id -ne $cfg.clientId -or $sc -ne $cfg.clientSecret) { $fixed = $true; Write-Host "  Removed invisible characters from the saved service token." -ForegroundColor Yellow }
-  if ($id -notmatch '^[A-Za-z0-9]+\.access$') { Write-Host "  The saved Client ID doesn't look right; enter it again." -ForegroundColor Yellow; $id = Read-ClientId; $fixed = $true }
-  if ($sc -notmatch '^[A-Za-z0-9]{32,}$') { Write-Host "  The saved Client Secret doesn't look right; enter it again." -ForegroundColor Yellow; $sc = Read-ClientSecret; $fixed = $true }
-  if ($fixed) {
-    $cfg.clientId = $id; $cfg.clientSecret = $sc
-    [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json -Depth 3))
+  Write-Host ""
+  Write-Host "Saved relay settings in ${cfgPath}:"
+  Write-Host "  Hub address:      $($cfg.hubUrl)"
+  Write-Host "  Client ID:        $($cfg.clientId)"
+  Write-Host "  Client Secret:    $(if ($cfg.clientSecret) { '(saved, hidden)' } else { '(none)' })"
+  Write-Host "  Name for this PC: $($cfg.device)"
+  Write-Host "  WoW folder:       $($cfg.wowFolder)"
+  $change = $Reconfigure
+  if (-not $change) { $a = Read-Host "Change any of these (for example a new service token)? [y/N]"; $change = $a -match '^[yY]' }
+  if ($change) { $cfg = Ask-Settings $cfg }
+  else {
+    # repair a token saved with invisible characters, or ask again when it can't be right
+    $fixed = $false
+    $id = Clean-Token $cfg.clientId; $sc = Clean-Token $cfg.clientSecret
+    if ($id -ne $cfg.clientId -or $sc -ne $cfg.clientSecret) { $fixed = $true; Write-Host "  Removed invisible characters from the saved service token." -ForegroundColor Yellow }
+    if ($id -notmatch '^[A-Za-z0-9]+\.access$') { Write-Host "  The saved Client ID doesn't look right; enter it again." -ForegroundColor Yellow; $id = Read-ClientId; $fixed = $true }
+    if ($sc -notmatch '^[A-Za-z0-9]{32,}$') { Write-Host "  The saved Client Secret doesn't look right; enter it again." -ForegroundColor Yellow; $sc = Read-ClientSecret; $fixed = $true }
+    if ($fixed) {
+      $cfg.clientId = $id; $cfg.clientSecret = $sc
+      [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json -Depth 3))
+    }
   }
 }
 
