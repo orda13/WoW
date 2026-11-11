@@ -17,7 +17,10 @@
   - Each alt's documents sit under a prefix derived from its Blizzard name (`c1a2b3c4.state/character`), in the same store.
   - `local-shim.js` adds the prefix for the character picked on the page (`?char=` or localStorage).
   - Server code that touches character data goes through `charStore(store, id)`.
-  - Characters the add-on records are tracked automatically (`newAlts` in `lib/settings.js`, as `name-<main's realm>`, up to 10). Ones removed in Settings go to `config.altsRemoved` and aren't added again.
+  - WoW Forever has no realms: a character is a first name and a surname, unique together, and two characters can share a first name (Talwyn Orda the druid and Talwyn Bank the mage). Blizzard names are `first-surname` (`talwyn-orda`).
+    - The add-on files characters under `"First Surname"` (`ns.charKey`, from `UnitNameUnmodified`, which returns both; `UnitName` gives only the first) and records `surname`; before 1.0.46 it used `Name-Realm`, and that shared entry moves to the character of its class at login.
+    - The hub matches by full name: `pickChar` by surname from the Blizzard name (an entry without one only if its class fits), inventories and `Shared.lua` store `name` as the full name, and the page's `isMe`/`planWho` use the full name from the Blizzard name (`myFullName`). Plans and ticks (`shared/questplan`, `talentplans`, `recipeneeds`, `secretticks`) are keyed by the lower-case full name; the add-on looks up its full name, then its first name (`ns.forMe`).
+  - Characters the add-on records are tracked automatically (`newAlts` in `lib/settings.js`, as `first-surname`, up to 10). Ones removed in Settings go to `config.altsRemoved` and aren't added again.
   - The Ledger tab's Your characters table removes a character with its ×: it goes in `shared/hiddenchars` (keyed `<account>/<key>`), drops out of the page, `Shared.lua` and auto-tracking, and leaves Settings' list (re-added on "bring back").
 - Relays (`app/relay.js`; installers `scripts/install-relay.ps1` and `scripts/install-relay.sh`):
   - Other PCs and the Steam Deck send their SavedVariables to the hub's `/api/relay/upload` with a Cloudflare service token.

@@ -7,11 +7,14 @@ local ADDON, ns = ...
 local function copy()
   local sv = rawget(_G, "AskMrRobotDb5")
   if type(sv) ~= "table" or type(sv.char) ~= "table" then return end
-  local name, realm = UnitName("player") or "?", GetRealmName() or ""
-  local me = sv.char[name .. " - " .. realm]            -- AceDB's key for this character
+  -- AceDB's key for this character: "First Surname" where names are unique per region (WoW Forever), else "Name - Realm"
+  local name, surname = ns.nameParts and ns.nameParts()
+  name = name or UnitName("player") or "?"
+  local regional = type(RegionalUniqueNamesEnabled) == "function" and select(2, pcall(RegionalUniqueNamesEnabled)) == true
+  local me = (regional and sv.char[surname and (name .. " " .. surname) or name]) or sv.char[name .. " - " .. (GetRealmName() or "")]
   local db = LevelingLedgerDB
   if type(me) ~= "table" or type(db) ~= "table" or type(db.chars) ~= "table" then return end
-  local c = db.chars[name .. "-" .. realm]
+  local c = ns.charKey and db.chars[ns.charKey()]
   if type(c) ~= "table" then return end
   -- item names: the game often has none while you log out, so the ones saved before (and the add-on's item names) are kept
   local before = type(c.amr) == "table" and type(c.amr.names) == "table" and c.amr.names or {}

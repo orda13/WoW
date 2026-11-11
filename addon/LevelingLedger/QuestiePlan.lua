@@ -11,8 +11,8 @@ local ICON = "Interface\\AddOns\\Questie\\Icons\\available.blp"
 
 local function plan()
   local all = rawget(_G, "LevelingLedgerShared") and LevelingLedgerShared.plans
-  local me = (UnitName("player") or ""):lower()
-  return (type(all) == "table" and type(all[me]) == "table") and all[me] or {}
+  local p = ns.forMe and ns.forMe(all)
+  return type(p) == "table" and p or {}
 end
 local function completed(id) return C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted and C_QuestLog.IsQuestFlaggedCompleted(id) end
 local function inLog(id) return C_QuestLog and C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(id) end

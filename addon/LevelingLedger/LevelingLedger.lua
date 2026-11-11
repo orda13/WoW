@@ -95,8 +95,34 @@ local function safe(fn, ...)
 end
 
 -- ---------- character and session ----------
+-- WoW Forever has no realms: a character is a first name and a surname, unique together (UnitNameUnmodified gives
+-- both; UnitName only the first). Two characters can share a first name, so the full name is the key there.
+local function nameParts()
+  local first, surname = UnitName("player"), nil
+  if type(UnitNameUnmodified) == "function" then
+    local ok, a, b = pcall(UnitNameUnmodified, "player")
+    if ok and type(a) == "string" and a ~= "" then first = a; if type(b) == "string" and b ~= "" then surname = b end end
+  end
+  return first or "?", surname
+end
+local function oldKey() return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "") end
 local function charKey()
-  return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "")
+  local first, surname = nameParts()
+  if surname then return first .. " " .. surname end
+  return oldKey()
+end
+ns.nameParts, ns.charKey = nameParts, charKey
+-- the names the page files plans and ticks under, most specific first: "talwyn orda", then "talwyn" (older pages)
+function ns.whoKeys()
+  local first, surname = nameParts()
+  local t = {}
+  if surname then t[#t + 1] = (first .. " " .. surname):lower() end
+  t[#t + 1] = first:lower()
+  return t
+end
+function ns.forMe(all)
+  if type(all) ~= "table" then return nil end
+  for _, k in ipairs(ns.whoKeys()) do if all[k] ~= nil then return all[k] end end
 end
 
 -- While you log out the game often answers with nothing: no rested XP, no zone, not resting, 0 gold, level 0, 0 XP.
@@ -905,10 +931,19 @@ f:SetScript("OnEvent", function(_, event, ...)
     db.version, db.chars = VERSION, db.chars or {}
   elseif event == "PLAYER_LOGIN" then
     safe(function()
-      local key = charKey()
+      local key, first, surname = charKey(), nameParts()
+      -- before 1.0.46 every character was filed under first name and realm, so two characters with one first name
+      -- shared (and overwrote) one entry: it goes to the character of its class, the other starts its own
+      local old = oldKey()
+      if old ~= key and not db.chars[key] and type(db.chars[old]) == "table" then
+        local o = db.chars[old]
+        if not o.class or o.class == select(2, UnitClass("player")) then db.chars[key] = o; db.chars[old] = nil end
+      end
       char = db.chars[key] or {}
       db.chars[key] = char
-      char.name, char.realm = UnitName("player"), GetRealmName()
+      char.name, char.realm = first, GetRealmName()
+      char.surname = surname
+      char.guid = UnitGUID and UnitGUID("player") or char.guid
       char.class, char.race, char.faction = select(2, UnitClass("player")), select(2, UnitRace("player")), UnitFactionGroup("player")
       char.level = UnitLevel("player")
       for _, k in ipairs({ "sessions", "levels", "xpMax", "quests", "trainer", "vendors", "loot" }) do char[k] = char[k] or {} end

@@ -1026,7 +1026,7 @@ details.ab-lv[open] .ab-strip { display: none; }
       </fieldset>
       <fieldset class="st-group">
         <legend>Characters</legend>
-        <p class="hint">The character above is your main. Every other character the add-on records is added here by itself (on your main's realm, like <code>bob-orda</code>), up to 10. Each gets its own ledger; switch with the menu under the name. A character on another realm: fix its name here. Removing one stops it being added again and keeps its data, so adding it back restores it.</p>
+        <p class="hint">The character above is your main. Every other character the add-on records is added here by itself as first name and surname, the way Blizzard spells it (<code>talwyn-bank</code>), up to 10. Each gets its own ledger; switch with the menu under the name. Removing one stops it being added again and keeps its data, so adding it back restores it.</p>
         <div class="form-grid">
           <label class="field wide"><span class="label">Other characters</span><textarea id="stAlts" rows="3" spellcheck="false" placeholder="bob-smith"></textarea><span class="st-err" data-for="alts"></span></label>
         </div>
@@ -1558,7 +1558,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     } else {
       const maxLv = c.maxLevel || MAXLV[c.version] || 60;
       $("verLabel").textContent = [c.version || "World of Warcraft: Forever", c.ruleset && `${c.ruleset} ruleset`].filter(Boolean).join(" · ");
-      $("charName").textContent = c.name || "Your character";
+      $("charName").textContent = myFullName() || c.name || "Your character";
       // the class shows everywhere: its colour (--class) on the card, the page's accents and the XP bar's frame
       const ck = classKey(c.cls), fac = myFaction();
       document.documentElement.dataset.cls = ck || "";
@@ -2124,11 +2124,13 @@ details.ab-lv[open] .ab-strip { display: none; }
   }
   // ---------- planned quests: shared/questplan { byChar: { "<first name>": { [questId]: title } } }; the add-on pins
   // their quest givers in Questie and tracks them once accepted ----------
-  const planWho = () => ((S.char && S.char.name) || "").split(" ")[0].toLowerCase();
-  const myPlan = () => ((S.plan && S.plan.byChar) || {})[planWho()] || {};
+  // plans and ticks are filed under the full name ("talwyn orda"); the main ledger also reads its older first-name ones
+  const planWho = () => myFullName().toLowerCase();
+  const byMe = (by) => { by = by || {}; const w = planWho(); if (by[w] != null) return by[w]; return !window.LL_CHAR ? by[w.split(" ")[0]] : undefined; };
+  const myPlan = () => byMe(S.plan && S.plan.byChar) || {};
   function togglePlan(q) {
     const who = planWho(); if (!who || !db) return;
-    const by = { ...((S.plan && S.plan.byChar) || {}) }, mine = { ...(by[who] || {}) };
+    const by = { ...((S.plan && S.plan.byChar) || {}) }, mine = { ...(byMe(by) || {}) };
     if (mine[q.i]) delete mine[q.i]; else mine[q.i] = q.t;
     by[who] = mine; S.plan = { byChar: by, updatedAt: Date.now() };
     renderQuests(); renderQuestLog();
@@ -2600,7 +2602,10 @@ details.ab-lv[open] .ab-strip { display: none; }
   async function renderWatch() {
     try {
       const st = await (await fetch("/api/status")).json();
+      const before = myFullName();
       S.status = st; renderHealth(); renderCharPick();
+      // the ledger's full name comes with the status: redraw what depends on knowing which character is this one
+      if (myFullName() !== before) { render(); if (typeof BOOKS !== "undefined" && BOOKS.data) renderSecrets(); if (typeof renderRecipes === "function") renderRecipes(); }
       const w = $("impWatch");
       w.textContent = st.files && st.files.length ? `Watching ${st.files.join(", ")}` : "";
       if (st.lastError) w.textContent += (w.textContent ? " · " : "") + st.lastError;
@@ -2616,10 +2621,21 @@ details.ab-lv[open] .ab-strip { display: none; }
   // ---------- your characters: gold, bags and bank across every account ----------
   // characters removed with the table's × (shared/hiddenchars { ids: { "<account>/<key>": { name, alt } } }) are left out everywhere
   const invId = (c) => (c.account || "") + "/" + (c.key || c.name);
+  // WoW Forever names are a first name and a surname (no realms), and two characters can share a first name, so the
+  // ledger knows itself by its full name, from the Blizzard name in Settings ("talwyn-orda" -> "Talwyn Orda")
+  const slugName = (sl) => String(sl || "").split("-").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const mySlug = () => { const l = (S.status && S.status.characters) || []; const m = l.find((c) => c.id === (window.LL_CHAR || "")); return m ? m.character : ""; };
+  function myFullName() { const f = slugName(mySlug()); return f.includes(" ") ? f : ((S.char && S.char.name) || f || ""); }
   const hiddenIds = () => (S.hidden && S.hidden.ids) || {};
   const invAll = () => Object.values((S.inv && S.inv.chars) || {}).sort((a, b) => (b.level || 0) - (a.level || 0) || a.name.localeCompare(b.name));
   const invChars = () => { const h = hiddenIds(); return invAll().filter((c) => !h[invId(c)]); };
-  const isMe = (c) => { const n = ((S.char && S.char.name) || "").split(" ")[0].toLowerCase(); return !!n && c.name.toLowerCase() === n; };
+  // this ledger's character: by full name where both sides have one, else by first name (an add-on before 1.0.46)
+  const isMe = (c) => {
+    const me = myFullName().toLowerCase(), n = String((c && c.name) || "").toLowerCase();
+    if (!me || !n) return false;
+    if (n.includes(" ") && me.includes(" ")) return n === me;
+    return n.split(" ")[0] === me.split(" ")[0];
+  };
   function invItemName(id) {
     const a = S.invItems && S.invItems.items && S.invItems.items[id];
     if (a) return { n: a[0], q: a[1] };
@@ -2754,7 +2770,8 @@ details.ab-lv[open] .ab-strip { display: none; }
     let alt = null;
     const alts = await altsList();
     if (alts) {
-      alt = alts.find((a) => a.split("-")[0] === c.name.toLowerCase()) || null;
+      const nm = c.name.toLowerCase().trim().replace(/\s+/g, "-");
+      alt = alts.find((a) => a === nm) || (nm.includes("-") ? null : alts.find((a) => a.split("-")[0] === nm)) || null;
       if (alt && !(await putAlts(alts.filter((a) => a !== alt)))) { toast("Couldn't update the character list in Settings."); alt = null; }
     }
     const ids = { ...hiddenIds(), [invId(c)]: { name: c.name, ...(alt ? { alt } : {}), at: Date.now() } };
@@ -2811,7 +2828,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     if (list.length && !list.some((c) => c.id === cur)) { try { localStorage.setItem("ll-char", ""); } catch {} location.search = ""; return; } // that alt was removed
     $("charPickWrap").hidden = list.length < 2;
     const sel = $("charPick");
-    const label = (c) => (c.name || c.character) + (c.level ? ` · ${c.level}${c.cls ? " " + c.cls : ""}` : "");
+    const label = (c) => (slugName(c.character) || c.name) + (c.level ? ` · ${c.level}${c.cls ? " " + c.cls : ""}` : "");
     if (sel.options.length !== list.length || [...sel.options].some((o, i) => o.textContent !== label(list[i]))) sel.replaceChildren(...list.map((c) => { const o = el("option", null, label(c)); o.value = c.id; return o; }));
     sel.value = cur;
   }
@@ -2887,8 +2904,9 @@ details.ab-lv[open] .ab-strip { display: none; }
       const st = await (await fetch("/api/status")).json();
       $("stWatch").textContent = st.files && st.files.length ? "Watching " + st.files.join(", ") : (st.lastError || "No add-on file found yet.");
       // characters the add-on has seen that aren't tracked yet (it knows first names only)
-      const tracked = new Set((st.characters || []).map((c) => (c.name || c.character).split(/[ -]/)[0].toLowerCase()));
-      const untracked = (st.seen || []).filter((c) => !tracked.has(c.name.toLowerCase()));
+      const tracked = new Set((st.characters || []).map((c) => slugName(c.character).toLowerCase()));
+      const trackedFirst = new Set([...tracked].map((n) => n.split(" ")[0]));
+      const untracked = (st.seen || []).filter((c) => { const n = c.name.toLowerCase(); return n.includes(" ") ? !tracked.has(n) : !trackedFirst.has(n); });
       const devs = st.devices || [];
       $("stDevices").textContent = devs.length ? "Devices sending add-on data: " + devs.map((d) => `${d.name} (last sent ${new Date(d.lastUpload).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })})`).join(", ") + "." : "No other devices have sent add-on data yet. See \"Other PCs and the Steam Deck\" in the README to set up the relay.";
       $("stSeen").textContent = untracked.length ? "The add-on has also seen: " + untracked.map((c) => c.name + (c.level ? ` (level ${c.level}${c.cls ? " " + c.cls.charAt(0) + c.cls.slice(1).toLowerCase() : ""})` : "")).join(", ") + ". They aren't tracked because you removed them or there are already 10; add them above to track them." : "";
@@ -4514,7 +4532,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     // gold: this character, and everyone
     const chars = invChars(), me = chars.find(isMe);
     const all = chars.reduce((a, x) => a + (x.money || 0), 0);
-    tile("inv_misc_coin_01", "Gold", me && me.money != null ? moneyEl(me.money) : "–", chars.length > 1 ? `${moneyEl(all).textContent} across ${chars.length} characters` : "", "ledger", "invPanel");
+    tile("inv_misc_coin_01", "Gold", me && me.money != null ? moneyEl(me.money) : "–", chars.length > 1 ? `${money(all) || "0c"} across ${chars.length} characters` : "", "ledger", "invPanel");
     // training: the next visit and whether you can afford it
     if (AB.data) {
       const cls = (c.cls || "Druid").split(/[ (]/)[0], lv = c.level || 1;
@@ -4524,10 +4542,10 @@ details.ab-lv[open] .ab-strip { display: none; }
       let next = now.length ? { lv, es: now } : null;
       for (let L = lv + 1; !next && L <= Math.min(60, lv + 10); L++) { const es = list.filter((e) => e.lv === L); if (es.length) next = { lv: L, es }; }
       if (next) {
-        const cost = next.es.reduce((a, e) => a + (AB.costs[e.id] || 0), 0), money = me && me.money;
-        const short = money != null && cost > money;
+        const cost = next.es.reduce((a, e) => a + (AB.costs[e.id] || 0), 0), carry = me && me.money;
+        const short = carry != null && cost > carry;
         tile("inv_misc_book_11", next.lv === lv ? "Train now" : `Training at ${next.lv}`, cost ? moneyEl(cost) : `${next.es.length} abilit${next.es.length === 1 ? "y" : "ies"}`,
-          short ? `you're ${moneyEl(cost - money).textContent} short` : `${next.es.length} abilit${next.es.length === 1 ? "y" : "ies"}`, "talents", "abPanel", short ? "warn" : "");
+          short ? `you're ${money(cost - carry)} short` : `${next.es.length} abilit${next.es.length === 1 ? "y" : "ies"}`, "talents", "abPanel", short ? "warn" : "");
       }
     }
     // quests in your log
@@ -4711,7 +4729,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   // quests, this character's bags and bank (shared/inventories), or a tick here (shared/secretticks, by first name, which
   // the add-on also reads to drop the pins) ----------
   const SECRETS = { show: "todo" };
-  const secretTicks = () => ((S.secretTicks && S.secretTicks.byChar) || {})[planWho()] || {};
+  const secretTicks = () => byMe(S.secretTicks && S.secretTicks.byChar) || {};
   function myItems() {
     const me = invChars().find(isMe); const out = new Map();
     for (const w of [me && me.bags, me && me.bank]) for (const [id, n] of Object.entries(w || {})) out.set(+id, (out.get(+id) || 0) + n);
@@ -4730,7 +4748,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   }
   function setSecretTick(sc, on) {
     const who = planWho(); if (!who) return;
-    const by = { ...((S.secretTicks && S.secretTicks.byChar) || {}) }, mine = { ...(by[who] || {}) };
+    const by = { ...((S.secretTicks && S.secretTicks.byChar) || {}) }, mine = { ...(byMe(by) || {}) };
     if (on) mine[sc.id] = true; else delete mine[sc.id];
     by[who] = mine; S.secretTicks = { byChar: by, updatedAt: Date.now() };
     renderSecrets(); write(() => db.doc("shared/secretticks").set(S.secretTicks));
@@ -5129,7 +5147,7 @@ details.ab-lv[open] .ab-strip { display: none; }
 
   // ---------- talent leveling plan: shared/talentplans { byChar: { "<first name>": { id, name, from, order: [nodeId per level], labels } } };
   // the add-on names the next talent when you level up (through Shared.lua) ----------
-  const myTalPlan = () => ((S.tplan && S.tplan.byChar) || {})[planWho()] || null;
+  const myTalPlan = () => byMe(S.tplan && S.tplan.byChar) || null;
   // each level's pick with the rank it brings that talent to
   const stepName = (s) => s.max > 1 ? `${s.n} ${s.rank}/${s.max}` : s.n;
   function planSteps(p) {

@@ -10,8 +10,7 @@ local ICON = "Interface\\AddOns\\Questie\\Icons\\available.blp"
 
 local function needs()
   local all = rawget(_G, "LevelingLedgerShared") and LevelingLedgerShared.recipes
-  local me = (UnitName("player") or ""):lower()
-  local r = type(all) == "table" and all[me]
+  local r = ns.forMe and ns.forMe(all)
   return type(r) == "table" and type(r.items) == "table" and r or { items = {}, npcs = {} }
 end
 local function idFromLink(link) return link and tonumber(link:match("item:(%d+)")) end

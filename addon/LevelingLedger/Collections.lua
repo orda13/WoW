@@ -127,13 +127,13 @@ local function hasPet(itemID)
   return ok2 and (tonumber(n) or 0) > 0
 end
 local function savedSecrets()
-  local db = ns.db and ns.db(); local c = db and db.chars and db.chars[(UnitName("player") or "?") .. "-" .. (GetRealmName() or "")]
+  local db = ns.db and ns.db(); local c = db and db.chars and ns.charKey and db.chars[ns.charKey()]
   local d = {}; for _, id in ipairs(type(c) == "table" and c.secrets and c.secrets.done or {}) do d[id] = true end
   return d
 end
 local function ticked(id)
   local all = rawget(_G, "LevelingLedgerShared") and LevelingLedgerShared.secrets
-  local mineT = type(all) == "table" and all[string.lower(UnitName("player") or "")]
+  local mineT = ns.forMe and ns.forMe(all)
   return type(mineT) == "table" and mineT[id] and true or false
 end
 local function secretSeen(sc) -- what the game itself shows right now
@@ -209,7 +209,7 @@ local function keepList(now, before) local out, seen = {}, {}
 end
 local function save(loggingOut)
   local db = ns.db and ns.db(); if not (db and db.chars) then return end
-  local c = db.chars[(UnitName("player") or "?") .. "-" .. (GetRealmName() or "")]
+  local c = ns.charKey and db.chars[ns.charKey()]
   if type(c) ~= "table" then return end
   local old, oldq = c.books or {}, c.chainq or {}
   local d, g = {}, {}

@@ -10,18 +10,30 @@ function loadAbilities(publicDir) {
   return abilities;
 }
 
+// "Talwyn Orda" from the add-on's name and surname (WoW Forever has surnames instead of realms)
+const fullName = (x) => [x && x.name, x && x.surname].filter(Boolean).join(" ");
+
 // Returns the character table for the ledger's character, or null if the file has none.
-// hint: the character from the settings (e.g. "talwyn-orda"), used before Blizzard has filled in the character
+// hint: the character from the settings, as Blizzard spells it: first name and surname ("talwyn-orda")
 function pickChar(data, store, hint) {
   if (!data || !data.chars) return null;
   const chars = Object.values(data.chars);
   const c = store.get("state/character");
   const last = store.get("state/addon");
-  const want = ((c && c.name) || (hint || "").split("-")[0] || (last && last.char) || "").split(" ")[0].toLowerCase();
+  const parts = String(hint || "").toLowerCase().split("-");
+  const want = ((c && c.name) || parts[0] || (last && last.char) || "").split(" ")[0].toLowerCase();
+  const surname = parts.length > 1 ? parts.slice(1).join(" ") : "";
   if (!want) return chars[0] || null;
-  // the same name can appear more than once (another realm, or the realm's name changed): take the one played most recently
+  const newest = (l) => l.sort((a, b) => lastActive(b) - lastActive(a))[0] || null;
   const same = chars.filter((x) => (x.name || "").toLowerCase() === want);
-  return same.sort((a, b) => lastActive(b) - lastActive(a))[0] || null;
+  // two characters can share a first name: the surname tells them apart (add-on 1.0.46 and later)
+  if (surname) { const exact = same.filter((x) => String(x.surname || "").toLowerCase() === surname); if (exact.length) return newest(exact); }
+  // older add-ons recorded no surname; never take one recorded under another surname
+  let plain = same.filter((x) => !x.surname);
+  // and keep to this character's class, so a namesake of another class can't land here
+  const cls = c && c.cls ? String(c.cls).split(/[ (]/)[0].toUpperCase() : "";
+  if (cls && plain.some((x) => x.class)) plain = plain.filter((x) => !x.class || x.class === cls);
+  return newest(plain);
 }
 function lastActive(c) {
   let t = c.skillsAt || 0;
@@ -375,4 +387,4 @@ function importAddon(text, store, publicDir, source, hint) {
   return { message, savedAt: (data.savedAt || 0) * 1000 };
 }
 
-module.exports = { importAddon, readSaved, pickChar, sourceKey };
+module.exports = { importAddon, readSaved, pickChar, sourceKey, fullName };

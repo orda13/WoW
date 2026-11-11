@@ -7,7 +7,7 @@ local TAG = "|cffd9aa5aLeveling Ledger|r: "
 local function plan()
   local all = rawget(_G, "LevelingLedgerShared") and LevelingLedgerShared.talents
   if type(all) ~= "table" then return nil end
-  local p = all[string.lower(UnitName("player") or "")]
+  local p = ns.forMe and ns.forMe(all)
   if type(p) ~= "table" or type(p.picks) ~= "table" then return nil end
   return p
 end

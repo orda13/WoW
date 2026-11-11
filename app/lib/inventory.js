@@ -25,7 +25,8 @@ function mergeInventories(store, data, file) {
     const at = (c.stateAt || c.bagsAt || 0) * 1000;
     if (prev && prev.at >= at && !(c.bankAt && c.bankAt * 1000 > (prev.bankAt || 0))) continue;
     chars[id] = {
-      name: c.name, key, account, level: c.level || null, cls: c.class || "", faction: c.faction || "",
+      // the full name (WoW Forever: first name and surname), so two characters with one first name stay apart
+      name: [c.name, c.surname].filter(Boolean).join(" "), first: c.name, key, account, level: c.level || null, cls: c.class || "", faction: c.faction || "",
       money: c.money != null ? c.money : (prev && prev.money) ?? null,
       rested: c.rested || 0, zone: c.zone || "", subzone: c.subzone || "", at,
       // for the rested estimate: resting (inn or city) when last seen, and the size of this level's XP bar
@@ -38,6 +39,14 @@ function mergeInventories(store, data, file) {
       professions: Object.fromEntries(Object.entries(c.skills || {}).map(([n, v]) => [n, v.rank || 0])),
     };
     if (JSON.stringify(prev) !== JSON.stringify(chars[id])) changed = true;
+  }
+  // add-ons before 1.0.46 filed WoW Forever characters by first name and realm ("Talwyn-Normal"), one entry for every
+  // character with that first name; once the full names arrive from that account, the old entry goes
+  for (const c of Object.values(data.chars)) {
+    if (!c || !c.surname || !c.name) continue;
+    for (const [id, x] of Object.entries(chars)) {
+      if (x.account === account && !x.first && String(x.name || "").toLowerCase() === String(c.name).toLowerCase() && String(x.key || "").startsWith(c.name + "-")) { delete chars[id]; changed = true; }
+    }
   }
   if (changed) store.set("shared/inventories", { chars, updatedAt: Date.now() });
   // auction prices (whole account): the newest price seen per item wins, across every account and device

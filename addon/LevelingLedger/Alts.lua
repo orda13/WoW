@@ -14,7 +14,7 @@ local function shared()
 end
 local function others()
   local db, me = ns.db and ns.db(), ns.char and ns.char()
-  local myKey = me and ((me.name or "") .. "-" .. (me.realm or ""))
+  local myKey = ns.charKey and ns.charKey()
   local byKey = {}
   if db and db.chars then for key, c in pairs(db.chars) do if c ~= me then byKey[key] = { key = key, c = c } end end end
   local sh = shared()

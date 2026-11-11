@@ -115,20 +115,25 @@ function applyUpdate(config, body, isLocal) {
 }
 
 // config.json is written in place: the service may not create files next to it.
-// Characters the add-on has seen that the ledger doesn't track yet, as Blizzard names on the main character's realm
-// ("bob-orda"). Skips ones you removed in Settings, and stops at 10 extra characters. Returns the names to add.
+// Characters the add-on has seen that the ledger doesn't track yet, as Blizzard names them. WoW Forever names are a
+// first name and a surname ("Talwyn Bank" -> "talwyn-bank"); a name without a surname (an older add-on) is taken to
+// share the main character's surname. Skips ones you removed in Settings, and stops at 10. Returns the names to add.
 function newAlts(config, names) {
   const main = (config.blizzard && config.blizzard.character) || "";
-  const realm = main.includes("-") ? main.slice(main.indexOf("-") + 1) : "";
-  if (!realm) return [];
-  const first = (slug) => String(slug).split("-")[0];
-  const known = new Set([main, ...(config.alts || []), ...(config.altsRemoved || [])].map(first));
+  const tail = main.includes("-") ? main.slice(main.indexOf("-") + 1) : "";
+  const known = new Set([main, ...(config.alts || []), ...(config.altsRemoved || [])]);
+  // a bare first name matches any tracked character with that first name (it could be any of them)
+  const firsts = new Set([...known].map((slug) => String(slug).split("-")[0]));
   const out = [];
   for (const n of names) {
-    const slug = String(n || "").trim().toLowerCase().replace(/\s+/g, "-");
-    if (!slug || !/^[\p{L}\p{N}']+$/u.test(slug) || known.has(slug)) continue;
+    const words = String(n || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length || words.some((w) => !/^[\p{L}\p{N}']+$/u.test(w))) continue;
+    let slug;
+    if (words.length > 1) slug = words.join("-");
+    else { if (!tail || firsts.has(words[0])) continue; slug = words[0] + "-" + tail; }
+    if (known.has(slug)) continue;
     if ((config.alts || []).length + out.length >= 10) break;
-    known.add(slug); out.push(slug + "-" + realm);
+    known.add(slug); firsts.add(words[0]); out.push(slug);
   }
   return out;
 }
