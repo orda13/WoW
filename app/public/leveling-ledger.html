@@ -636,6 +636,9 @@ button:disabled { opacity: .55; }
 .bk-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin: 22px 0 8px; }
 .bk-goal { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
 .bk-goal.reached { outline: 1px solid var(--brass); }
+.ex-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.ex-list li { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.ex-list a { font-weight: 600; }
 .bk-goal label.check { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .bk-goal label.check input { margin: 0; }
 .bk-table td, .bk-table th { vertical-align: top; }
@@ -949,6 +952,12 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     <p class="muted">Your ledger data is copied once a day into the <code>data\backups</code> folder of the app, and the last two weeks are kept. Restoring saves your current data first, so a restore can be undone.</p>
     <div class="row"><button id="bkNow">Back up now</button></div>
     <ul class="bk-list" id="bkList"></ul>
+  </section>
+
+  <section class="panel" id="exportPanel" data-view="ledger">
+    <div class="tal-head"><h2>Export</h2><span class="hint" id="exportNote"></span></div>
+    <p class="muted">Download this character's data. The CSV files open in Excel, Google Sheets or Numbers; the JSON file is everything, for safekeeping.</p>
+    <ul class="ex-list" id="exportList"></ul>
   </section>
 
   <section class="panel" id="lvlReport" data-view="ledger">
@@ -2656,6 +2665,25 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   }
 
   // ---------- backups ----------
+  // ---------- export: /api/export (app/lib/export.js) for the character shown ----------
+  const EXPORTS = [["sessions", "Play sessions", "CSV", "Each session: time, levels, XP and XP per hour, kills, quests, deaths, gold earned and spent, zones"],
+    ["levels", "Levels", "CSV", "When you reached each level, and the play time it took"],
+    ["quests", "Quests", "CSV", "Quests completed and the ones in your quest log, with titles and zones"],
+    ["characters", "All characters", "CSV", "Every character: level, class, gold, rested XP, where, last played, professions"],
+    ["items", "Bags and banks", "CSV", "Every item in every character's bags and bank"],
+    ["json", "Everything", "JSON", "All of this character's data and the shared data, for safekeeping or another tool"]];
+  function renderExport() {
+    const ul = $("exportList"); if (!ul) return;
+    const who = ((S.char && S.char.name) || "this character").split(" ")[0];
+    $("exportNote").textContent = who;
+    ul.replaceChildren(...EXPORTS.map(([what, label, fmtName, about]) => {
+      const li = el("li"); const a = el("a", null, `${label} (${fmtName})`);
+      a.href = "/api/export?char=" + encodeURIComponent(window.LL_CHAR || "") + "&what=" + what; a.setAttribute("download", "");
+      li.append(a, el("span", "muted", about)); return li;
+    }));
+  }
+  renderExport();
+
   async function renderBackups() {
     const ul = $("bkList");
     try {
@@ -4034,7 +4062,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   const VIEWS = ["ledger", "quests", "dungeons", "talents", "skills", "collectables", "settings"];
   // ---------- section buttons: each tab shows one group of its sections at a time, or all (remembered per tab) ----------
   const SECTIONS = {
-    ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel"]]],
+    ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel", "exportPanel"]]],
     quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
     talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
     collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🗝️", "Secrets", ["secretPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
@@ -4944,7 +4972,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const settle = (snap) => { if (snap.metadata && !snap.metadata.fromCache) { pending--; if (pending <= 0) { clearTimeout(timer); $("offline").hidden = true; } } };
     const fail = () => { clearTimeout(timer); $("offline").hidden = false; S.loaded = true; render(); };
     let gotChar = false, gotSess = false;
-    charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); if (!TAL.picked) loadTalents(charClass()); }, fail);
+    charRef().onSnapshot((s) => { S.char = s.exists ? s.data() : null; gotChar = true; S.loaded = gotChar; settle(s); render(); reconcileSessions(); renderHistory(); renderExport(); if (!TAL.picked) loadTalents(charClass()); }, fail);
     sessRef().onSnapshot((s) => { S.session = s.exists ? s.data() : null; gotSess = true; settle(s); renderSession(); renderLog(); }, fail);
     db.doc("state/syncstatus").onSnapshot((s) => { S.sync = s.exists ? s.data() : null; if (S.sync && !S.sync.pending && S.syncLocal && (S.sync.at || 0) >= S.syncLocal) { S.syncLocal = 0; if (S.sync.message) toast(S.sync.changed ? "Updated from Blizzard" : "Nothing new from Blizzard yet"); } renderSyncStatus(); renderSettingsSync(); renderHealth(); }, () => {});
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});

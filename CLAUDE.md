@@ -11,6 +11,7 @@
   - `addon-import.js`: add-on import
   - `blizzard.js`: Blizzard sync
   - `access.js`: Cloudflare Access JWT check
+  - `export.js`: `/api/export?char=&what=` downloads, for the Ledger tab's Export panel: CSV (sessions, levels, quests, characters, items; cells that look like formulas get a leading apostrophe) or JSON (the character's documents plus the shared ones)
 - Characters (`lib/characters.js`):
   - The main character's documents use plain paths (`state/character`).
   - Each alt's documents sit under a prefix derived from its Blizzard name (`c1a2b3c4.state/character`), in the same store.

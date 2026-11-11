@@ -8,6 +8,7 @@ const { syncBlizzard, resetToken } = require("./lib/blizzard");
 const { checkJournal } = require("./lib/journal");
 const { checkRequest, viaCloudflare } = require("./lib/access");
 const { publicView, applyUpdate, saveConfig, newAlts } = require("./lib/settings");
+const { exportData } = require("./lib/export");
 const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
@@ -197,6 +198,17 @@ const server = http.createServer(async (req, res) => {
       if (!/^[A-Za-z0-9_\-.~:@+]{1,200}$/.test(col)) return send(res, 400, { error: "bad collection" });
       if (req.method === "GET") return send(res, 200, { docs: store.list(col) });
       if (req.method === "POST") { const id = store.add(col, await json(req)); return send(res, 200, { id }); }
+    }
+    // export one character's data: /api/export?char=<id>&what=json|sessions|levels|characters|items|quests
+    if (p === "/api/export" && req.method === "GET") {
+      const c = findChar(url.searchParams.get("char"));
+      if (!c) return send(res, 404, { error: "unknown character" });
+      const cs = storeFor(c.id);
+      const name = ((cs.get("state/character") || {}).name || c.character || "character").split(" ")[0];
+      const out = exportData(store, cs, String(url.searchParams.get("what") || ""), name, PUBLIC);
+      if (!out) return send(res, 400, { error: "unknown export" });
+      res.writeHead(200, { "Content-Type": out.type, "Content-Disposition": `attachment; filename="${out.filename}"`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      return res.end(out.body);
     }
     if (p === "/api/backups" && req.method === "GET") return send(res, 200, { backups: backups.list(), keepDays: config.backupDays || 14 });
     if (p === "/api/backups/now" && req.method === "POST") return send(res, 200, { name: backups.now() });
