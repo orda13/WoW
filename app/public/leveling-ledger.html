@@ -1077,10 +1077,11 @@ details.ab-lv[open] .ab-strip { display: none; }
         <div class="form-grid">
           <label class="field"><span class="label">Team domain</span><input id="stTeam" spellcheck="false" placeholder="yourteam.cloudflareaccess.com"><span class="st-err" data-for="teamDomain"></span></label>
           <label class="field"><span class="label">Application Audience (AUD) tag</span><input id="stAud" spellcheck="false"><span class="st-err" data-for="aud"></span></label>
-          <label class="field wide"><span class="label">Google accounts allowed in (one per line)</span><textarea id="stEmails" rows="2" spellcheck="false"></textarea><span class="st-err" data-for="allowedEmails"></span></label>
+          <label class="field wide"><span class="label">Google accounts that share your own ledger (one per line): they see and change your characters</span><textarea id="stEmails" rows="2" spellcheck="false"></textarea><span class="st-err" data-for="allowedEmails"></span></label>
           <label class="field wide"><span class="label">Devices allowed to send add-on data: Cloudflare service token Client IDs (one per line)</span><textarea id="stTokens" rows="2" spellcheck="false" placeholder="0123456789abcdef0123456789abcdef.access"></textarea><span class="st-err" data-for="serviceTokens"></span></label>
         </div>
         <p class="hint" id="stDevices"></p>
+        <p class="notice" id="stEmailsWarn" hidden></p>
       </fieldset>
       <fieldset class="st-group owner-only" id="stPeopleGroup">
         <legend>People with their own ledger</legend>
@@ -2999,6 +3000,9 @@ details.ab-lv[open] .ab-strip { display: none; }
     $("stWowFolder").value = s.wowFolder; $("stSvFile").value = s.savedVariablesFile; $("stBackupDays").value = s.backupDays;
     $("stTeam").value = s.access.teamDomain; $("stAud").value = s.access.aud; $("stEmails").value = s.access.allowedEmails.join("\n");
     $("stTokens").value = (s.access.serviceTokens || []).join("\n");
+    const sharing = s.access.allowedEmails || [];
+    $("stEmailsWarn").hidden = sharing.length < 2;
+    $("stEmailsWarn").textContent = sharing.length < 2 ? "" : `${sharing.length} Google accounts share your own ledger: ${sharing.join(", ")}. Each of them sees and changes your characters. To give a friend a ledger of their own instead, remove them here and add them under People with their own ledger.`;
     for (const id of ["stTeam", "stAud", "stEmails", "stTokens"]) $(id).disabled = !s.canEditAccess;
     $("stAccessNote").textContent = s.canEditAccess
       ? "Fill these in from Cloudflare Zero Trust (README, Part 2). Until all three are set, visits through Cloudflare are refused."
