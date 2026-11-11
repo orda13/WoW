@@ -2948,7 +2948,11 @@ details.ab-lv[open] .ab-strip { display: none; }
     add(conn ? "good" : "bad", conn ? "Service connected" : "Can't reach the service", conn ? "Live updates are on" : "Check that the Leveling Ledger service is running on your PC");
     // add-on
     const a = S.addon;
-    if (st && !(st.files && st.files.length)) add("warn", "Add-on file not found", st.lastError || "", "settings");
+    const personView = !!(st && st.account && !st.account.owner);
+    if (st && !(st.files && st.files.length)) {
+      if (personView) add("warn", "No data from your PC yet", "Your relay hasn't sent the add-on's file yet: play with the add-on enabled, log out or /reload once, and check the relay on your PC (node C:\\LevelingLedgerRelay\\relay.js --test)", "settings");
+      else add("warn", "Add-on file not found", st.lastError || "", "settings");
+    }
     else if (!a) add("warn", "No add-on data yet", "Log out or /reload in game with the add-on enabled", "settings", "impPanel");
     else {
       const errs = (a.errors || []).filter((e) => e.at && e.at * 1000 >= (a.savedAt || 0) - 6 * 3600 * 1000);
