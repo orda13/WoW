@@ -2648,8 +2648,9 @@ details.ab-lv[open] .ab-strip { display: none; }
   // with that first name exists, since it's one of those characters recorded the old way
   const invAll = () => {
     const all = Object.values((S.inv && S.inv.chars) || {});
-    const isFull = (c) => !!c.first || /\s/.test(String(c.name || "").trim());
-    const full = new Set(all.filter(isFull).map((c) => String(c.first || c.name).trim().split(/\s+/)[0].toLowerCase()));
+    // a full name has a surname; "first" alone doesn't tell (every row carries it since 1.0.46)
+    const isFull = (c) => /\s/.test(String(c.name || "").trim());
+    const full = new Set(all.filter(isFull).map((c) => String(c.name).trim().split(/\s+/)[0].toLowerCase()));
     // and one row per full name (the newest), however many files or accounts it came from
     const newest = new Map();
     for (const c of all) { const k = String(c.name || "").trim().toLowerCase(); const o = newest.get(k); if (!o || (c.at || 0) > (o.at || 0)) newest.set(k, c); }

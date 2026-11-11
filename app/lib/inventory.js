@@ -12,19 +12,43 @@ const toCounts = (o) => {
 // file: ...\WTF\Account\<account>\SavedVariables\LevelingLedger.lua
 const accountOf = (file) => path.basename(path.dirname(path.dirname(file || ""))) || "";
 
+// A row is a full name when it has a surname ("Talwyn Orda"); a first name alone ("Talwyn") is a WoW Forever
+// character recorded by an add-on before 1.0.46, so once any full-name row shares that first name the old row is
+// stale. And a character shows once: the newest row for each name, whatever file or account it came from.
+const nameOf = (x) => String((x && x.name) || "").trim();
+const isFull = (x) => /\s/.test(nameOf(x));
+function tidy(chars) {
+  const fullFirsts = new Set(Object.values(chars).filter(isFull).map((x) => nameOf(x).split(/\s+/)[0].toLowerCase()));
+  const out = {}, newest = new Map(); let changed = false;
+  for (const [id, x] of Object.entries(chars)) {
+    if (!x || !nameOf(x)) { changed = true; continue; }
+    if (!isFull(x) && fullFirsts.has(nameOf(x).toLowerCase())) { changed = true; continue; }
+    const k = nameOf(x).toLowerCase(), o = newest.get(k);
+    if (o) { changed = true; if ((out[o].at || 0) >= (x.at || 0)) continue; delete out[o]; }
+    newest.set(k, id); out[id] = x;
+  }
+  return { chars: out, changed };
+}
+// at startup: clear what earlier versions left behind
+function tidyInventories(store) {
+  const cur = store.get("shared/inventories"); if (!cur || !cur.chars) return 0;
+  const t = tidy(cur.chars);
+  if (t.changed) store.set("shared/inventories", { ...cur, chars: t.chars, updatedAt: Date.now() });
+  return Object.keys(cur.chars).length - Object.keys(t.chars).length;
+}
+
 function mergeInventories(store, data, file) {
   if (!data || !data.chars) return false;
   const account = accountOf(file);
   const cur = store.get("shared/inventories") || { chars: {} };
   const chars = { ...cur.chars };
   let changed = false;
-  // first names that have a full-name entry (add-on 1.0.46+): an old entry under that first name alone is stale
-  const isFull = (x) => x && (x.first || /\s/.test(String(x.name || "").trim()));
-  const fullFirsts = new Set([...Object.values(chars).filter(isFull).map((x) => String(x.first || x.name).trim().split(/\s+/)[0].toLowerCase()),
-    ...Object.values(data.chars).filter((c) => c && c.surname && c.name).map((c) => String(c.name).toLowerCase())]);
+  // first names that have a full-name row (add-on 1.0.46+): an entry under that first name alone isn't added
+  const fullFirsts = new Set([...Object.values(chars).filter(isFull).map((x) => nameOf(x).split(/\s+/)[0].toLowerCase()),
+    ...Object.values(data.chars).filter((c) => c && c.surname && c.name).map((c) => String(c.name).trim().toLowerCase())]);
   for (const [key, c] of Object.entries(data.chars)) {
     if (!c || !c.name) continue;
-    if (!c.surname && fullFirsts.has(String(c.name).toLowerCase())) continue;
+    if (!c.surname && fullFirsts.has(String(c.name).trim().toLowerCase())) continue;
     const id = `${account}/${key}`;
     const prev = chars[id];
     const at = (c.stateAt || c.bagsAt || 0) * 1000;
@@ -47,10 +71,9 @@ function mergeInventories(store, data, file) {
   }
   // add-ons before 1.0.46 filed WoW Forever characters by first name and realm ("Talwyn-Normal"), one entry for every
   // character with that first name; once the full names arrive from that account, the old entry goes
-  for (const [id, x] of Object.entries(chars)) {
-    if (x && !isFull(x) && fullFirsts.has(String(x.name || "").trim().toLowerCase())) { delete chars[id]; changed = true; }
-  }
-  if (changed) store.set("shared/inventories", { chars, updatedAt: Date.now() });
+  const t = tidy(chars);
+  if (t.changed) changed = true;
+  if (changed) store.set("shared/inventories", { chars: t.chars, updatedAt: Date.now() });
   // auction prices (whole account): the newest price seen per item wins, across every account and device
   if (data.ah && typeof data.ah === "object") {
     const cur = store.get("shared/ahprices") || {}; const items = { ...(cur.items || {}) }; let n = 0;
@@ -72,4 +95,4 @@ function mergeInventories(store, data, file) {
   return changed;
 }
 
-module.exports = { mergeInventories, accountOf };
+module.exports = { mergeInventories, tidyInventories, accountOf };

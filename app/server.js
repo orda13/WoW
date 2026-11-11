@@ -13,7 +13,7 @@ const { importAddon } = require("./lib/addon-import");
 const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
 const { characters, charStore } = require("./lib/characters");
-const { mergeInventories } = require("./lib/inventory");
+const { mergeInventories, tidyInventories } = require("./lib/inventory");
 const { readSaved } = require("./lib/addon-import");
 const { buildSummary, writeShared } = require("./lib/summary");
 const { relayVersion, relayBundle } = require("./lib/relaybundle");
@@ -44,6 +44,8 @@ config.access = config.access || {};
 const PORT = config.port || 8787;
 const dataDir = config.dataDir ? path.resolve(APP, config.dataDir) : path.join(APP, "data");
 const store = new Store(path.join(dataDir, "store.json"), path.join(dataDir, "seed.json"));
+// clear what earlier versions left in the characters list (old first-name rows, the same character twice)
+try { const n = tidyInventories(store); if (n) console.log(`Tidied the characters list: ${n} stale row${n === 1 ? "" : "s"} removed`); } catch (e) { console.log("Couldn't tidy the characters list: " + e.message); }
 
 // ---------- daily backups (data/backups, last 14 days by default) ----------
 const backups = startBackups({ store, dir: path.join(dataDir, "backups"), keepDays: () => config.backupDays || 14, log });
