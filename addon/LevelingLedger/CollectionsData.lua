@@ -44,6 +44,7 @@ ns.libraryBooks = {
   { n = 40, name = "Goaz Scrolls", zone = "Wetlands", map = 1437, x = 33.6, y = 47.9, note = "Solo", quest = 78146, item = 209848 },
 }
 ns.libraryTurnIn = { A = { n = "Garion Wendell", zone = "Stormwind City" }, H = { n = "Owen Thadd", zone = "Undercity" } }
+ns.libraryTiers = {10, 20, 25}
 ns.questChains = {
   { id = "cozy-sleeping-bag", name = "Cozy Sleeping Bag", level = 14, steps = {
     A = {
@@ -67,4 +68,23 @@ ns.questChains = {
       { zone = "Hillsbrad Foothills", map = 1424, x = 87.3, y = 49.6, title = "Hastily Rolled-Up Satchel", quest = 79976 },
     },
   } },
+}
+ns.secrets = {
+  { id = "torch", name = "Night Watchman's Torch", status = "solved", have = { quests = {98372, 99267}, items = {280612}, toy = 280612 }, steps = { { zone = "Duskwood", map = 1431, x = 17.2, y = 54.4, title = "Dead guard: Raven Hill (most often)" }, { zone = "Duskwood", map = 1431, x = 23.6, y = 33.2, title = "Dead guard: other spot" }, { zone = "Duskwood", map = 1431, x = 47.6, y = 59.6, title = "Dead guard: other spot" }, { zone = "Duskwood", map = 1431, x = 45.6, y = 79, title = "Dead guard: other spot" }, { zone = "Duskwood", map = 1431, x = 66, y = 33.8, title = "Dead guard: other spot" }, { zone = "Duskwood", map = 1431, x = 68.8, y = 69.6, title = "Dead guard: other spot" } } },
+  { id = "gustjumper", name = "Musical Gustjumper", status = "solved", have = { items = {268109}, pet = 268109 }, steps = { { zone = "Zephras Isle", map = 2521, x = 51.4, y = 72.2, title = "Singing frogs on the rock" } } },
+  { id = "water-globe", name = "Befouled Water Globe", status = "solved", have = { names = {"Cleansed Water Globe"} }, steps = { { zone = "Zephras Isle", map = 2521, x = 41.7, y = 23.4, title = "Ancient Heirloom: tower, top floor" } } },
+  { id = "serpent-form", name = "Druid Serpent Form", status = "solved", have = { allItems = {6473, 10410, 10411, 10412, 10413} }, class = "DRUID", level = 17, steps = { { zone = "The Barrens", map = 1413, x = 46, y = 36.4, title = "Wailing Caverns entrance" } } },
+  { id = "mutanus", name = "Mutanus the Devourer", status = "solved", have = {  }, level = 17, steps = { { zone = "The Barrens", map = 1413, x = 46, y = 36.4, title = "Wailing Caverns entrance" } } },
+  { id = "rockslicer", name = "Rockslicer", status = "solved", have = { items = {872} }, level = 15, steps = { { zone = "Westfall", map = 1436, x = 42.6, y = 71.7, title = "Deadmines entrance (Moonbrook)" } } },
+  { id = "coldflame-saber", name = "Coldflame Saber", status = "solved", have = { names = {"Coldflame Saber"} }, class = "MAGE", level = 21, steps = { { zone = "Silverpine Forest", map = 1421, x = 44.8, y = 67.8, title = "Shadowfang Keep entrance" } } },
+  { id = "lyn", name = "Lyn the Ignored", status = "solved", have = {  }, level = 22, steps = { { zone = "Silverpine Forest", map = 1421, x = 44.8, y = 67.8, title = "Shadowfang Keep: the Black Tome" }, { zone = "Silverpine Forest", map = 1421, x = 63.4, y = 64.3, title = "Ambermill: the Leyline Focus" } } },
+  { id = "lordaeron-bosses", name = "Ruins of Lordaeron secret bosses", status = "solved", have = {  }, steps = {  } },
+  { id = "malignant-root", name = "Malignant Root ring", status = "solved", have = { items = {282283} }, fac = "A", steps = { { zone = "Wetlands", map = 1437, x = 56.4, y = 41.3, title = "Rethiel the Greenwarden" } } },
+  { id = "applejack", name = "Applejack Still", status = "solved", have = { quests = {91736} }, fac = "A", level = 7, steps = { { zone = "Elwynn Forest", map = 1429, x = 24.6, y = 58, title = "Applejack Still" } } },
+  { id = "silver-waves", name = "Silver of the Waves", status = "solved", have = { quests = {86614} }, fac = "A", level = 13, steps = { { zone = "Loch Modan", map = 1432, x = 50.6, y = 53.4, title = "Silver of the Waves: hand in" } } },
+  { id = "whispering-horror", name = "Whispering Horror Residue", status = "solved", have = { quests = {95328} }, fac = "H", level = 7, steps = { { zone = "Tirisfal Glades", map = 1420, x = 8.6, y = 60.2, title = "The cellar elite" } } },
+  { id = "sanders", name = "Captain Sander's Hidden Treasure", status = "solved", have = { quests = {140} }, level = 10, steps = { { zone = "Westfall", map = 1436, x = 25.9, y = 47.8, title = "Clue: old jetty" }, { zone = "Westfall", map = 1436, x = 40.5, y = 47.8, title = "Clue: Gold Coast" }, { zone = "Westfall", map = 1436, x = 26, y = 16.9, title = "The treasure" } } },
+  { id = "black-market", name = "The Black Market", status = "solved", have = {  }, level = 40, steps = { { zone = "Riverglades", map = 2548, x = 78.2, y = 51.8, title = "Agents of the Black Market" } } },
+  { id = "stone-key", name = "Keystone Fragment and Stone Key", status = "unsolved", have = {  }, steps = {  } },
+  { id = "taldramir", name = "Taldramir, the Whispering Wood", status = "later", have = {  }, steps = {  } },
 }

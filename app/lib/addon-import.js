@@ -196,6 +196,15 @@ function importAddon(text, store, publicDir, source, hint) {
     if (!prev || doc.at > (prev.at || 0)) store.set("state/chainq", doc);
   }
 
+  // 2h. WoW Forever secrets the game shows done (Collections.lua): ids like "torch"; kept once seen
+  if (ch.secrets && ch.secrets.at) {
+    const ids = (Array.isArray(ch.secrets.done) ? ch.secrets.done : ch.secrets.done && typeof ch.secrets.done === "object" ? Object.values(ch.secrets.done) : [])
+      .map(String).filter((x) => /^[a-z0-9-]{1,40}$/.test(x));
+    const prev = store.get("state/secrets");
+    const doc = { done: [...new Set([...((prev && prev.done) || []), ...ids])].sort(), at: ch.secrets.at * 1000 };
+    if (!prev || (doc.at > (prev.at || 0) && JSON.stringify(doc.done) !== JSON.stringify(prev.done))) { store.set("state/secrets", doc); done.push(`${doc.done.length} secret${doc.done.length === 1 ? "" : "s"}`); }
+  }
+
   // 2e. Ask Mr. Robot's gear setups and sell list, copied by MrRobot.lua from its add-on (the newest copy wins)
   if (ch.amr && ch.amr.at) {
     const list = (v) => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

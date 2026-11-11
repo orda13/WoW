@@ -47,7 +47,13 @@ function buildSummary(store) {
     if (!t || !Array.isArray(t.labels) || !t.labels.length) continue;
     talents[String(who).toLowerCase()] = { from: Number(t.from) || 10, picks: t.labels.slice(0, 80).map((x) => String(x || "")) };
   }
-  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents };
+  // secrets ticked on the page, per character (first name, lower case): { who: { "torch": true } }, so the add-on drops their pins
+  const secrets = {};
+  for (const [who, t] of Object.entries((store.get("shared/secretticks") || {}).byChar || {})) {
+    const ids = Object.keys(t || {}).filter((id) => t[id] && /^[a-z0-9-]{1,40}$/.test(id)).slice(0, 100);
+    if (ids.length) secrets[String(who).toLowerCase()] = ids;
+  }
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents, secrets };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -100,9 +106,15 @@ function toLua(sum) {
     if (!t || !Array.isArray(t.picks) || !t.picks.length) continue;
     talents.push(`  [${luaStr(who, 40)}] = { from = ${int(t.from, 100)}, picks = {${t.picks.slice(0, 80).map((x) => luaStr(x, 60)).join(",")}} },`);
   }
+  const secrets = [];
+  for (const [who, ids] of Object.entries((sum && sum.secrets) || {}).slice(0, MAX_CHARS)) {
+    if (!Array.isArray(ids)) continue;
+    const l = ids.filter((id) => /^[a-z0-9-]{1,40}$/.test(String(id))).slice(0, 100).map((id) => `[${luaStr(id, 40)}]=true`);
+    if (l.length) secrets.push(`  [${luaStr(who, 40)}] = {${l.join(",")}},`);
+  }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n secrets = {\n${secrets.join("\n")}\n },\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

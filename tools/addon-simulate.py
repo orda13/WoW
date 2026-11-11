@@ -374,6 +374,17 @@ slash('books')
 print('chain pin:', L.eval('BOOKPINS[995001]'))
 print('bags in slots:', list(L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then return c.bagItems end end end')().values()), '| bank bag slots:', list((L.eval('function() for _, c in pairs(LevelingLedgerDB.chars) do if c.name == "Talwyn" then return c.bankBagItems end end end')() or {}).values()))
 slash('chains')
+# secrets: ? pins on the spots of the ones not done yet (your class, faction and level), /ledger secrets, a toy learned,
+# a tick from the page (Shared.lua), and the logout record
+_sp = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 996000 then n = n + 1; t[v:match("Secret: ([^@]-) @")] = true end end; local l = {}; for k in pairs(t) do l[#l + 1] = k end; table.sort(l); return n .. " pins: " .. table.concat(l, ", ") end'
+print('secret pins:', L.eval(_sp)())
+slash('secrets')
+L.execute('PlayerHasToy = function(id) return id == 280612 end; LevelingLedgerShared.secrets = { ["talwyn"] = { ["gustjumper"] = true } }')
+fire('BAG_UPDATE_DELAYED')
+print('after learning the torch and ticking the frog on the page:', L.eval(_sp)())
+slash('secrets pins off'); print('secret pins after off:', L.eval(_sp)()); slash('secrets pins on')
+fire('PLAYER_LOGOUT')
+print('secrets saved at logout:', list(L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].secrets.done').values()))
 slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''

@@ -636,6 +636,8 @@ button:disabled { opacity: .55; }
 .bk-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin: 22px 0 8px; }
 .bk-goal { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: .92rem; }
 .bk-goal.reached { outline: 1px solid var(--brass); }
+.bk-goal label.check { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.bk-goal label.check input { margin: 0; }
 .bk-table td, .bk-table th { vertical-align: top; }
 .bk-table tr.got td { color: var(--muted); }
 .bk-way { font-family: var(--mono); font-size: .8rem; }
@@ -822,6 +824,12 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   <section class="panel" id="chainPanel" data-view="collectables">
     <div class="tal-head"><h2>Quest chains</h2><span class="num muted" id="chainNote"></span></div>
     <div id="chainBody"><p class="empty">Loading…</p></div>
+  </section>
+
+  <section class="panel" id="secretPanel" data-view="collectables">
+    <div class="tal-head"><h2>Secrets</h2><span class="num muted" id="secretNote"></span></div>
+    <div id="secretBody"><p class="empty">Loading…</p></div>
+    <p class="hint">Secrets players have found in WoW Forever, from news and guide sites (Icy Veins, Warcraft Tavern, Method, the WoW Secret Finding Discord's findings and others), in our own words; ids and spots from AllTheThings' Forever data. A secret is ticked when the game shows it (a quest done, the item owned, the whole set, the toy or pet learned; the add-on checks as you play) or when you tick it here. In game, Questie's map shows a ? on the spots of the ones you haven't done, and /ledger secrets lists them.</p>
   </section>
 
 
@@ -4029,7 +4037,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     ledger: [["📜", "Overview", ["board", "invPanel"]], ["📈", "Report", ["lvlReport", "histPanel"]], ["🔌", "Add-on & backups", ["impPanel", "bkPanel"]]],
     quests: [["❗", "Quests", ["qlogPanel", "questPanel"]], ["🛡️", "Your gear", ["wornPanel", "amrPanel"]], ["🎁", "Gear from quests", ["gearPanel"]]],
     talents: [["🌳", "Talents", ["talPanel"]], ["✨", "Abilities", ["abPanel"]]],
-    collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
+    collectables: [["🏆", "Collection", ["collPanel", "collectView"]], ["📚", "Library Books", ["booksPanel"]], ["🛏️", "Quest chains", ["chainPanel"]], ["🗝️", "Secrets", ["secretPanel"]], ["🎒", "Bags", ["bagsPanel"]]],
     skills: [["📊", "Overview", ["skillsPanel", "repPanel", "favorPanel"]], ["🧭", "Profession guide", ["profPlanPanel"]], ["🌿", "Gathering", ["gatherPanel"]],
       ["📖", "Recipes", ["recipePanel"]], ["🧱", "Materials", ["matPanel"]]],
   };
@@ -4079,9 +4087,9 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
   // (state/books: handed in and in bags), Blizzard's completed quests, and ticks you set here (state/bookticks) ----------
   const BOOKS = { data: null, loading: false, show: "need" };
   function loadBooks() {
-    if (BOOKS.data || BOOKS.loading) { renderBooks(); renderChains(); return; }
+    if (BOOKS.data || BOOKS.loading) { renderBooks(); renderChains(); renderSecrets(); return; }
     BOOKS.loading = true;
-    fetch("collections-forever.json").then((r) => r.json()).then((d) => { BOOKS.data = d; renderBooks(); renderChains(); }).catch(() => { $("booksBody").replaceChildren(el("p", "empty", "Couldn't load the book list. Reload the page to try again.")); });
+    fetch("collections-forever.json").then((r) => r.json()).then((d) => { BOOKS.data = d; renderBooks(); renderChains(); renderSecrets(); }).catch(() => { $("booksBody").replaceChildren(el("p", "empty", "Couldn't load the book list. Reload the page to try again.")); });
   }
   function bookState(b) {
     const got = S.books || {};
@@ -4106,7 +4114,7 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     const ti = col.turnin[fac || "A"];
     for (const m of col.milestones) {
       const g = el("div", "bk-goal" + (have >= m.at ? " reached" : ""));
-      g.append(el("b", null, `${m.at} books: ${m.title}`), el("span", have >= m.at ? "pill go" : "pill", have >= m.at ? " Reached" : ` ${m.at - have} to go`));
+      g.append(el("b", null, `${m.at} books` + (m.title ? `: ${m.title}` : "") + (m.lvl ? ` (level ${m.lvl})` : "")), el("span", have >= m.at ? "pill go" : "pill", have >= m.at ? " Reached" : ` ${m.at - have} to go`));
       const r = el("div"); r.append(document.createTextNode("Choose one: "));
       m.rewards.forEach(([id, n], i) => { if (i) r.append(document.createTextNode(" or ")); r.append(id ? whA("item", id, n) : el("span", null, n)); });
       g.append(r); goals.append(g);
@@ -4193,6 +4201,100 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     }
     $("chainNote").textContent = notes.join(" · ");
     box.append(el("p", "hint", `Steps for ${fac === "H" ? "Horde" : "Alliance"}, from your guide; quests from AllTheThings' Forever data. A step is done once its quest is completed (the add-on checks at logout). In game, Questie's map pins your current step, and /ledger chains prints it with a /way line.`));
+  }
+  // ---------- secrets (collections-forever.json "secrets"): done from the add-on (state/secrets), Blizzard's completed
+  // quests, this character's bags and bank (shared/inventories), or a tick here (shared/secretticks, by first name, which
+  // the add-on also reads to drop the pins) ----------
+  const SECRETS = { show: "todo" };
+  const secretTicks = () => ((S.secretTicks && S.secretTicks.byChar) || {})[planWho()] || {};
+  function myItems() {
+    const me = invChars().find(isMe); const out = new Map();
+    for (const w of [me && me.bags, me && me.bank]) for (const [id, n] of Object.entries(w || {})) out.set(+id, (out.get(+id) || 0) + n);
+    for (const id of (me && me.bagItems) || []) out.set(+id, (out.get(+id) || 0) + 1);
+    return out;
+  }
+  function secretState(sc, items) {
+    const h = sc.have || {}, names = new Set([...items.keys()].map((id) => invItemName(id).n.toLowerCase()));
+    if (((S.secrets && S.secrets.done) || []).includes(sc.id) || secretTicks()[sc.id]) return "done";
+    if ((h.quests || []).some((q) => QD.done && QD.done.has(q))) return "done";
+    if ((h.items || []).some((i) => items.has(i)) || (h.names || []).some((n) => names.has(n.toLowerCase()))) return "done";
+    if (h.allItems && h.allItems.length && h.allItems.every((i) => items.has(i))) return "done";
+    const p = sc.parts || {};
+    if ((p.items || []).some((i) => items.has(i)) || (p.names || []).some((n) => names.has(n.toLowerCase())) || (h.allItems || []).some((i) => items.has(i))) return "started";
+    return "todo";
+  }
+  function setSecretTick(sc, on) {
+    const who = planWho(); if (!who) return;
+    const by = { ...((S.secretTicks && S.secretTicks.byChar) || {}) }, mine = { ...(by[who] || {}) };
+    if (on) mine[sc.id] = true; else delete mine[sc.id];
+    by[who] = mine; S.secretTicks = { byChar: by, updatedAt: Date.now() };
+    renderSecrets(); write(() => db.doc("shared/secretticks").set(S.secretTicks));
+  }
+  function renderSecrets() {
+    const box = $("secretBody"); if (!box || !BOOKS.data) return;
+    const all = BOOKS.data.secrets || [], fac = (myFaction() || "")[0], cls = ((S.char && S.char.cls) || "").split(/[ (]/)[0].toUpperCase();
+    const fits = (sc) => (!sc.fac || !fac || sc.fac === fac) && (!sc.class || !cls || sc.class === cls);
+    const items = myItems();
+    const mine = all.filter(fits), solved = mine.filter((sc) => sc.status === "solved");
+    const st = new Map(mine.map((sc) => [sc.id, secretState(sc, items)]));
+    const nDone = solved.filter((sc) => st.get(sc.id) === "done").length;
+    $("secretNote").textContent = `${nDone} of ${solved.length} done`;
+    box.replaceChildren();
+    const bar = el("div", "row");
+    for (const [k, label] of [["todo", "Still to do"], ["done", "Done"], ["all", "All"]]) {
+      const b = el("button", SECRETS.show === k ? "pill go" : "pill", label); b.type = "button"; b.onclick = () => { SECRETS.show = k; renderSecrets(); }; bar.append(b);
+    }
+    const other = all.length - mine.length;
+    if (other) bar.append(el("span", "muted", ` · ${other} more for another class or faction`));
+    box.append(bar);
+    const groups = [["solved", "Solved: how to get them"], ["unsolved", "Still being solved"], ["later", "Coming later"]];
+    for (const [status, title] of groups) {
+      const list = mine.filter((sc) => sc.status === status && (status !== "solved" || SECRETS.show === "all" || (SECRETS.show === "done" ? st.get(sc.id) === "done" : st.get(sc.id) !== "done")));
+      if (!list.length || (status !== "solved" && SECRETS.show === "done")) continue;
+      box.append(el("h3", null, title));
+      const grid = el("div", "bk-goals");
+      for (const sc of list) {
+        const s = st.get(sc.id), card = el("div", "bk-goal" + (s === "done" ? " reached" : ""));
+        const h = el("div", "row"); h.append(el("b", null, sc.name), el("span", "pill", sc.kind));
+        if (status === "solved") h.append(el("span", s === "done" ? "pill go" : s === "started" ? "pill wait" : "pill", s === "done" ? "Done" : s === "started" ? "Started" : sc.level ? `Level ${sc.level}+` : "To do"));
+        if (sc.class) h.append(el("span", "muted", " " + sc.class.charAt(0) + sc.class.slice(1).toLowerCase() + " only"));
+        if (sc.fac) h.append(el("span", "muted", sc.fac === "A" ? " Alliance" : " Horde"));
+        card.append(h);
+        if (sc.reward) { const r = el("div"); r.append(document.createTextNode("Reward: ")); sc.reward.forEach(([id, n], i) => { if (i) r.append(document.createTextNode(", ")); r.append(whA("item", id, n)); }); card.append(r); }
+        card.append(el("p", "muted", sc.about));
+        if (sc.needs) card.append(el("div", "muted", "Needs first: " + sc.needs.map((id) => (all.find((x) => x.id === id) || { name: id }).name).join(", ")));
+        const parts = [...((sc.parts && sc.parts.items) || []).map((i) => [i, (sc.names || {})[i] || "Item " + i, items.has(i)]),
+          ...((sc.parts && sc.parts.names) || []).map((n) => [0, n, [...items.keys()].some((id) => invItemName(id).n.toLowerCase() === n.toLowerCase())]),
+          ...((sc.have && sc.have.allItems) || []).map((i) => [i, (sc.names || {})[i] || "Item " + i, items.has(i)])];
+        if (parts.length) {
+          const pl = el("div"); pl.append(document.createTextNode(sc.have && sc.have.allItems ? "Set pieces: " : "Along the way: "));
+          parts.forEach(([id, n, got], i) => { if (i) pl.append(document.createTextNode(" · ")); pl.append(id ? whA("item", id, n) : el("span", null, n), document.createTextNode(got ? " ✓" : "")); });
+          card.append(pl);
+        }
+        if ((sc.steps || []).length) {
+          const ul = el("ul", "pp-list");
+          for (const step of sc.steps) {
+            const li = el("li"); const line = `/way #${step.map} ${step.x}, ${step.y} ${step.title}`;
+            li.append(el("span", null, `${step.zone}: ${step.title} `), el("code", "bk-way", `${step.x}, ${step.y}`), document.createTextNode(" "));
+            const cp = el("button", "linkish", "copy /way"); cp.type = "button"; cp.title = line;
+            cp.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(line).then(() => { cp.textContent = "copied"; setTimeout(() => cp.textContent = "copy /way", 1500); }).catch(() => {}); };
+            li.append(cp); ul.append(li);
+          }
+          card.append(ul);
+        }
+        // a tick for what the game can't report (boss kills, a place found), or to mark one by hand
+        const auto = s === "done" && !secretTicks()[sc.id];
+        if (status === "solved" && S.canWrite && !auto) {
+          const lb = el("label", "check"); const cb = el("input"); cb.type = "checkbox"; cb.checked = s === "done";
+          cb.onchange = () => setSecretTick(sc, cb.checked);
+          const reports = Object.keys(sc.have || {}).length > 0;
+          lb.append(cb, document.createTextNode(reports ? " done" : " done (the game doesn't report this one)")); card.append(lb);
+        }
+        grid.append(card);
+      }
+      box.append(grid);
+    }
+    if (!box.querySelector(".bk-goal")) box.append(el("p", "empty", SECRETS.show === "todo" ? "You've done every secret found so far." : "None yet."));
   }
   // ---------- bags: every bag in WoW Forever (bags-forever.json) and who has it: in a bag slot, carried, in the bank ----------
   const BAGS = { data: null, loading: false };
@@ -4848,6 +4950,8 @@ td[class^="cls-"] img.ico { border-radius: 50%; }
     db.doc("state/trainercosts").onSnapshot((s) => { if (AB.dirty || s.metadata.hasPendingWrites) return; AB.costs = { ...((s.exists && s.data().costs) || {}) }; AB.fromAddon = { ...((s.exists && s.data().fromAddon) || {}) }; renderAbilities(); }, () => {});
     db.doc("state/gear").onSnapshot((s) => { S.gear = s.exists ? s.data() : null; renderGearWorn(); renderGear(); renderAmr(); if (DG.data) renderDungeons(); }, () => {});
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
+    db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
+    db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});

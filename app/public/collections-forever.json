@@ -1,6 +1,6 @@
 {
  "source": "The owner's list of Library Book locations, joined with AllTheThings' WoW Forever database (MIT) for each book's quest and item.",
- "fetched": "2026-11-10",
+ "fetched": "2026-11-11",
  "collections": [
   {
    "id": "library-books",
@@ -42,14 +42,36 @@
     {
      "at": 20,
      "title": "Greater Friend of the Library",
+     "quest": 79536,
+     "lvl": 20,
      "rewards": [
       [
-       0,
+       281634,
        "Field Researcher's Loop"
       ],
       [
-       0,
+       281635,
        "Philanthropist's Ring"
+      ]
+     ]
+    },
+    {
+     "at": 25,
+     "title": "",
+     "quest": 82208,
+     "lvl": 30,
+     "rewards": [
+      [
+       277254,
+       "Truthseeker's Bow"
+      ],
+      [
+       277258,
+       "Crest of Elucidation"
+      ],
+      [
+       277260,
+       "Researcher's Night Light"
       ]
      ]
     }
@@ -703,6 +725,522 @@
      }
     ]
    }
+  }
+ ],
+ "secrets": [
+  {
+   "id": "torch",
+   "name": "Night Watchman's Torch",
+   "kind": "Toy",
+   "status": "solved",
+   "reward": [
+    [
+     280612,
+     "Night Watchman's Torch"
+    ]
+   ],
+   "about": "A toy torch you can hold (not in cities; it goes out in combat or water). A dead Night Watch guard appears in Duskwood at night, often behind the biggest building in Raven Hill, but he moves between several spots. Click him for the quick quest An Unfortunate End. Lose it and you can get another. Needed for the Befouled Water Globe secret.",
+   "have": {
+    "quests": [
+     98372,
+     99267
+    ],
+    "items": [
+     280612
+    ],
+    "toy": 280612
+   },
+   "steps": [
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 17.2,
+     "y": 54.4,
+     "title": "Dead guard: Raven Hill (most often)"
+    },
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 23.6,
+     "y": 33.2,
+     "title": "Dead guard: other spot"
+    },
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 47.6,
+     "y": 59.6,
+     "title": "Dead guard: other spot"
+    },
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 45.6,
+     "y": 79,
+     "title": "Dead guard: other spot"
+    },
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 66,
+     "y": 33.8,
+     "title": "Dead guard: other spot"
+    },
+    {
+     "zone": "Duskwood",
+     "map": 1431,
+     "x": 68.8,
+     "y": 69.6,
+     "title": "Dead guard: other spot"
+    }
+   ],
+   "names": {
+    "280612": "Night Watchman's Torch"
+   }
+  },
+  {
+   "id": "gustjumper",
+   "name": "Musical Gustjumper",
+   "kind": "Pet",
+   "status": "solved",
+   "reward": [
+    [
+     268109,
+     "Musical Gustjumper"
+    ]
+   ],
+   "about": "A singing frog companion. On Zephras Isle, at the top of the waterfall, target the frogs singing on the rock and /sing (at least two frogs must be on the rock). One hops onto the log next to you: click it. It isn't soulbound, so you can get more and trade or sell them.",
+   "have": {
+    "items": [
+     268109
+    ],
+    "pet": 268109
+   },
+   "steps": [
+    {
+     "zone": "Zephras Isle",
+     "map": 2521,
+     "x": 51.4,
+     "y": 72.2,
+     "title": "Singing frogs on the rock"
+    }
+   ],
+   "names": {
+    "268109": "Musical Gustjumper"
+   }
+  },
+  {
+   "id": "water-globe",
+   "name": "Befouled Water Globe",
+   "kind": "Secret chain",
+   "status": "solved",
+   "about": "Solved by the WoW Secret Finding Discord. You need the Ancient Heirloom ring (Skyborne characters get it from their first quest; anyone can take one from the top floor of the tower) and the Night Watchman's Torch. With the torch, reveal the Ancient Hilt at the back of the Ruins of Ban'aethal, collect the Ancient Skyborne Blades around the isle, then click the Befouled Water Globe to get the Cleansed Water Globe.",
+   "have": {
+    "names": [
+     "Cleansed Water Globe"
+    ]
+   },
+   "parts": {
+    "names": [
+     "Ancient Heirloom",
+     "Befouled Water Globe",
+     "Ancient Hilt"
+    ]
+   },
+   "needs": [
+    "torch"
+   ],
+   "steps": [
+    {
+     "zone": "Zephras Isle",
+     "map": 2521,
+     "x": 41.7,
+     "y": 23.4,
+     "title": "Ancient Heirloom: tower, top floor"
+    }
+   ]
+  },
+  {
+   "id": "serpent-form",
+   "name": "Druid Serpent Form",
+   "kind": "Look",
+   "status": "solved",
+   "class": "DRUID",
+   "level": 17,
+   "about": "Wear all five pieces of the Embrace of the Viper set from Wailing Caverns and Cat Form becomes a serpent. The tooltip doesn't say so.",
+   "have": {
+    "allItems": [
+     6473,
+     10410,
+     10411,
+     10412,
+     10413
+    ]
+   },
+   "steps": [
+    {
+     "zone": "The Barrens",
+     "map": 1413,
+     "x": 46,
+     "y": 36.4,
+     "title": "Wailing Caverns entrance"
+    }
+   ],
+   "names": {
+    "6473": "Armor of the Fang",
+    "10410": "Leggings of the Fang",
+    "10411": "Footpads of the Fang",
+    "10412": "Belt of the Fang",
+    "10413": "Gloves of the Fang"
+   }
+  },
+  {
+   "id": "mutanus",
+   "name": "Mutanus the Devourer",
+   "kind": "Secret boss",
+   "status": "solved",
+   "level": 17,
+   "about": "A hidden boss in Wailing Caverns: he only appears once all four Lords of the Fang are dead. The game doesn't report the kill: tick it here.",
+   "have": {},
+   "steps": [
+    {
+     "zone": "The Barrens",
+     "map": 1413,
+     "x": 46,
+     "y": 36.4,
+     "title": "Wailing Caverns entrance"
+    }
+   ]
+  },
+  {
+   "id": "rockslicer",
+   "name": "Rockslicer",
+   "kind": "Item",
+   "status": "solved",
+   "level": 15,
+   "reward": [
+    [
+     872,
+     "Rockslicer"
+    ]
+   ],
+   "about": "Rhahk'Zor's two-handed axe in the Deadmines now mines Copper, Tin, Silver and Iron veins without the Mining skill.",
+   "have": {
+    "items": [
+     872
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Westfall",
+     "map": 1436,
+     "x": 42.6,
+     "y": 71.7,
+     "title": "Deadmines entrance (Moonbrook)"
+    }
+   ],
+   "names": {
+    "872": "Rockslicer"
+   }
+  },
+  {
+   "id": "coldflame-saber",
+   "name": "Coldflame Saber",
+   "kind": "Item",
+   "status": "solved",
+   "class": "MAGE",
+   "level": 21,
+   "about": "A Mage-only sword whose melee attacks deal extra fire damage to frozen targets. From level 6, Comprehend Scroll on the untranslated scrolls you find until one is the Scroll of the Saber; farm Baron Silverlaine in Shadowfang Keep for the Blade of Silverlaine; use the scroll on the blade.",
+   "have": {
+    "names": [
+     "Coldflame Saber"
+    ]
+   },
+   "parts": {
+    "names": [
+     "Scroll of the Saber",
+     "Blade of Silverlaine"
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Silverpine Forest",
+     "map": 1421,
+     "x": 44.8,
+     "y": 67.8,
+     "title": "Shadowfang Keep entrance"
+    }
+   ]
+  },
+  {
+   "id": "lyn",
+   "name": "Lyn the Ignored",
+   "kind": "Secret boss",
+   "status": "solved",
+   "level": 22,
+   "about": "Take the Black Tome from the table next to Archmage Arugal at the end of Shadowfang Keep (everyone in the group can loot one). Use it at the Leyline Focus next to Archmage Ataeric in the Ambermill town hall, then use what it makes on the purple ritual circle in the lower level of the City of Dalaran to summon Lyn the Ignored. The game doesn't report the kill: tick it here.",
+   "have": {},
+   "parts": {
+    "items": [
+     276561,
+     275989
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Silverpine Forest",
+     "map": 1421,
+     "x": 44.8,
+     "y": 67.8,
+     "title": "Shadowfang Keep: the Black Tome"
+    },
+    {
+     "zone": "Silverpine Forest",
+     "map": 1421,
+     "x": 63.4,
+     "y": 64.3,
+     "title": "Ambermill: the Leyline Focus"
+    }
+   ],
+   "names": {
+    "276561": "Black Tome",
+    "275989": "Tome of Dalaran"
+   }
+  },
+  {
+   "id": "lordaeron-bosses",
+   "name": "Ruins of Lordaeron secret bosses",
+   "kind": "Secret boss",
+   "status": "solved",
+   "about": "Two hidden bosses in the Ruins of Lordaeron dungeon: summon The Abandoned at a glowing knight statue, and Viktor the Vile from the fireplace of a ruined house. The game doesn't report the kills: tick it here.",
+   "have": {},
+   "steps": []
+  },
+  {
+   "id": "malignant-root",
+   "name": "Malignant Root ring",
+   "kind": "Item",
+   "status": "solved",
+   "fac": "A",
+   "reward": [
+    [
+     282283,
+     "Malignant Root"
+    ]
+   ],
+   "about": "Nightveiled Rotheaps in the Wetlands drop Rotheap Innards. Bring them to Rethiel the Greenwarden and pick the extra dialogue option to trade them for the ring. No quest or reputation needed.",
+   "have": {
+    "items": [
+     282283
+    ]
+   },
+   "parts": {
+    "items": [
+     279537
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Wetlands",
+     "map": 1437,
+     "x": 56.4,
+     "y": 41.3,
+     "title": "Rethiel the Greenwarden"
+    }
+   ],
+   "names": {
+    "282283": "Malignant Root",
+    "279537": "Rotheap Innards"
+   }
+  },
+  {
+   "id": "applejack",
+   "name": "Applejack Still",
+   "kind": "Hidden quest",
+   "status": "solved",
+   "fac": "A",
+   "level": 7,
+   "reward": [
+    [
+     247824,
+     "Thunder Applejack"
+    ]
+   ],
+   "about": "A still in western Elwynn Forest turns 4 Shiny Red Apples into a drink. Repeatable.",
+   "have": {
+    "quests": [
+     91736
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Elwynn Forest",
+     "map": 1429,
+     "x": 24.6,
+     "y": 58,
+     "title": "Applejack Still"
+    }
+   ]
+  },
+  {
+   "id": "silver-waves",
+   "name": "Silver of the Waves",
+   "kind": "Hidden quest",
+   "status": "solved",
+   "fac": "A",
+   "level": 13,
+   "reward": [
+    [
+     281256,
+     "Repurposed Hair Band"
+    ]
+   ],
+   "about": "A hidden quest that starts from a silver hair clip whose only clue is two initials. It ends in Loch Modan.",
+   "have": {
+    "quests": [
+     86614
+    ]
+   },
+   "parts": {
+    "items": [
+     278051
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Loch Modan",
+     "map": 1432,
+     "x": 50.6,
+     "y": 53.4,
+     "title": "Silver of the Waves: hand in"
+    }
+   ],
+   "names": {
+    "278051": "Monogrammed Silver Hair Clip"
+   }
+  },
+  {
+   "id": "whispering-horror",
+   "name": "Whispering Horror Residue",
+   "kind": "Hidden quest",
+   "status": "solved",
+   "fac": "H",
+   "level": 7,
+   "about": "A level 11 elite in a cellar in western Tirisfal Glades drops an item that starts this quest.",
+   "have": {
+    "quests": [
+     95328
+    ]
+   },
+   "parts": {
+    "items": [
+     268812
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Tirisfal Glades",
+     "map": 1420,
+     "x": 8.6,
+     "y": 60.2,
+     "title": "The cellar elite"
+    }
+   ],
+   "names": {
+    "268812": "Whispering Horror Residue"
+   }
+  },
+  {
+   "id": "sanders",
+   "name": "Captain Sander's Hidden Treasure",
+   "kind": "Hidden quest",
+   "status": "solved",
+   "level": 10,
+   "reward": [
+    [
+     270257,
+     "Captain Sander's Locker"
+    ]
+   ],
+   "about": "A treasure map that drops in Westfall leads to four clues along the coast; the chest now holds a new Forever reward.",
+   "have": {
+    "quests": [
+     140
+    ]
+   },
+   "parts": {
+    "items": [
+     1357
+    ]
+   },
+   "steps": [
+    {
+     "zone": "Westfall",
+     "map": 1436,
+     "x": 25.9,
+     "y": 47.8,
+     "title": "Clue: old jetty"
+    },
+    {
+     "zone": "Westfall",
+     "map": 1436,
+     "x": 40.5,
+     "y": 47.8,
+     "title": "Clue: Gold Coast"
+    },
+    {
+     "zone": "Westfall",
+     "map": 1436,
+     "x": 26,
+     "y": 16.9,
+     "title": "The treasure"
+    }
+   ],
+   "names": {
+    "1357": "Captain Sander's Treasure Map"
+   }
+  },
+  {
+   "id": "black-market",
+   "name": "The Black Market",
+   "kind": "Vendor",
+   "status": "solved",
+   "level": 40,
+   "about": "In the goblin harbor of Powderfuse Port (boat from Steamwheedle Port in Tanaris), two Agents of the Black Market: Madam Swyndle runs a black market auction house, Mister Graphed sells rare crafting materials and the Gift of Galloping (a 15-day mount speed buff). Stock rotates. Tick it once you've found it.",
+   "have": {},
+   "steps": [
+    {
+     "zone": "Riverglades",
+     "map": 2548,
+     "x": 78.2,
+     "y": 51.8,
+     "title": "Agents of the Black Market"
+    }
+   ]
+  },
+  {
+   "id": "stone-key",
+   "name": "Keystone Fragment and Stone Key",
+   "kind": "Unsolved",
+   "status": "unsolved",
+   "about": "Not solved yet. A Torn Page and a knife (a barrel inside the sewers' back entrance, or an open book; guides differ) give the Keystone Fragment. In Blackrock Mountain, in the corridors toward Upper Blackrock Spire, a Scarshield Grunt who won't attack guards a satchel: use the fragment there for the Stone Key. What it opens isn't known.",
+   "have": {},
+   "parts": {
+    "names": [
+     "Keystone Fragment",
+     "Stone Key"
+    ]
+   },
+   "steps": []
+  },
+  {
+   "id": "taldramir",
+   "name": "Taldramir, the Whispering Wood",
+   "kind": "Coming later",
+   "status": "later",
+   "about": "WoW Forever's first legendary, a staff, expected in spring 2027 from a Moonglade quest line (an Elune ritual with the Cenarion Circle). Known from datamining only.",
+   "have": {},
+   "steps": []
   }
  ]
 }
