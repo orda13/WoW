@@ -202,12 +202,23 @@ L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e
 L.execute('LL_NS = {}')
 # the game's own dungeon entrance list (newer clients): one the generated data doesn't place, one it does (skipped)
 L.execute('''C_Map = C_Map or {}
-C_Map.GetMapChildrenInfo = function(id) if id == 1414 then return { { mapID = 1413 }, { mapID = 2548 } } end return {} end
+C_Map.GetMapChildrenInfo = function(id) if id == 1414 then return { { mapID = 1413 }, { mapID = 2548 }, { mapID = 2521 }, { mapID = 1439 } } end return {} end
 C_EncounterJournal = { GetDungeonEntrancesForMap = function(m)
   if m == 2548 then return { { name = "The Drowned City", position = { x = 0.412, y = 0.633 }, atlasName = "Dungeon" } } end
   if m == 1413 then return { { name = "Wailing Caverns", position = { x = 0.46, y = 0.365 }, atlasName = "Dungeon" } } end
-  return {} end }''')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua'):   # the order the .toc loads them; all get the same private table
+  return {} end }
+-- the game's flight point list (newer clients): Auberdine known, a new Zephras Isle point not learned, a Horde one
+Enum = Enum or {}; Enum.FlightPathState = { Current = 0, Reachable = 1, Unreachable = 2 }; Enum.FlightPathFaction = { Neutral = 0, Horde = 1, Alliance = 2 }
+C_TaxiMap = { GetTaxiNodesForMap = function(m)
+  if m == 1439 then return { { name = "Auberdine, Darkshore", position = { x = 0.3634, y = 0.4558 }, state = 1, faction = 2 } } end
+  if m == 2521 then return { { name = "Shen'dar Village, Zephras Isle", position = { x = 0.52, y = 0.61 }, state = 2, faction = 0 },
+                             { name = "Horde Camp, Zephras Isle", position = { x = 0.2, y = 0.3 }, state = 2, faction = 1 } } end
+  return {} end }
+TAXI = {}
+function NumTaxiNodes() return #(TAXI.nodes or {}) end
+function TaxiNodeName(i) return TAXI.nodes[i][1] end
+function TaxiNodeGetType(i) return TAXI.nodes[i][2] end''')
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua', 'FlightData.lua', 'Flights.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -407,12 +418,22 @@ fire('PLAYER_LOGOUT')
 print('secrets saved at logout:', list(L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].secrets.done').values()))
 # dungeon and raid entrances: a pin per entrance spot (Blackrock Mountain's instances share one), the game's list for the
 # newest dungeons, /ledger dungeons for your level, pins off and on
-_ep = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 997000 then n = n + 1; t[#t + 1] = v end end; table.sort(t); return n, t end'
+_ep = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 997000 and id < 998000 then n = n + 1; t[#t + 1] = v end end; table.sort(t); return n, t end'
 _n, _t = L.eval(_ep)()
 print('entrance pins:', _n, '|', [v for v in _t.values() if 'Blackrock' in v or 'Drowned' in v or 'Wailing' in v or 'Ahn' in v])
 L.execute('FIRSTPIN = nil; for id, v in pairs(BOOKPINS) do if id >= 997000 then FIRSTPIN = id end end')
 slash('dungeons')
 slash('dungeons pins off'); print('entrance pins after off:', L.eval(_ep)()[0]); slash('dungeons pins on'); print('after on:', L.eval(_ep)()[0])
+# flight points: a pin per flight master of your faction (and neutral ones), learned or not, the game's list for new
+# zones, a flight map opened, /ledger flights, pins off and on
+_fp = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 998000 then n = n + 1; t[#t + 1] = v end end; table.sort(t); return n, t end'
+_n, _t = L.eval(_fp)()
+print('flight pins:', _n, '|', [v for v in _t.values() if 'Darkshore' in v or 'Zephras' in v or 'Westfall' in v])
+L.execute('NPCGUID = "Creature-0-1-0-1-523-000003"; TAXI.nodes = { { "Sentinel Hill, Westfall", "CURRENT" }, { "Lakeshire, Redridge Mountains", "REACHABLE" }, { "Darkshire, Duskwood", "NONE" } }')
+fire('TAXIMAP_OPENED')
+print('after the flight map at Thor:', dict(L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].flights.npcs')), sorted(L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].flights.names').keys()))
+slash('flights')
+slash('flights pins off'); print('flight pins after off:', L.eval(_fp)()[0]); slash('flights pins on'); print('after on:', L.eval(_fp)()[0])
 slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''

@@ -38,6 +38,7 @@ python3 -I "$B/build_att_forever.py" "$W/att" "$W/fdr" | tail -2
 python3 -I "$B/build_library_books.py" "$W/att" | tail -1
 python3 -I "$B/build_bags.py" "$W/questiedb" "$W/att" | tail -3
 python3 -I "$B/build_entrances.py" "$W/questiedb" | tail -1
+python3 -I "$B/build_flightpoints.py" "$W/questiedb" | tail -1
 if [ -n "$TOKEN" ]; then python3 -I "$B/build_talents.py" | tail -1; else echo "  talents skipped (no Blizzard token)"; fi
 if [ -n "$AL" ]; then python3 -I "$B/build_atlasloot_gaps.py" "$AL" | tail -1; else echo "  AtlasLoot skipped (no folder given)"; fi
 
