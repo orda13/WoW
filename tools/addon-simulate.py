@@ -200,7 +200,14 @@ function print(...) io.write(table.concat({...}, " ") .. "\n") end
 ''')
 L.execute('function FRAME_FIRE(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
 L.execute('LL_NS = {}')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua'):   # the order the .toc loads them; all get the same private table
+# the game's own dungeon entrance list (newer clients): one the generated data doesn't place, one it does (skipped)
+L.execute('''C_Map = C_Map or {}
+C_Map.GetMapChildrenInfo = function(id) if id == 1414 then return { { mapID = 1413 }, { mapID = 2548 } } end return {} end
+C_EncounterJournal = { GetDungeonEntrancesForMap = function(m)
+  if m == 2548 then return { { name = "The Drowned City", position = { x = 0.412, y = 0.633 }, atlasName = "Dungeon" } } end
+  if m == 1413 then return { { name = "Wailing Caverns", position = { x = 0.46, y = 0.365 }, atlasName = "Dungeon" } } end
+  return {} end }''')
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -379,7 +386,7 @@ print('bags in slots:', list(L.eval('function() for _, c in pairs(LevelingLedger
 slash('chains')
 # secrets: ? pins on the spots of the ones not done yet (your class, faction and level), /ledger secrets, a toy learned,
 # a tick from the page (Shared.lua), and the logout record
-_sp = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 996000 then n = n + 1; t[v:match("Secret: ([^@]-) @")] = true end end; local l = {}; for k in pairs(t) do l[#l + 1] = k end; table.sort(l); return n .. " pins: " .. table.concat(l, ", ") end'
+_sp = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 996000 and id < 997000 then n = n + 1; t[v:match("Secret: ([^@]-) @")] = true end end; local l = {}; for k in pairs(t) do l[#l + 1] = k end; table.sort(l); return n .. " pins: " .. table.concat(l, ", ") end'
 print('secret pins:', L.eval(_sp)())
 slash('secrets')
 L.execute('PlayerHasToy = function(id) return id == 280612 end; LevelingLedgerShared.secrets = { ["talwyn"] = { ["gustjumper"] = true } }')
@@ -388,6 +395,14 @@ print('after learning the torch and ticking the frog on the page:', L.eval(_sp)(
 slash('secrets pins off'); print('secret pins after off:', L.eval(_sp)()); slash('secrets pins on')
 fire('PLAYER_LOGOUT')
 print('secrets saved at logout:', list(L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].secrets.done').values()))
+# dungeon and raid entrances: a pin per entrance spot (Blackrock Mountain's instances share one), the game's list for the
+# newest dungeons, /ledger dungeons for your level, pins off and on
+_ep = 'function() local n, t = 0, {}; for id, v in pairs(BOOKPINS) do if id >= 997000 then n = n + 1; t[#t + 1] = v end end; table.sort(t); return n, t end'
+_n, _t = L.eval(_ep)()
+print('entrance pins:', _n, '|', [v for v in _t.values() if 'Blackrock' in v or 'Drowned' in v or 'Wailing' in v or 'Ahn' in v])
+L.execute('FIRSTPIN = nil; for id, v in pairs(BOOKPINS) do if id >= 997000 then FIRSTPIN = id end end')
+slash('dungeons')
+slash('dungeons pins off'); print('entrance pins after off:', L.eval(_ep)()[0]); slash('dungeons pins on'); print('after on:', L.eval(_ep)()[0])
 slash('books pins off'); print('pins after off:', L.eval('function() local n = 0; for _ in pairs(BOOKPINS) do n = n + 1 end; return n end')()); slash('books pins on')
 # serialize like WoW's SavedVariables writer
 ser = L.eval(r'''
