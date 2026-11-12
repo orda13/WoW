@@ -299,6 +299,16 @@ GetRealZoneText = function() return ZONE or "Darkshore" end; GetInventoryItemID 
 fire('BAG_UPDATE_DELAYED'); fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
 me = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']
 print('your bags:', dict(me.bags), '| bank:', dict(me.bank), '| gold:', me.money)
+# the newest engine: no bank bags, character bank tabs from 6 (and the reagent bag at 5, which is never bank)
+L.execute('_BI = Enum.BagIndex; Enum.BagIndex = { Backpack = 0, Bag_1 = 1, Bag_4 = 4, ReagentBag = 5, Bank = -1, CharacterBankTab_1 = 6, CharacterBankTab_2 = 7 }')
+fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
+print('bank tabs engine: bags', dict(me.bags), '| bank:', dict(me.bank))
+# a client with no bag names at all (classic numbering): bank bags straight after the four bags
+L.execute('Enum.BagIndex = nil')
+fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
+print('no bag names: bank:', dict(me.bank))
+L.execute('Enum.BagIndex = _BI')
+fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
 L.execute('GameTooltip:SetItem("Peacebloom", "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r")')
 print('tooltip for Peacebloom:', list(L.globals().GameTooltip.lines.values()))
 L.execute('GameTooltip:SetItem("Briarthorn", "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r")')

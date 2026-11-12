@@ -268,7 +268,8 @@ end
 local function scanContainers(bags)
   local out = {}
   for _, bag in ipairs(bags) do
-    for slot = 1, slotCount(bag) do
+    local ok, count = pcall(slotCount, bag) -- a container this client doesn't have counts as empty
+    for slot = 1, (ok and tonumber(count)) or 0 do
       local id, count, link = slotItem(bag, slot)
       if id then out[id] = (out[id] or 0) + (count or 1); if link then noteItemName(id, link) end end
     end
@@ -306,17 +307,41 @@ end
 local function scanBank()
   if not bankOpen then return end
   local n, nb = NUM_BAG_SLOTS or 4, NUM_BANKBAGSLOTS or 6
-  -- bank bags start after the reagent bag on clients that have one (BankBag_1 = 6), right after the bags otherwise
   local BI = Enum and Enum.BagIndex
-  local first = (BI and BI.BankBag_1) or (n + 1)
-  local list = { BANK_CONTAINER or (BI and BI.Bank) or -1 }
-  for b = first, first + nb - 1 do list[#list + 1] = b end
+  -- the bags you carry (backpack, bag slots, reagent bag) are never bank
+  local carried = { [0] = true }
+  for b = 1, n do carried[b] = true end
+  if BI and BI.ReagentBag then carried[BI.ReagentBag] = true end
+  local list, seen, bagSlots = {}, {}, {}
+  local function add(b) if type(b) == "number" and not seen[b] and not carried[b] then seen[b] = true; list[#list + 1] = b end end
+  add(BANK_CONTAINER or (BI and BI.Bank) or -1)
+  -- the bank's containers by the game's own names: bank bag slots (BankBag_1..) on clients with bank bags, the
+  -- character bank tabs (CharacterBankTab_1..) on the newest engine. Never the reagent bag, which some clients number 5.
+  local extra = {}
+  if BI then
+    for k, v in pairs(BI) do
+      if type(k) == "string" and type(v) == "number" then
+        if k:match("^BankBag_%d+$") then extra[#extra + 1] = v; bagSlots[#bagSlots + 1] = v
+        elseif k:match("^CharacterBankTab_%d+$") then extra[#extra + 1] = v end
+      end
+    end
+  end
+  table.sort(extra)
+  for _, b in ipairs(extra) do add(b) end
+  if #extra == 0 then
+    -- no names for them: the bank bags follow the bags (and the reagent bag, where the client has one)
+    local first = n + 1
+    while carried[first] do first = first + 1 end
+    for b = first, first + nb - 1 do add(b); bagSlots[#bagSlots + 1] = b end
+  end
   -- the reagent bank, where the client has one
-  local rbank = BI and (BI.Reagentbank or BI.ReagentBank)
-  if rbank and pcall(slotCount, rbank) then list[#list + 1] = rbank end
+  add(BI and (BI.Reagentbank or BI.ReagentBank))
   char.bank = scanContainers(list)
   char.bankAt = now()
-  char.bankBagItems = bagItemsIn(first, first + nb - 1)
+  table.sort(bagSlots)
+  local eq = {}
+  for _, b in ipairs(bagSlots) do if not carried[b] then local ok, id = pcall(bagItemIn, b); if ok and id then eq[#eq + 1] = id end end end
+  char.bankBagItems = eq
 end
 
 local function noteZone()
