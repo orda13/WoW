@@ -25,3 +25,7 @@ It fetches each source into a scratch folder, rebuilds the files below, and list
 | Ask Mr. Robot | your own gear setups | (from the add-on, per character) | nothing to refresh |
 
 Facts only from every source (IDs, levels, coordinates, names, which boss drops what); no code, guide text or map pictures. Credits are in the README.
+
+## Hotfixes
+`refresh_blizzard_items.py` re-reads every item the page shows (quest rewards, dungeon loot, what recipes make) from Blizzard's Forever item data and prints each change, so a hotfix post can be checked against it. Blizzard's item data usually has a hotfix within days; its recipe reagents, talent and spell text can lag. Changes from a post that Blizzard hasn't published yet are patched into the JSON by hand (the next rebuild then takes Blizzard's version):
+- 2026-11-12 (hotfixes of Nov 5-11): bag recipes' bolts (Green/Red Woolen Bag 5, Green Silk Pack 5, Black Silk Pack 6, Red Mageweave Bag 5) and the bag guide's slot counts (`bags.tsv`); Coarse Grinding Stone grey at 90 (green estimated at 70); Tanning Rack skill 125, skill-ups 15 lower; "Recipe: Elixir of Holy Power"; "Find Bingles" under Loch Modan; talent text for Mental Dexterity, Maelstrom Weapon, Stormstrike, Soul Siphon, Wrack and Nature's Swiftness; Arcane Shot and Summon Hawk at 11% of base Mana.

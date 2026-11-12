@@ -263,7 +263,7 @@
   {
    "kind": "standard",
    "n": "Green Woolen Bag",
-   "slots": 8,
+   "slots": 10,
    "src": "Crafted with Tailoring",
    "id": 4241
   },
@@ -284,7 +284,7 @@
   {
    "kind": "standard",
    "n": "Red Woolen Bag",
-   "slots": 8,
+   "slots": 10,
    "src": "Crafted with Tailoring",
    "id": 5763
   },
@@ -382,7 +382,7 @@
   {
    "kind": "standard",
    "n": "Green Silk Pack",
-   "slots": 10,
+   "slots": 12,
    "src": "Crafted with Tailoring",
    "id": 5764
   },
@@ -396,7 +396,7 @@
   {
    "kind": "standard",
    "n": "Black Silk Pack",
-   "slots": 10,
+   "slots": 12,
    "src": "Crafted with Tailoring",
    "id": 5765
   },
@@ -456,7 +456,7 @@
   {
    "kind": "standard",
    "n": "Red Mageweave Bag",
-   "slots": 12,
+   "slots": 14,
    "src": "Crafted with Tailoring",
    "id": 10051
   },

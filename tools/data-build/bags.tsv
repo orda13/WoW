@@ -25,10 +25,10 @@ standard	Red Leather Bag	8	Level 9-25 world drop
 standard	Gnoll Hide Sack	8	Drops from Fedfennel in Elwynn Forest
 standard	Captain Sander's Booty Bag	8	Reward from Captain Sander's Hidden Treasure	Captain Sander's Hidden Treasure
 standard	Woolen Bag	8	Crafted with Tailoring
-standard	Green Woolen Bag	8	Crafted with Tailoring
+standard	Green Woolen Bag	10	Crafted with Tailoring
 standard	Brown Leather Satchel	8	Sold by general vendors
 standard	Green Leather Bag	8	Level 9-25 world drop
-standard	Red Woolen Bag	8	Crafted with Tailoring
+standard	Red Woolen Bag	10	Crafted with Tailoring
 standard	White Leather Bag	8	Level 9-25 world drop
 standard	Large Blue Sack	10	Level 19-32 world drop
 standard	Large Red Sack	10	Level 19-32 world drop
@@ -40,9 +40,9 @@ standard	Gunnysack of the Night Watch	10	Reward from The Night Watch	The Night W
 standard	Ooze-covered Bag	10	Reward from Digging Through the Ooze	Digging Through the Ooze
 standard	Small Silk Pack	10	Crafted with Tailoring
 standard	Heavy Brown Bag	10	Sold by general vendors
-standard	Green Silk Pack	10	Crafted with Tailoring
+standard	Green Silk Pack	12	Crafted with Tailoring
 standard	Large Green Sack	10	Level 19-32 world drop
-standard	Black Silk Pack	10	Crafted with Tailoring
+standard	Black Silk Pack	12	Crafted with Tailoring
 standard	Large Brown Sack	10	Level 19-32 world drop
 standard	Snakeskin Bag	10	Drop from Lady Anacondra in Wailing Caverns
 standard	Spidersilk Pouch	12	Reward from Stronger than Steel in Mulgore	Stronger than Steel
@@ -50,7 +50,7 @@ standard	Sturdy Lunchbox	12	Drop from Venture Co. Foreman in Stranglethorn Vale
 standard	Large Knapsack	12	Level 30-49 world drop
 standard	Huge Brown Sack	12	Sold by general vendors
 standard	Mageweave Bag	12	Crafted with Tailoring
-standard	Red Mageweave Bag	12	Crafted with Tailoring
+standard	Red Mageweave Bag	14	Crafted with Tailoring
 standard	Troll-hide Bag	14	Level 39-53 world drop
 standard	Journeyman's Backpack	14	Level 39-60 world drop
 standard	Thawpelt Sack	14	Reward from The Platinum Discs	The Platinum Discs
