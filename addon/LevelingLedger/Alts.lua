@@ -76,20 +76,43 @@ local function itemIcon(id)
 end
 
 -- ---------- tooltips ----------
+-- a character's full name: two characters can share a first name (Talwyn Orda and Talwyn Bank)
+local function fullName(c, key)
+  local n = c.name or key or "?"
+  if c.surname and c.surname ~= "" and not tostring(n):find(" ", 1, true) then n = n .. " " .. c.surname end
+  return n
+end
+local function whereText(bg, bk)
+  local where = {}
+  if bg > 0 then where[#where + 1] = "bags " .. ns.fmtNum(bg) end
+  if bk > 0 then where[#where + 1] = "bank " .. ns.fmtNum(bk) end
+  return table.concat(where, ", ")
+end
+-- the item on every character: you first (bags as of now, bank as of your last bank visit), then the others; a total
+-- line on top once more than one character holds it
 local function addTooltipLines(tt, id)
   if not tt or not id then return end
-  local any = false
+  local rows, totBg, totBk = {}, 0, 0
+  local me = ns.char and ns.char()
+  if me then
+    local bg, bk = held(me, id)
+    if bg + bk > 0 then rows[#rows + 1] = { c = me, bg = bg, bk = bk, you = true } end
+  end
   for _, o in ipairs(others()) do
     local bg, bk = held(o.c, id)
-    if bg + bk > 0 then
-      if not any then tt:AddLine(" "); any = true end
-      local where = {}
-      if bk > 0 then where[#where + 1] = "bank " .. bk end
-      if bg > 0 then where[#where + 1] = "bags " .. bg end
-      tt:AddDoubleLine(classIcon(o.c.class, 12) .. cname(o.c, o.key), ns.fmtNum(bg + bk) .. "  (" .. table.concat(where, ", ") .. ")", 1, 1, 1, 1, 1, 1)
-    end
+    if bg + bk > 0 then rows[#rows + 1] = { c = o.c, key = o.key, bg = bg, bk = bk } end
   end
-  if any then tt:Show() end
+  if #rows == 0 then return end
+  for _, r in ipairs(rows) do totBg = totBg + r.bg; totBk = totBk + r.bk end
+  tt:AddLine(" ")
+  if #rows > 1 then
+    tt:AddDoubleLine("|cffd9aa5aYou have " .. ns.fmtNum(totBg + totBk) .. "|r", whereText(totBg, totBk), 1, 1, 1, 0.85, 0.85, 0.85)
+  end
+  for _, r in ipairs(rows) do
+    local name = classIcon(r.c.class, 12) .. "|c" .. classHex(r.c.class) .. fullName(r.c, r.key) .. "|r" .. (r.you and " |cff9d9d9d(you)|r" or "")
+    tt:AddDoubleLine(name, ns.fmtNum(r.bg + r.bk) .. "  (" .. whereText(r.bg, r.bk) .. ")", 1, 1, 1, 1, 1, 1)
+  end
+  tt:Show()
 end
 local function hookTooltips()
   if TooltipDataProcessor and Enum and Enum.TooltipDataType and TooltipDataProcessor.AddTooltipPostCall then
