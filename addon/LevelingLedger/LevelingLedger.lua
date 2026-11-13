@@ -708,6 +708,17 @@ local function fishZone(z)
   char.fishing.at = now()
   return e
 end
+-- where you stood (the bobber lands a few yards out): for the page's fishing map; g = got away
+local function fishSpot(z, got)
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  local pos = map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(map, "player")
+  local x, y = nil, nil
+  if pos and pos.GetXY then x, y = pos:GetXY() end
+  if not (x and y and x > 0 and y > 0) or IsInInstance() then return end
+  char.fishing.spots = char.fishing.spots or {}
+  table.insert(char.fishing.spots, { z = z, x = math.floor(x * 1000 + 0.5) / 10, y = math.floor(y * 1000 + 0.5) / 10, g = got and 1 or nil, s = fishSkill(), at = now() })
+  trim(char.fishing.spots, 1500)
+end
 local function noteCatch()
   if not (IsFishingLoot and IsFishingLoot()) or not GetNumLootItems then return end
   local z = zone(); if not z or z == "" then return end
@@ -717,6 +728,7 @@ local function noteCatch()
   fishSeen[key] = true
   local e = fishZone(z)
   e.c = e.c + 1
+  safe(fishSpot, z, false)
   for slot = 1, GetNumLootItems() do
     local id = idFromLink(GetLootSlotLink(slot))
     if id then
@@ -731,6 +743,7 @@ local function noteGetaway(_, msg)
   local z = zone(); if not z or z == "" then return end
   local e = fishZone(z)
   e.g = e.g + 1
+  safe(fishSpot, z, true)
 end
 
 -- ---------- loot ----------

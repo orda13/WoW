@@ -436,6 +436,10 @@ div.qc-red { border: 0; }
 .gmap .gn.orange { fill: #ff8040; } .gmap .gn.yellow { fill: #ffff00; } .gmap .gn.green { fill: #40c040; } .gmap .gn.grey { fill: #9d9d9d; } .gmap .gn.red { fill: #ff2020; } .gmap .gn.unknown { fill: #ffffff; }
 .gmap .groute { fill: none; stroke: #4dd2ff; stroke-width: .35; stroke-dasharray: 1.2 .6; opacity: .9; }
 .gmap .gmine { fill: none; stroke: #fff; stroke-width: .25; }
+.gmap .gn.pool { fill: #4fb3ff; stroke: #04223a; stroke-width: .12; }
+.gmap .gfish { fill: #40c040; stroke: #052b05; stroke-width: .12; opacity: .85; }
+.gmap .gfish.away { fill: #ff4040; stroke: #3a0404; }
+.g-controls label.g-hide { display: none; }
 table.gbest { border-collapse: collapse; width: 100%; font-size: .86rem; }
 table.gbest td { padding: 2px 6px 2px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 table.gbest tr.on td { font-weight: 700; }
@@ -1372,13 +1376,13 @@ details.ab-lv[open] .ab-strip { display: none; }
 
   <section class="panel" id="gatherPanel" data-view="skills">
     <header><h2>Gathering</h2></header>
-    <p class="hint">Where herbs, ore and skinnable beasts spawn (QuestieDB's Forever data; beasts are picked by name, since the data has no creature type, so a few may be wrong), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Map images: Wowhead.</p>
+    <p class="hint">Where herbs, ore and skinnable beasts spawn (QuestieDB's Forever data; beasts are picked by name, since the data has no creature type, so a few may be wrong), coloured for your skill like recipes: orange always gives a skill-up, yellow usually, green sometimes, grey never. Spawn points are places a node can appear, not live nodes, so the route is a loop through the best ones. Rings are where you've gathered. Fishing shows the fishing pools QuestieDB places and where you caught fish (green) or lost them (red), with the zones for your skill. Map images: Wowhead.</p>
     <div class="row g-controls">
-      <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option><option>Skinning</option></select></label>
+      <label>Profession <select id="gProf"><option>Herbalism</option><option>Mining</option><option>Skinning</option><option>Fishing</option></select></label>
       <label>Zone <select id="gZoneSel"></select></label>
-      <label><input type="checkbox" id="gGreen"> include green</label>
-      <label><input type="checkbox" id="gGrey"> show grey</label>
-      <label><input type="checkbox" id="gMine" checked> my gathers</label>
+      <label id="gGreenL"><input type="checkbox" id="gGreen"> include green</label>
+      <label id="gGreyL"><input type="checkbox" id="gGrey"> show grey</label>
+      <label><input type="checkbox" id="gMine" checked> <span id="gMineT">my gathers</span></label>
       <label><input type="checkbox" id="gMyLv" checked> zones for my level</label>
     </div>
     <div id="gInfo" class="hint"></div>
@@ -3923,7 +3927,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     // your catches and getaways, per zone
     const fz = (S.fishing && S.fishing.zones) || {};
     const rows = Object.entries(fz).filter(([, e]) => e.c || e.g).sort((a, b) => (b[1].c + b[1].g) - (a[1].c + a[1].g));
-    const h = el("div", "pp-buy"); h.append(el("span", "label", "Your catches "), el("span", "muted", rows.length ? "(from the add-on; getaways mean the zone is above your skill)" : "(none recorded yet: the add-on counts your catches and getaways per zone from version 1.0.51)"));
+    const h = el("div", "pp-buy"); h.append(el("span", "label", "Your catches "), el("span", "muted", rows.length ? "(from the add-on; getaways mean the zone is above your skill)" : "(none recorded yet: the add-on counts your catches and getaways per zone from version 1.0.52)"));
     if (rows.length) {
       const ul = el("ul", "pp-list");
       for (const [z, e] of rows.slice(0, 12)) {
@@ -4063,7 +4067,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     GA.loading = true;
     fetch("gathering-forever.json").then((r) => r.json()).then((d) => {
       GA.data = d;
-      const ps = profs().map((p) => p.name); const first = ["Herbalism", "Mining", "Skinning"].find((n) => ps.includes(n)); if (first) $("gProf").value = first;
+      const ps = profs().map((p) => p.name); const first = ["Herbalism", "Mining", "Skinning", "Fishing"].find((n) => ps.includes(n)); if (first) $("gProf").value = first;
       renderGather();
       try { renderProfPlan(); } catch (e) { console.error(e); }
     }).catch(() => { $("gInfo").textContent = "Couldn't load the gathering data."; });
@@ -4099,10 +4103,77 @@ details.ab-lv[open] .ab-strip { display: none; }
     }
     return rank.sort((a, b) => b.score - a.score || a.zn.localeCompare(b.zn));
   }
+  // ---------- fishing on the gathering map: zones for your skill (the guides' bands, pools, your own catches and
+  // getaways), pools from QuestieDB, and where you caught fish or lost them (the add-on's spots) ----------
+  function fishZones(skill, myLv) {
+    const byName = new Map(Object.entries(GA.data.zones).map(([id, n]) => [n, id]));
+    const fz = (S.fishing && S.fishing.zones) || {}, sk = skill || 0;
+    const band = FISH_ROUTE.findIndex(([from, to]) => sk >= from && sk < to);
+    const cand = new Map();
+    const add = (zn, why) => { const zid = byName.get(zn); if (!zid) return; const c = cand.get(zid) || { zid, zn, why: new Set(), pools: 0, score: 0 }; if (why) c.why.add(why); cand.set(zid, c); };
+    FISH_ROUTE.forEach(([from, to, zones], i) => zones.forEach((z) => add(z, i === band ? "your band" : i < band ? "easier" : "harder")));
+    for (const z of Object.keys(fz)) add(z, "you fished here");
+    for (const n of GA.data.nodes) if (n.kind === "Fishing") for (const [zid, pts] of Object.entries(n.spawns)) { const zn = GA.data.zones[zid]; if (zn) { add(zn, null); cand.get(zid).pools += pts.length; } }
+    const out = [];
+    for (const c of cand.values()) {
+      const r = zoneLv(c.zn); if (myLv && r && r[0] > myLv + 5) continue;
+      const e = fz[c.zn], tries = e ? e.c + e.g : 0, rate = tries ? e.g / tries : null;
+      c.rec = e ? { c: e.c, g: e.g, rate } : null;
+      c.score = (c.why.has("your band") ? 3 : c.why.has("easier") ? 1 : c.why.has("harder") ? -1 : 0) + Math.min(2, c.pools / 10)
+        + (rate == null ? 0 : rate < 0.1 ? 1 : rate >= 0.2 ? -3 : -1);
+      out.push(c);
+    }
+    return out.sort((a, b) => b.score - a.score || a.zn.localeCompare(b.zn));
+  }
+  function renderFishMap() {
+    const svg = $("gSvg"), skill = ((profs().find((p) => p.name === "Fishing")) || {}).skill ?? null;
+    const rank = fishZones(skill, $("gMyLv").checked ? charLv() : 0);
+    const sel = $("gZoneSel"); const cur = rank.some((r) => r.zid === GA.zone) ? GA.zone : (rank[0] && rank[0].zid);
+    sel.replaceChildren(...rank.map((r) => { const o = el("option", null, `${r.zn}${r.pools ? ` (${r.pools} pool${r.pools === 1 ? "" : "s"})` : ""}`); o.value = r.zid; return o; }));
+    if (cur) sel.value = cur; GA.zone = sel.value;
+    const t = el("table", "gbest");
+    for (const r of rank.slice(0, 8)) {
+      const tr = el("tr", r.zid === GA.zone ? "on" : null); tr.onclick = () => { GA.zone = r.zid; renderGather(); };
+      const rec = r.rec ? `${r.rec.c} caught${r.rec.g ? `, ${r.rec.g} got away` : ""}` : "";
+      tr.append(el("td", null, r.zn), el("td", "muted", [...r.why].join(", ")), el("td", r.rec && r.rec.rate >= 0.2 ? "pp-get" : "muted", rec || (r.pools ? `${r.pools} pool${r.pools === 1 ? "" : "s"}` : "")));
+      t.append(tr);
+    }
+    $("gBest").replaceChildren(t.childNodes.length ? t : el("p", "muted", skill == null ? "This character has no Fishing yet." : "No zones for your level."));
+    const zid = GA.zone, zn = GA.data.zones[zid], img = $("gImg");
+    img.onerror = () => { img.hidden = true; }; img.onload = () => { img.hidden = false; };
+    img.src = `https://wow.zamimg.com/images/wow/classic/maps/enus/original/${zid}.jpg`;
+    const NS = "http://www.w3.org/2000/svg", mk = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+    svg.replaceChildren();
+    const legend = new Map();
+    for (const n of GA.data.nodes) {
+      if (n.kind !== "Fishing") continue; const pts = n.spawns[zid]; if (!pts) continue;
+      legend.set(n.n, (legend.get(n.n) || 0) + pts.length);
+      for (const [x, y] of pts) { const c = mk("ellipse", { cx: x, cy: y, rx: 0.6, ry: 0.9, class: "gn pool" }); const tt = mk("title", {}); tt.textContent = n.n; c.append(tt); svg.append(c); }
+    }
+    const spots = $("gMine").checked ? ((S.fishing && S.fishing.spots) || []).filter((p) => p.z === zn) : [];
+    for (const p of spots) { const c = mk("ellipse", { cx: p.x, cy: p.y, rx: 0.45, ry: 0.68, class: "gfish" + (p.g ? " away" : "") }); const tt = mk("title", {}); tt.textContent = (p.g ? "Got away" : "Caught") + (p.s != null ? ` at skill ${p.s}` : ""); c.append(tt); svg.append(c); }
+    const lg = $("gLegend"); lg.replaceChildren(el("h3", null, zn || "Zone"));
+    const row = (col, text) => { const d = el("div"); const dot = el("span", "g-dot"); dot.style.background = col; d.append(dot, document.createTextNode(text)); lg.append(d); };
+    for (const [nm, c] of [...legend].sort((a, b) => b[1] - a[1])) row("#4fb3ff", `${nm} (${c})`);
+    const caught = spots.filter((p) => !p.g).length, lost = spots.length - caught;
+    if (spots.length) { row("#40c040", `Your catches (${caught})`); if (lost) row("#ff4040", `Got away (${lost})`); }
+    const e = ((S.fishing && S.fishing.zones) || {})[zn];
+    $("gInfo").textContent = (skill == null ? "This character has no Fishing. " : `Fishing ${skill}. `)
+      + (legend.size ? "Blue: fishing pools (QuestieDB's Forever data; it places pools in only a few zones so far). " : "No pools recorded in this zone; any water works for skill-ups. ")
+      + (spots.length ? "Green: where you caught fish; red: where they got away (too hard for your skill there). " : "Your catch spots show here once the add-on (1.0.52) records you fishing in this zone. ")
+      + (e && e.g && e.c + e.g ? `Here ${Math.round(e.g / (e.c + e.g) * 100)}% of your casts got away.` : "");
+  }
   function renderGather() {
     const svg = $("gSvg"); if (!svg) return;
     if (!GA.data) { loadGather(); return; }
     const prof = $("gProf").value;
+    // each profession keeps its own zone
+    GA.zoneBy = GA.zoneBy || {};
+    if (GA.prof !== prof) { if (GA.prof) GA.zoneBy[GA.prof] = GA.zone; GA.zone = GA.zoneBy[prof] || null; GA.prof = prof; }
+    const fishing = prof === "Fishing";
+    for (const id of ["gGreenL", "gGreyL"]) $(id).classList.toggle("g-hide", fishing);
+    $("gMineT").textContent = fishing ? "my catches" : "my gathers";
+    if (fishing) return renderFishMap();
     const skill = ((profs().find((p) => p.name === prof)) || {}).skill ?? null;
     const nodes = GA.data.nodes.filter((n) => n.kind === prof);
     const want = new Set(["orange", "yellow", ...($("gGreen").checked ? ["green"] : [])]);
@@ -5776,7 +5847,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
-    db.doc("state/fishing").onSnapshot((s) => { S.fishing = s.exists ? s.data() : null; try { renderProfPlan(); } catch (e) { console.error(e); } }, () => {});
+    db.doc("state/fishing").onSnapshot((s) => { S.fishing = s.exists ? s.data() : null; try { renderProfPlan(); renderGather(); } catch (e) { console.error(e); } }, () => {});
     db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) { renderBooks(); renderDash(); } }, () => {});
     db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});

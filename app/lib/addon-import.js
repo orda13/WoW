@@ -236,7 +236,11 @@ function importAddon(text, store, publicDir, source, hint, opts) {
       for (const [id, n] of Object.entries(e.items || {})) if (Number(id) > 0 && Number(n) > 0) items[Number(id)] = Number(n);
       zones[z] = { c: Number(e.c) || 0, g: Number(e.g) || 0, items, ...(e.lo != null ? { lo: Number(e.lo) } : {}), ...(e.hi != null ? { hi: Number(e.hi) } : {}) };
     }
-    const doc = { zones, at: ch.fishing.at * 1000 };
+    // where you fished: { z, x, y, g (got away), s (skill) }, the newest 1500
+    const spots = (Array.isArray(ch.fishing.spots) ? ch.fishing.spots : ch.fishing.spots && typeof ch.fishing.spots === "object" ? Object.values(ch.fishing.spots) : [])
+      .filter((p) => p && typeof p.z === "string" && p.z.length <= 80 && Number(p.x) > 0 && Number(p.x) <= 100 && Number(p.y) > 0 && Number(p.y) <= 100)
+      .slice(-1500).map((p) => ({ z: p.z, x: Number(p.x), y: Number(p.y), ...(p.g ? { g: 1 } : {}), ...(p.s != null ? { s: Number(p.s) } : {}) }));
+    const doc = { zones, spots, at: ch.fishing.at * 1000 };
     const prev = store.get("state/fishing");
     if (!prev || doc.at > (prev.at || 0)) store.set("state/fishing", doc);
   }

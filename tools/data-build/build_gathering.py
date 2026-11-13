@@ -35,6 +35,11 @@ for m in mats.values():
         if kind in ('Herbalism', 'Mining'): kinds[oid] = (n, kind)
 
 MINING = {k for k in SKILL if re.search(r'Vein|Deposit', k)}
+# fishing pools: the materials file's fishing nodes, and any object named like one (as build_mats.py tells them apart)
+POOL = re.compile(r'\bschool\b|floating wreckage|floating debris|patch of elemental water', re.I)  # not quest pools (tide pools, moonwells)
+for m in mats.values():
+    for n, oid, zones, kind in m.get('nodes') or []:
+        if kind == 'Fishing': kinds[oid] = (n, 'Fishing')
 
 # spawns
 objects = parse_data_string(open(os.path.join(QDB, 'data', 'Forever', 'foreverObjectDB.lua'), encoding='utf-8').read(), 'QuestieDB.objectData')
@@ -42,6 +47,7 @@ objects = parse_data_string(open(os.path.join(QDB, 'data', 'Forever', 'foreverOb
 for oid, o in objects.items():
     nm = (o[0] if isinstance(o, list) else (o or {}).get(1)) if o else None
     if nm in SKILL and oid not in kinds: kinds[oid] = (nm, 'Mining' if nm in MINING else 'Herbalism')
+    elif nm and oid not in kinds and POOL.search(nm) and not re.search(r'quest|bunny|trigger|\[', nm, re.I): kinds[oid] = (nm, 'Fishing')
 nodes, used_zones = [], set()
 for oid, (name, kind) in sorted(kinds.items()):
     o = objects.get(oid)
@@ -99,7 +105,7 @@ for zid in sorted(used_zones):
     if not c: continue
     zones[str(zid)] = known.get(norm(c)) or c.replace('_', ' ').title()
 
-json.dump({'source': "QuestieDB's Forever object data (herb and mining node spawns); skill needed from the original game",
+json.dump({'source': "QuestieDB's Forever object data (herb, mining node and fishing pool spawns); skill needed from the original game",
            'fetched': '2026-11-08', 'zones': zones, 'nodes': nodes}, open(OUT, 'w'), separators=(',', ':'), ensure_ascii=False)
 print(len(nodes), 'nodes,', sum(len(p) for n in nodes for p in n['spawns'].values()), 'spawns,', len(zones), 'zones,',
       sum(1 for n in nodes if n['sk'] is None), 'without a skill:', [n['n'] for n in nodes if n['sk'] is None][:12], os.path.getsize(OUT), 'bytes')

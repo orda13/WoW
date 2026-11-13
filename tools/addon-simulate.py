@@ -283,6 +283,7 @@ L.execute('ZONE = "Westfall"; LOOTSRC = "GameObject-0-1-1-1-35591-0000F003"'); f
 L.execute('FISHING = false; LOOTLINKS = nil; ZONE = "Darkshore"')
 _fz = L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].fishing.zones')
 print('fishing:', {z: {'c': _fz[z].c, 'g': _fz[z].g, 'items': dict(_fz[z]['items']), 'lo': _fz[z].lo} for z in _fz})
+print('fishing spots:', [(p.z, p.x, p.y, p.g) for p in L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].fishing.spots').values()])
 L.execute('LOOTLINKS = nil')
 L.execute('LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"')
 print('gathers:', [dict(g) for g in L.globals().LevelingLedgerDB.chars['Talwyn-Normal'].gathers.values()])
