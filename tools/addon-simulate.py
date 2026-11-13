@@ -272,6 +272,17 @@ L.execute('ZONE = "The Deadmines"; INSTANCE = true; TARGETGUID = "Creature-0-1-3
 L.execute('ZONE = "Darkshore"; INSTANCE = false; LOOTSRC = "GameObject-0-1-1-1-1618-0000BBBB"'); fire('LOOT_OPENED')
 # skinning a Thistle Bear (creature 2163): Light Leather from its corpse is a skinning spot
 L.execute('LOOTLINKS = { "|cffffffff|Hitem:2318::::::::13:::::|h[Light Leather]|h|r", "|cffffffff|Hitem:2318::::::::13:::::|h[Light Leather]|h|r" }; LOOTSRC = "Creature-0-1-1-1-2163-0000CCCC"'); fire('LOOT_OPENED')
+# fishing: two catches from the same bobber window counted once, a second bobber, a getaway (newer clients send
+# error type and message; older ones the message alone), and another zone
+L.execute('function IsFishingLoot() return FISHING or false end; GetLootSlotInfo = GetLootSlotInfo or function(s) return nil, "", 1 end; ERR_FISH_ESCAPED = "Your fish got away!"')
+L.execute('FISHING = true; ZONE = "Darkshore"; LOOTLINKS = { "|cffffffff|Hitem:6291::::::::13:::::|h[Raw Brilliant Smallfish]|h|r", "|cffffffff|Hitem:6303::::::::13:::::|h[Raw Slitherskin Mackerel]|h|r" }; LOOTSRC = "GameObject-0-1-1-1-35591-0000F001"')
+fire('LOOT_OPENED'); fire('LOOT_OPENED')
+L.execute('LOOTSRC = "GameObject-0-1-1-1-35591-0000F002"'); fire('LOOT_OPENED')
+fire('UI_ERROR_MESSAGE', 51, 'Your fish got away!'); fire('UI_ERROR_MESSAGE', 'Your fish got away!'); fire('UI_ERROR_MESSAGE', 50, 'Not enough mana')
+L.execute('ZONE = "Westfall"; LOOTSRC = "GameObject-0-1-1-1-35591-0000F003"'); fire('LOOT_OPENED')
+L.execute('FISHING = false; LOOTLINKS = nil; ZONE = "Darkshore"')
+_fz = L.eval('LevelingLedgerDB.chars["Talwyn-Normal"].fishing.zones')
+print('fishing:', {z: {'c': _fz[z].c, 'g': _fz[z].g, 'items': dict(_fz[z]['items']), 'lo': _fz[z].lo} for z in _fz})
 L.execute('LOOTLINKS = nil')
 L.execute('LOOTSRC = "Creature-0-1-36-1-1763-0000AAAA"')
 print('gathers:', [dict(g) for g in L.globals().LevelingLedgerDB.chars['Talwyn-Normal'].gathers.values()])

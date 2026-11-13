@@ -227,6 +227,20 @@ function importAddon(text, store, publicDir, source, hint, opts) {
     if (!prev || (doc.at > (prev.at || 0) && JSON.stringify(doc.done) !== JSON.stringify(prev.done))) { store.set("state/secrets", doc); done.push(`${doc.done.length} secret${doc.done.length === 1 ? "" : "s"}`); }
   }
 
+  // 2i. fishing: catches and getaways per zone, with the fishing skill seen there (the newest copy wins)
+  if (ch.fishing && ch.fishing.at && ch.fishing.zones && typeof ch.fishing.zones === "object") {
+    const zones = {};
+    for (const [z, e] of Object.entries(ch.fishing.zones)) {
+      if (!e || typeof e !== "object" || typeof z !== "string" || z.length > 80) continue;
+      const items = {};
+      for (const [id, n] of Object.entries(e.items || {})) if (Number(id) > 0 && Number(n) > 0) items[Number(id)] = Number(n);
+      zones[z] = { c: Number(e.c) || 0, g: Number(e.g) || 0, items, ...(e.lo != null ? { lo: Number(e.lo) } : {}), ...(e.hi != null ? { hi: Number(e.hi) } : {}) };
+    }
+    const doc = { zones, at: ch.fishing.at * 1000 };
+    const prev = store.get("state/fishing");
+    if (!prev || doc.at > (prev.at || 0)) store.set("state/fishing", doc);
+  }
+
   // 2e. Ask Mr. Robot's gear setups and sell list, copied by MrRobot.lua from its add-on (the newest copy wins)
   if (ch.amr && ch.amr.at) {
     const list = (v) => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

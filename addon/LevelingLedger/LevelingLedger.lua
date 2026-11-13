@@ -695,9 +695,50 @@ local function onMerchant()
   char.vendors[npc] = v
 end
 
+-- ---------- fishing: what you catch where, and the fish that get away (the sign a zone is above your skill) ----------
+local fishSeen = {}
+local function fishSkill() local s = char.skills and char.skills.Fishing; return s and s.rank or nil end
+local function fishZone(z)
+  char.fishing = char.fishing or { zones = {} }
+  char.fishing.zones = char.fishing.zones or {}
+  local e = char.fishing.zones[z] or { c = 0, g = 0, items = {} }
+  char.fishing.zones[z] = e
+  local sk = fishSkill()
+  if sk then e.lo = math.min(e.lo or sk, sk); e.hi = math.max(e.hi or sk, sk) end
+  char.fishing.at = now()
+  return e
+end
+local function noteCatch()
+  if not (IsFishingLoot and IsFishingLoot()) or not GetNumLootItems then return end
+  local z = zone(); if not z or z == "" then return end
+  -- one catch per bobber, however often the loot window reopens
+  local key = GetLootSourceInfo and GetLootSourceInfo(1) or tostring(now())
+  if fishSeen[key] then return end
+  fishSeen[key] = true
+  local e = fishZone(z)
+  e.c = e.c + 1
+  for slot = 1, GetNumLootItems() do
+    local id = idFromLink(GetLootSlotLink(slot))
+    if id then
+      local _, _, qty = GetLootSlotInfo(slot)
+      e.items[id] = (e.items[id] or 0) + (tonumber(qty) or 1)
+    end
+  end
+end
+local function noteGetaway(_, msg)
+  if not msg then return end
+  if msg ~= rawget(_G, "ERR_FISH_ESCAPED") and msg ~= "Your fish got away!" then return end
+  local z = zone(); if not z or z == "" then return end
+  local e = fishZone(z)
+  e.g = e.g + 1
+end
+
 -- ---------- loot ----------
 local function onLoot()
   if not GetNumLootItems then return end
+  safe(noteCatch)
+  -- a catch has its own record (char.fishing): the bobber isn't a creature or a gathering node
+  if IsFishingLoot and IsFishingLoot() then return end
   local z, inInstance = zone(), IsInInstance()
   for slot = 1, GetNumLootItems() do
     local link = GetLootSlotLink(slot)
@@ -940,6 +981,7 @@ listen(f, "TRAINER_UPDATE")
 listen(f, "MERCHANT_SHOW")
 listen(f, "MERCHANT_UPDATE")
 listen(f, "LOOT_OPENED")
+listen(f, "UI_ERROR_MESSAGE")
 listen(f, "PLAYER_DEAD")
 listen(f, "ZONE_CHANGED_NEW_AREA")
 listen(f, "ZONE_CHANGED")
@@ -1022,6 +1064,11 @@ f:SetScript("OnEvent", function(_, event, ...)
   elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then where.trainer = true; safe(onTrainer)
   elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then where.merchant = true; safe(onMerchant)
   elseif event == "LOOT_OPENED" then safe(onLoot)
+  elseif event == "UI_ERROR_MESSAGE" then
+    -- newer clients send (error type, message), older ones the message alone
+    local a1, a2 = ...
+    local msg = type(a2) == "string" and a2 or (type(a1) == "string" and a1 or nil)
+    safe(function() noteGetaway(nil, msg) end)
   elseif event == "CHAT_MSG_COMBAT_XP_GAIN" then local msg = ...; safe(onXPMessage, msg)
   elseif event == "PLAYER_DEAD" then char.deaths = char.deaths + 1; if session then session.deaths = session.deaths + 1 end
   elseif event == "ZONE_CHANGED_NEW_AREA" then safe(noteZone); safe(noteState)

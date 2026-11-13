@@ -3881,6 +3881,79 @@ details.ab-lv[open] .ab-strip { display: none; }
     wrap.append(s, el("div", "tablewrap", null)); wrap.lastChild.append(t);
     return rows.length ? wrap : document.createTextNode("");
   }
+  // ---------- Fishing: ranks, where to fish for your skill, your own catches and getaways, pools ----------
+  // Ranks and the zone route are from WoW Forever fishing guides (Nov 2026), which follow the original game and disagree on
+  // the exact zone thresholds; your own record (the add-on core: catches and getaways per zone, state/fishing) is the check.
+  const FISH_RANKS = [
+    { cap: 75, n: "Apprentice", how: "a Fishing trainer (in the capitals and most towns)" },
+    { cap: 150, n: "Journeyman", how: "a Fishing trainer" },
+    { cap: 225, n: "Expert", how: "the book Expert Fishing - The Bass and You, sold by Old Man Heming in Booty Bay, Stranglethorn Vale (about 1 gold; needs Fishing 125 and level 20)" },
+    { cap: 300, n: "Artisan", how: "Nat Pagle's quest Nat Pagle, Angler Extreme in Dustwallow Marsh (needs level 35 and Fishing 225; one guide says WoW Forever removed it, so check in game)" },
+  ];
+  const FISH_ROUTE = [
+    [1, 75, ["Elwynn Forest", "Dun Morogh", "Teldrassil", "Durotar", "Mulgore", "Tirisfal Glades"], "any starting zone or capital city"],
+    [75, 150, ["Westfall", "The Barrens", "Darkshore", "Loch Modan", "Silverpine Forest"]],
+    [150, 225, ["Stranglethorn Vale", "Dustwallow Marsh", "Desolace", "Arathi Highlands"]],
+    [225, 300, ["Tanaris", "Feralas", "Azshara", "Felwood"]],
+  ];
+  const fishItem = (id) => { const n = ((S.invItems && S.invItems.items) || {})[id];
+    return (Array.isArray(n) ? n[0] : n && n.n) || ((MAT.data || {})[id] || {}).n || ((QD.items || {})[id] || {}).n || "Item " + id; };
+  function fishGuide(k) {
+    const sec = el("div", "pp-prof"), lv = charLv(), sk = k.skill || 0, cap = k.max || 75;
+    // the next rank, and a warning at the cap (skill-ups past it are lost)
+    const next = FISH_RANKS.find((r) => r.cap > cap);
+    if (next) {
+      const p = el("p", sk >= cap - 10 ? "bud-warn" : "hint");
+      p.textContent = (sk >= cap - 10 ? `You're at ${sk} of ${cap}: learn ${next.n} before you fish more, or the skill-ups are lost. ` : `Your cap is ${cap}. At ${cap} you'll need ${next.n} (to ${next.cap}): `) + `${next.n} comes from ${next.how}.`;
+      sec.append(p);
+    } else if (sk >= 300) sec.append(el("p", "muted", "Fishing is at 300: nothing left to level. Your catches below still show what each zone gives."));
+    // the route, from the guides; your stage first
+    const ol = el("ol", "pp-stages"); let n = 0;
+    for (const [from, to, zones, note] of FISH_ROUTE) {
+      if (to <= sk && sk < 300) continue;
+      const li = el("li", sk >= from && sk < to ? "now" : null); li.value = ++n;
+      li.append(el("b", null, `${from}–${to}: `), document.createTextNode(note ? note + " (" + zones.join(", ") + ")" : zones.join(", ")));
+      const high = zones.filter((z) => { const r = zoneLv(z); return r && r[0] > lv + 5; });
+      if (high.length) li.append(el("span", "muted", ` · above your level: ${high.map((z) => `${z} (${lvText(z)})`).join(", ")}; fish from the shore near a town or flight point`));
+      ol.append(li);
+      const rank = FISH_RANKS.find((r) => r.cap === to);
+      if (rank && rank.cap < 300 && cap <= rank.cap) ol.append(el("li", "pp-mile", `At ${rank.cap}: learn ${FISH_RANKS[FISH_RANKS.indexOf(rank) + 1].n}`));
+    }
+    sec.append(el("p", "hint", "Where to fish for your skill, from WoW Forever fishing guides (they follow the original game and differ a little on where each band starts). Your own record below is the check: a zone where fish get away is above your skill for now."), ol);
+    // your catches and getaways, per zone
+    const fz = (S.fishing && S.fishing.zones) || {};
+    const rows = Object.entries(fz).filter(([, e]) => e.c || e.g).sort((a, b) => (b[1].c + b[1].g) - (a[1].c + a[1].g));
+    const h = el("div", "pp-buy"); h.append(el("span", "label", "Your catches "), el("span", "muted", rows.length ? "(from the add-on; getaways mean the zone is above your skill)" : "(none recorded yet: the add-on counts your catches and getaways per zone from version 1.0.51)"));
+    if (rows.length) {
+      const ul = el("ul", "pp-list");
+      for (const [z, e] of rows.slice(0, 12)) {
+        const li = el("li"), tries = e.c + e.g, rate = tries ? Math.round(e.g / tries * 100) : 0;
+        li.append(el("b", null, z), document.createTextNode(` · ${e.c} caught`));
+        li.append(el("span", e.g ? (rate >= 20 ? "pp-get" : "muted") : "pp-have", e.g ? ` · ${e.g} got away (${rate}%)` : " · none got away"));
+        if (e.lo != null) li.append(el("span", "muted", ` · at skill ${e.lo === e.hi ? e.lo : e.lo + "–" + e.hi}`));
+        const top = Object.entries(e.items || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        if (top.length) { li.append(document.createTextNode(" · ")); top.forEach(([id, q], i) => { if (i) li.append(document.createTextNode(", ")); li.append(whA("item", id, fishItem(id), "who"), el("span", "num muted", ` ×${q}`)); }); }
+        ul.append(li);
+      }
+      h.append(ul);
+    }
+    sec.append(h);
+    // schools and pools, from the materials data
+    const pools = new Map();
+    for (const [id, m] of Object.entries(MAT.data || {}))
+      for (const [pn, , zones, how] of m.nodes || []) if (how === "Fishing" && m.t !== "Herb") { const p = pools.get(pn) || { zones: new Set(), fish: [] }; (zones || []).forEach((z) => p.zones.add(z)); p.fish.push([id, m.n]); pools.set(pn, p); }
+    if (pools.size) {
+      const pb = el("div", "pp-buy"); pb.append(el("span", "label", "Schools and pools "), el("span", "muted", "(fish them for these catches; they need the skill to fish the zone)"));
+      const ul = el("ul", "pp-list");
+      for (const [pn, p] of [...pools].sort((a, b) => a[0].localeCompare(b[0]))) {
+        const li = el("li"); li.append(el("b", null, pn), document.createTextNode(p.zones.size ? ` · ${[...p.zones].join(", ")} · ` : " · "));
+        p.fish.forEach(([id, nm], i) => { if (i) li.append(document.createTextNode(", ")); li.append(whA("item", id, nm, "who")); });
+        ul.append(li);
+      }
+      pb.append(ul); sec.append(pb);
+    }
+    return sec;
+  }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
     const needs = recipeNeeds(); saveRecipeNeeds(needs);
@@ -3888,7 +3961,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     if (!GA.data) loadGather();
     const kn = knownRecipes(), out = [], skip = profSkip();
     // one profession at a time, picked from tabs (remembered); gathering ones and ones with recipes to follow
-    const tabs = [...kn].filter(([prof]) => ["Herbalism", "Mining", "Skinning"].includes(prof) || RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length));
+    const tabs = [...kn].filter(([prof]) => ["Herbalism", "Mining", "Skinning", "Fishing"].includes(prof) || RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length));
     let pick = null; try { pick = localStorage.getItem("ll-pp-prof"); } catch {}
     if (!tabs.some(([p2]) => p2 === pick)) pick = (tabs.find(([, k]) => k.skill != null && k.skill < 300) || tabs[0] || [null])[0];
     const bar = el("div", "pp-tabs"); bar.setAttribute("role", "tablist");
@@ -3902,6 +3975,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     }
     for (const [prof, k] of kn) {
       if (prof !== pick) continue;
+      if (prof === "Fishing" && k.skill != null) { out.push(fishGuide(k)); continue; }
       if (k.skill == null || k.skill >= 300) { out.push(el("p", "empty", k.skill >= 300 ? `${prof} is at 300: nothing left to level.` : `No skill recorded for ${prof} yet.`)); continue; }
       const sec = el("div", "pp-prof");
       const isGather = ["Herbalism", "Mining", "Skinning"].includes(prof);
@@ -5702,6 +5776,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
+    db.doc("state/fishing").onSnapshot((s) => { S.fishing = s.exists ? s.data() : null; try { renderProfPlan(); } catch (e) { console.error(e); } }, () => {});
     db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) { renderBooks(); renderDash(); } }, () => {});
     db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
     db.doc("state/amr").onSnapshot((s) => { S.amr = s.exists ? s.data() : null; renderAmr(); if (DG.data) renderDungeons(); }, () => {});
