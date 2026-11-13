@@ -92,6 +92,7 @@ end
 -- line on top once more than one character holds it
 local function addTooltipLines(tt, id)
   if not tt or not id then return end
+  local priced = ns.addPriceLine and ns.addPriceLine(tt, id)
   local rows, totBg, totBk = {}, 0, 0
   local me = ns.char and ns.char()
   if me then
@@ -102,9 +103,9 @@ local function addTooltipLines(tt, id)
     local bg, bk = held(o.c, id)
     if bg + bk > 0 then rows[#rows + 1] = { c = o.c, key = o.key, bg = bg, bk = bk } end
   end
-  if #rows == 0 then return end
+  if #rows == 0 then if priced then tt:Show() end return end
   for _, r in ipairs(rows) do totBg = totBg + r.bg; totBk = totBk + r.bk end
-  tt:AddLine(" ")
+  if not priced then tt:AddLine(" ") end
   if #rows > 1 then
     tt:AddDoubleLine("|cffd9aa5aYou have " .. ns.fmtNum(totBg + totBk) .. "|r", whereText(totBg, totBk), 1, 1, 1, 0.85, 0.85, 0.85)
   end

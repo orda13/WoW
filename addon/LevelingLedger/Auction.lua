@@ -13,6 +13,47 @@ local function note(id, each, n)
   local s = seen[id]
   if not s then seen[id] = { p = each, n = n } else s.n = s.n + n; if each < s.p then s.p = each end end
 end
+-- ---------- the price line on reagent tooltips ----------
+-- the newest price for an item: this account's own scans (LevelingLedgerDB.ah) or every device's, from the app
+-- (Shared.lua ah = { [id] = { copper each, listed, seen at } })
+function ns.ahPrice(id)
+  id = tonumber(id); if not id then return nil end
+  local db = ns.db and ns.db()
+  local mine = db and db.ah and db.ah[id]
+  local sh = rawget(_G, "LevelingLedgerShared"); sh = type(sh) == "table" and type(sh.ah) == "table" and sh.ah[id] or nil
+  local best = mine and { p = mine.p, n = mine.n, at = mine.at } or nil
+  if type(sh) == "table" and tonumber(sh[1]) and (not best or (tonumber(sh[3]) or 0) > (best.at or 0)) then best = { p = tonumber(sh[1]), n = tonumber(sh[2]), at = tonumber(sh[3]) } end
+  return best
+end
+local function isReagent(id)
+  local info = { (C_Item and C_Item.GetItemInfo or GetItemInfo)(id) }
+  if info[17] then return true end              -- the game's own "Crafting Reagent" flag
+  if info[12] == 7 then return true end          -- Trade Goods
+  return C_Item and C_Item.GetItemInfoInstant and select(6, C_Item.GetItemInfoInstant(id)) == 7 or false
+end
+local function ago(t)
+  if not t or t <= 0 then return "" end
+  local d = (now() - t) / 86400
+  if d < 1 / 24 then return "just now" elseif d < 1 then return math.floor(d * 24) .. " h ago" elseif d < 2 then return "yesterday" end
+  return math.floor(d) .. " days ago"
+end
+-- adds the line and returns true when there is one
+function ns.addPriceLine(tt, id)
+  if not tt or not id then return false end
+  local ok, reagent = pcall(isReagent, id)
+  if not ok or not reagent then return false end
+  local pr = ns.ahPrice(id)
+  if not pr or not pr.p or pr.p <= 0 then return false end
+  local each = ns.coins and ns.coins(pr.p) or (pr.p .. "c")
+  local info = { (C_Item and C_Item.GetItemInfo or GetItemInfo)(id) }
+  local stack = tonumber(info[8]) or 1
+  local right = each .. " each"
+  if stack >= 5 then right = right .. ", " .. (ns.coins and ns.coins(pr.p * stack) or (pr.p * stack)) .. " for " .. stack end
+  tt:AddLine(" ")
+  tt:AddDoubleLine("|cffd9aa5aAuction house|r" .. ((pr.n or 0) > 0 and (" |cff9d9d9d(" .. pr.n .. " listed, " .. ago(pr.at) .. ")|r") or (" |cff9d9d9d(" .. ago(pr.at) .. ")|r")), right, 1, 1, 1, 1, 1, 1)
+  return true
+end
+
 local function flush()
   local db = ns.db and ns.db(); if not db or not next(seen) then return end
   db.ah = db.ah or {}

@@ -332,10 +332,22 @@ fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
 print('no bag names: bank:', dict(me.bank))
 L.execute('Enum.BagIndex = _BI')
 fire('BANKFRAME_OPENED'); fire('BANKFRAME_CLOSED')
+# auction prices on reagent tooltips: Peacebloom from this account's own scan, Briarthorn where the app's copy
+# (Shared.lua, every device) is newer than ours
+L.execute('''_GII = GetItemInfo
+GetItemInfo = function(link) local id = tonumber(tostring(link):match("item:(%d+)") or link)
+  if id == 2447 or id == 2450 then return "Herb", nil, 1, 5, 0, "Tradeskill", "Herb", 20, "", nil, 10, 7, 9, 0, 0, nil, true end
+  return nil end
+LevelingLedgerDB.ah = LevelingLedgerDB.ah or {}
+LevelingLedgerDB.ah[2447] = { p = 95, n = 40, at = T - 3600 * 30 }
+LevelingLedgerDB.ah[2450] = { p = 300, n = 3, at = T - 86400 * 9 }
+LevelingLedgerShared = LevelingLedgerShared or {}; LevelingLedgerShared.ah = { [2450] = { 182, 12, T - 7200 } }
+GetCoinTextureString = function(c) local g, s2, cp = math.floor(c / 10000), math.floor(c / 100) % 100, c % 100; return (g > 0 and (g .. "g ") or "") .. (s2 > 0 and (s2 .. "s ") or "") .. cp .. "c" end''')
 L.execute('GameTooltip:SetItem("Peacebloom", "|cffffffff|Hitem:2447::::::::13:::::|h[Peacebloom]|h|r")')
 print('tooltip for Peacebloom:', list(L.globals().GameTooltip.lines.values()))
 L.execute('GameTooltip:SetItem("Briarthorn", "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r")')
 print('tooltip for Briarthorn (only you have it):', list(L.globals().GameTooltip.lines.values()))
+L.execute('GetItemInfo = _GII')
 L.execute('TradeSkillFrame_SetSelection(3)')
 helper = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.fonts and fr.fonts[1] and fr.fonts[1].text and fr.fonts[1].text:find("alts\' materials") then return fr.fonts[1].text end end end')()
 print('profession window:', helper)

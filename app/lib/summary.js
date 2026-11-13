@@ -5,7 +5,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const MAX_CHARS = 60, MAX_ITEMS = 4000;
+const MAX_CHARS = 60, MAX_ITEMS = 4000, MAX_PRICES = 3000;
 
 // shared/inventories + shared/items -> plain JSON for relays (timestamps in seconds, like the add-on's own)
 function buildSummary(store) {
@@ -53,7 +53,13 @@ function buildSummary(store) {
     const ids = Object.keys(t || {}).filter((id) => t[id] && /^[a-z0-9-]{1,40}$/.test(id)).slice(0, 100);
     if (ids.length) secrets[String(who).toLowerCase()] = ids;
   }
-  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents, secrets };
+  // auction prices from every device (shared/ahprices), the newest MAX_PRICES: { id: [copper each, listed, seen at (s)] },
+  // for the price line on reagent tooltips in game
+  const ah = {};
+  const prices = Object.entries((store.get("shared/ahprices") || {}).items || {}).filter(([id, v]) => /^\d{1,9}$/.test(id) && v && v.p > 0)
+    .sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).slice(0, MAX_PRICES);
+  for (const [id, v] of prices) ah[id] = [Math.round(v.p), v.n || 0, Math.floor((v.at || 0) / 1000)];
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents, secrets, ah };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -93,6 +99,11 @@ function toLua(sum) {
     const ids = Object.entries(q).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100).map(([id, t]) => `[${id}]=${luaStr(t, 80)}`);
     if (ids.length) plans.push(`  [${luaStr(who, 40)}] = {${ids.join(",")}},`);
   }
+  const ah = [];
+  for (const [id, v] of Object.entries((sum && sum.ah) || {}).slice(0, MAX_PRICES)) {
+    if (!/^\d{1,9}$/.test(id) || !Array.isArray(v) || !(int(v[0], 1e10) > 0)) continue;
+    ah.push(`[${id}]={${int(v[0], 1e10)},${int(v[1], 1e7)},${int(v[2], 4e9)}}`);
+  }
   const recipes = [];
   for (const [who, r] of Object.entries((sum && sum.recipes) || {}).slice(0, MAX_CHARS)) {
     if (!r || typeof r !== "object") continue;
@@ -114,7 +125,7 @@ function toLua(sum) {
   }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n secrets = {\n${secrets.join("\n")}\n },\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n secrets = {\n${secrets.join("\n")}\n },\n ah = {${ah.join(",")}},\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

@@ -1102,6 +1102,7 @@ ns.now = now
 ns.idFromLink = idFromLink
 ns.fmtMoney = fmtMoney
 ns.fmtNum = fmtNum
+ns.coins = coins
 ns.styleFrame = styleFrame
 ns.coins = coins
 ns.BACKDROP_TEMPLATE = BACKDROP_TEMPLATE
