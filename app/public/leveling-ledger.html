@@ -446,6 +446,7 @@ table.gbest tr.on td { font-weight: 700; }
 .g-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1px solid #000; margin-right: 4px; vertical-align: middle; }
 .pp-prof { margin-bottom: 14px; }
 .pp-stages { margin: 4px 0 6px 20px; padding: 0; }
+.pp-src { font-size: .72rem; opacity: .75; margin-left: 2px; }
 .pp-stages li { margin: 6px 0; }
 .pp-stages li.now > b { color: var(--brass); }
 .pp-stages li.now::marker { color: var(--brass); }
@@ -1369,7 +1370,7 @@ details.ab-lv[open] .ab-strip { display: none; }
 
   <section class="panel" id="profPlanPanel" data-view="skills">
     <header><h2>Profession guide</h2></header>
-    <p class="hint">The most effective way from your skill to 300, one profession at a time (pick it from the tabs), worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: the cheapest recipe for each point (orange always gives one, yellow sometimes), using materials on any of your characters first; each step shows which materials you already have, which another character holds, and what's left to get. Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way. Prices are ones you've seen at vendors or the auction house, else the published vendor price.</p>
+    <p class="hint">The most effective way from your skill to 300, one profession at a time (pick it from the tabs), worked out again every time your skill, recipes or materials change, so you can do things your own way and the guide follows. Crafting: for each point, the recipe with the lowest expected cost: every recipe you know, can train at your skill, can buy from a vendor in a zone near your level, or can buy on the auction house; orange always gives a point, yellow and green less often, so their cost counts for more; what a recipe costs to learn is spread over the points it gives. Materials on any of your characters are free; the rest are priced at the cheapest you've seen: a vendor (with your reputation discount), the auction house, or making them yourself (bolts, powders). Ranks your character level doesn't allow yet end the plan there. Each step shows which materials you already have, which another character holds, and what's left to get and where it's cheapest. Skip leaves a recipe out. Gathering, mining and skinning: the best zone for each part of the way.</p>
     <p class="hint" id="ppDiscount"></p>
     <div id="profPlan"><p class="empty">Loading recipes…</p></div>
   </section>
@@ -3728,12 +3729,38 @@ details.ab-lv[open] .ab-strip { display: none; }
     return r;
   }
   const listed = (p) => p ? Math.round(p * priceRatio()) : p;
-  function matPrice(name) {
-    const m = MAT.byName && MAT.byName.get(String(name).toLowerCase()); if (!m) return null;
-    const sg = seenGold((m.v || []).map((x) => x.id), m.id); if (sg) return { p: sg.p, from: "vendor" };
-    const ah = typeof ahPrice === "function" ? ahPrice(m.id) : null; if (ah) return { p: ah.p, from: "auction" };
-    // the published price only counts when a vendor actually sells it (gathered items carry a price too)
-    return m.price && ((m.v && m.v.length) || m.vn) ? { p: listed(m.price), from: "vendor list" } : null;
+  // A material's price: the cheapest way to get one. A vendor (the price you paid, or the listed price with your
+  // reputation discount, only when a vendor sells it; gathered items carry a price too) against the auction house
+  // (lowest buyout seen); a reagent you make yourself (Bolt of Silk Cloth, Rough Blasting Powder) from its own recipe.
+  // prices are worked out once per plan (renderProfPlan clears this); the planner asks for them hundreds of thousands of times
+  let priceMemo = new Map(), memoKn = null, memoAt = 0;
+  function matPrice(name, depth = 0) {
+    if (Date.now() - memoAt > 2000) { priceMemo = new Map(); memoKn = null; memoAt = Date.now(); }
+    const mk = String(name).toLowerCase() + "|" + depth;
+    if (priceMemo.has(mk)) return priceMemo.get(mk);
+    const r = matPriceCalc(name, depth); priceMemo.set(mk, r); return r;
+  }
+  function matPriceCalc(name, depth) {
+    const m = MAT.byName && MAT.byName.get(String(name).toLowerCase());
+    const opts = [];
+    if (m) {
+      const sg = seenGold((m.v || []).map((x) => x.id), m.id);
+      if (sg) opts.push({ p: sg.p, from: "vendor" });
+      else if (m.price && ((m.v && m.v.length) || m.vn)) opts.push({ p: listed(m.price), from: "vendor" });
+      const ah = typeof ahPrice === "function" ? ahPrice(m.id) : null; if (ah) opts.push({ p: ah.p, from: "auction", n: ah.n });
+    }
+    if (depth < 2 && RC.data) {
+      const kn = memoKn || (memoKn = knownRecipes());
+      const r = RC.data.recipes.find((e) => e.n.toLowerCase() === String(name).toLowerCase() && e.rg && e.rg.length && kn.has(e.p));
+      if (r) {
+        let sum = 0, ok = true;
+        for (const [n, q] of r.rg) { const pr = matPrice(n, depth + 1); if (!pr) { ok = false; break; } sum += pr.p * q; }
+        if (ok) opts.push({ p: Math.ceil(sum / (r.qty || 1)), from: "made", by: r.p });
+      }
+    }
+    if (!opts.length) return null;
+    const best = opts.reduce((a, b) => (b.p < a.p ? b : a));
+    return { ...best, alt: opts.filter((o) => o !== best) };
   }
   // The whole path from your skill to 300 for a crafting profession, one point at a time: the cheapest recipe that
   // can still give a point (known, learnable at a trainer now, or a recipe item a vendor sells for gold), using
@@ -3751,9 +3778,16 @@ details.ab-lv[open] .ab-strip { display: none; }
     const have = (key) => (mine.get(key) || 0) + (alts.get(key) || 0);
     const learned = new Set(), stages = [], later = new Map(), me = myFaction();
     let skill = k.skill, cur = null, max = k.max || 75, stop = null;
+    const lv = charLv();
     while (skill < 300) {
-      // trainer ranks: train the next one when you reach its skill (the path assumes you do)
-      for (const [at, cap, rank, lvl] of RANKS) if (skill >= at && max <= cap) { stages.push({ milestone: `Train ${rank} ${prof} (needs skill ${at} and level ${lvl}) to go past ${cap}.`, at: skill }); max = cap + 75; cur = null; }
+      // trainer ranks: train the next one when you reach its skill; a rank your level doesn't allow yet ends the path there
+      let blocked = null;
+      for (const [at, cap, rank, lvl] of RANKS) if (skill >= at && max <= cap) {
+        if (lv < lvl) { if (skill >= cap) { blocked = { rank, lvl, cap }; break; } continue; }
+        stages.push({ milestone: `Train ${rank} ${prof} (needs skill ${at} and level ${lvl}) to go past ${cap}.`, at: skill }); max = cap + 75; cur = null;
+      }
+      if (blocked) { stages.push({ milestone: `At ${blocked.cap}: ${blocked.rank} ${prof} needs level ${blocked.lvl} (you're ${lv}). The plan picks up again once you get there.`, at: skill }); stop = null; break; }
+      if (skill >= max) break;
       let best = null;
       for (const e of recipes) {
         const isK = k.set.has(e.n.toLowerCase()) || learned.has(e.n);
@@ -3762,18 +3796,26 @@ details.ab-lv[open] .ab-strip { display: none; }
           if (!e.learn) { const tp = trainerPrice(e.n); if (tp && tp.skr ? tp.skr > skill : learnAt(e) > skill) continue; learnCost = tp ? tp.cost : 0; how = { kind: "trainer", cost: tp ? tp.cost : null }; }
           else {
             if (learnAt(e) > skill) continue;
-            const l = e.learn.find((x) => x.v && x.price && x.v.some((v) => !FAVOR.ids.has(v.id))); if (!l) continue;
-            const ok = l.v.filter((v) => !FAVOR.ids.has(v.id) && (!me || !v.f || v.f.includes(me[0])));
+            // a vendor you can reach (your faction, a zone near your level), or the recipe item on the auction house
+            const l = e.learn.find((x) => x.v && x.price && x.v.some((v) => !FAVOR.ids.has(v.id)));
+            const ok = l ? l.v.filter((v) => !FAVOR.ids.has(v.id) && (!me || !v.f || v.f.includes(me[0]))) : [];
             const near = ok.filter((v) => reachable(v.z));
-            if (!near.length) { if (ok.length && !later.has(e.n)) later.set(e.n, { e, v: ok[0], at: skill }); continue; }
-            learnCost = listed(l.price); how = { kind: "vendor", cost: listed(l.price), item: l.n, v: near[0] };
+            const onAh = e.learn.map((x) => x.i && ahPrice(x.i) ? { l: x, a: ahPrice(x.i) } : null).filter(Boolean).sort((a, b) => a.a.p - b.a.p)[0];
+            const vendorCost = near.length ? listed(l.price) : null;
+            if (vendorCost != null && (!onAh || vendorCost <= onAh.a.p)) { learnCost = vendorCost; how = { kind: "vendor", cost: vendorCost, item: l.n, v: near[0] }; }
+            else if (onAh) { learnCost = onAh.a.p; how = { kind: "auction", cost: onAh.a.p, item: onAh.l.n }; }
+            else { if (ok.length && !later.has(e.n)) later.set(e.n, { e, v: ok[0], at: skill }); continue; }
           }
         }
-        const c = upColor(e, skill, true); if (c !== "orange" && c !== "yellow") continue;
+        const c = upColor(e, skill, true); if (c !== "orange" && c !== "yellow" && c !== "green") continue;
+        // the chance of a point: certain while orange, then falling to nothing at grey
         const chance = c === "orange" ? 1 : Math.max(0.1, (e.su[2] - skill) / (e.su[2] - e.su[0]));
         let cost = 0, unknown = false;
         for (const [n, q] of e.rg) { const short = Math.max(0, q - have(n.toLowerCase())); if (short) { const pr = matPrice(n); if (!pr) unknown = true; else cost += short * pr.p; } }
-        const per = cost / chance + (unknown ? 1e7 : 0) + learnCost;
+        // learning a recipe pays for every point it gives, not just this one: spread its price over the points it has
+        // left before it turns green (at most 20)
+        const pointsLeft = Math.max(1, Math.min(20, e.su[1] - skill));
+        const per = cost / chance + (unknown ? 1e7 : 0) + learnCost / pointsLeft;
         if (!best || per < best.per) best = { e, per, chance, how };
       }
       if (!best) { stop = skill; break; }
@@ -3960,6 +4002,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
+    priceMemo = new Map(); memoKn = null; memoAt = Date.now();
     const needs = recipeNeeds(); saveRecipeNeeds(needs);
     const r = priceRatio(); $("ppDiscount").textContent = r < 0.995 ? `Vendors sell to you at about ${Math.round(r * 100)}% of their listed price (your reputation discount, from ${ratioCache.n} prices you've seen), so listed prices here are adjusted.` : "";
     if (!GA.data) loadGather();
@@ -4009,7 +4052,7 @@ details.ab-lv[open] .ab-strip { display: none; }
         if (g.milestone) { ol.append(el("li", "pp-mile", g.milestone)); continue; }
         const li = el("li", crafted === 0 ? "now" : null); crafted++; li.value = crafted;
         li.append(el("b", null, `${g.from}–${g.to}: ${g.crafts}× ${g.e.n}`));
-        if (g.how) { li.append(el("span", "muted", g.how.kind === "trainer" ? " · learn at your trainer" : ` · buy ${g.how.item || "the recipe"} from ${g.how.v ? `${g.how.v.n}, ${g.how.v.z}${g.how.v.xy ? ` (${g.how.v.xy[0]}, ${g.how.v.xy[1]})` : ""}` : "a vendor"}`)); if (g.how.cost != null) { li.append(document.createTextNode(" ")); li.append(moneyEl(g.how.cost)); total += g.how.cost; } }
+        if (g.how) { li.append(el("span", "muted", g.how.kind === "trainer" ? " · learn at your trainer" : g.how.kind === "auction" ? ` · buy ${g.how.item || "the recipe"} on the auction house` : ` · buy ${g.how.item || "the recipe"} from ${g.how.v ? `${g.how.v.n}, ${g.how.v.z}${g.how.v.xy ? ` (${g.how.v.xy[0]}, ${g.how.v.xy[1]})` : ""}` : "a vendor"}`)); if (g.how.cost != null) { li.append(document.createTextNode(" ")); li.append(moneyEl(g.how.cost)); total += g.how.cost; } }
         // each material: how many this step uses, how many come from your bags, from other characters, and what's left to get
         let cost = 0; const d = el("div", "pp-mats");
         for (const [n, q] of g.need) {
@@ -4020,7 +4063,16 @@ details.ab-lv[open] .ab-strip { display: none; }
           const st = el("span", "pp-st");
           if (fromMe) st.append(el("span", "pp-have", `✓ ${fromMe === q ? "you have them" : fromMe + " in your bags"}`));
           if (fromAlt) st.append(el("span", "pp-alt", `${fromAlt} from ${altNames(n)}`));
-          if (left) { const g2 = el("span", "pp-get", `get ${left}`); if (pr) { g2.append(document.createTextNode(" · ")); g2.append(moneyEl(left * pr.p)); } else g2.title = "No vendor or auction price seen: gather, loot or buy it"; st.append(g2); }
+          if (left) {
+            const g2 = el("span", "pp-get", `get ${left}`);
+            if (pr) {
+              g2.append(document.createTextNode(" · ")); g2.append(moneyEl(left * pr.p));
+              g2.append(el("span", "pp-src", pr.from === "auction" ? " auction house" : pr.from === "made" ? " make them" : " vendor"));
+              const alt = (pr.alt || []).map((o) => `${o.from === "auction" ? "auction house" : o.from === "made" ? "making them" : "vendor"} ${money(o.p)} each`);
+              g2.title = `${money(pr.p)} each, the cheapest seen${alt.length ? "; " + alt.join(", ") : ""}${pr.from === "made" ? ` (from its own ${pr.by} recipe)` : ""}`;
+            } else g2.title = "No vendor or auction price seen: gather, loot or buy it";
+            st.append(g2);
+          }
           c.append(st); d.append(c);
         }
         total += cost;
