@@ -364,7 +364,16 @@ _btn = L.eval('function() local b; for _, fr in ipairs(FRAMES) do if fr.scripts.
 if _btn is None: _btn = L.eval('function() local b; for _, fr in ipairs(FRAMES) do if fr.scripts.OnClick then b = fr end end return b end')()
 _btn.scripts.OnClick(_btn); print('Find it selected row:', L.globals().SELECTED, '(Elixir of Wisdom is row 4)')
 slash_('craft')
-fire('TRADE_SKILL_CLOSE'); print('after closing the window:', _w.shown)
+_tg = L.globals().LevelingLedgerCraftPlanToggle
+_cb = _w.closeButton; _cb.scripts.OnClick(_cb)
+print('after its X: window', _w.shown, '| Next crafts button', _tg.shown, '| remembered', L.eval('LevelingLedgerDB.craftPlanClosed'))
+fire('TRADE_SKILL_CLOSE'); fire('TRADE_SKILL_SHOW')
+print('profession opened again: window', _w.shown, '| button', _tg.shown)
+_tg.scripts.OnClick(_tg)
+print('after Next crafts: window', _w.shown, '| button', _tg.shown, '| remembered', L.eval('LevelingLedgerDB.craftPlanClosed'))
+_cb.scripts.OnClick(_cb); slash_('craft'); fire('TRADE_SKILL_SHOW')
+print('/ledger craft brings it back:', _w.shown)
+fire('TRADE_SKILL_CLOSE'); print('after closing the window:', _w.shown, '| button', _tg.shown)
 L.execute('''TradeSkillFrame_SetSelection = _SEL
 _GII2 = GetItemInfo; GetItemInfo = function(l) local id = tonumber(tostring(l):match("item:(%d+)") or l); if id == 5772 then return "Pattern: Red Woolen Bag", nil, 2, 25, 0, "Recipe", "Tailoring", 1, "", nil, 50, 9, 2 end return nil end
 GameTooltip:SetItem("Pattern: Red Woolen Bag", "|cff1eff00|Hitem:5772::::::::13:::::|h[Pattern: Red Woolen Bag]|h|r")''')

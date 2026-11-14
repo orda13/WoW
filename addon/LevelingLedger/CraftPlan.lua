@@ -2,7 +2,8 @@
 -- worked out for this character (Shared.lua crafts, from shared/craftplan), with what you still have to buy, and a
 -- button that finds the recipe in the window. Steps you've already passed (your skill is past them) are skipped.
 -- The window is the add-on's own frame, next to the profession window; Blizzard's frames are only read, never changed.
---   /ledger craft   the next steps for each of your professions
+--   /ledger craft   the next steps for each of your professions (and brings the window back if you closed it)
+-- The window's X closes it; a small "Next crafts" button stays beside the profession window to open it again.
 local ADDON, ns = ...
 local TAG = "|cffd9aa5aLeveling Ledger|r: "
 
@@ -58,9 +59,18 @@ local function findRecipe(name, kind)
 end
 
 -- ---------- the window ----------
-local win, lines, btn
+local win, lines, btn, toggle
+local render
+-- closed or open: remembered for the account (LevelingLedgerDB.craftPlanClosed) until you open it again
+local function isClosed() local db = ns.db and ns.db(); return db and db.craftPlanClosed or false end
+local function setClosed(v) local db = ns.db and ns.db(); if db then db.craftPlanClosed = v or nil end end
 local function build()
   if win then return end
+  -- the small button that brings the window back, next to the profession window while it's closed
+  toggle = CreateFrame("Button", "LevelingLedgerCraftPlanToggle", UIParent, "UIPanelButtonTemplate")
+  toggle:SetSize(100, 22); toggle:SetText("Next crafts"); toggle:SetFrameStrata("HIGH")
+  toggle:SetScript("OnClick", function() setClosed(false); if ns.safe then ns.safe(render) else pcall(render) end end)
+  toggle:Hide()
   win = CreateFrame("Frame", "LevelingLedgerCraftPlan", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
   win:SetSize(300, 150)
   if win.SetBackdrop then
@@ -76,20 +86,34 @@ local function build()
     fs:SetPoint("TOPLEFT", 10, -10 - i * 22); fs:SetWidth(280); fs:SetJustifyH("LEFT")
     lines[i] = fs
   end
+  local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", 2, 2)
+  close:SetScript("OnClick", function() setClosed(true); if ns.safe then ns.safe(render) else pcall(render) end end)
+  win.closeButton = close
   btn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
   btn:SetSize(110, 20); btn:SetPoint("BOTTOMRIGHT", -8, 8); btn:SetText("Find it")
   win:Hide()
 end
 local cur = {}
-local function render()
+local function hideAll() if win then win:Hide() end if toggle then toggle:Hide() end end
+render = function()
   local prof, skill, max, kind = openProfession()
-  if not prof then if win then win:Hide() end return end
+  if not prof then hideAll() return end
   local steps = stepsFor(prof, skill)
-  if #steps == 0 then if win then win:Hide() end return end
+  if #steps == 0 then hideAll() return end
   build()
   local anchor = (kind == "trade" and rawget(_G, "TradeSkillFrame")) or (kind == "craft" and rawget(_G, "CraftFrame")) or rawget(_G, "ProfessionsFrame")
+  local shown = anchor and anchor.IsShown and anchor:IsShown()
+  if isClosed() then
+    win:Hide()
+    toggle:ClearAllPoints()
+    if shown then toggle:SetPoint("TOPLEFT", anchor, "TOPRIGHT", -30, -14) else toggle:SetPoint("CENTER", UIParent, "CENTER", 300, 0) end
+    toggle:Show()
+    return
+  end
+  toggle:Hide()
   win:ClearAllPoints()
-  if anchor and anchor.IsShown and anchor:IsShown() then win:SetPoint("TOPLEFT", anchor, "TOPRIGHT", -30, -14) else win:SetPoint("CENTER", UIParent, "CENTER", 300, 0) end
+  if shown then win:SetPoint("TOPLEFT", anchor, "TOPRIGHT", -30, -14) else win:SetPoint("CENTER", UIParent, "CENTER", 300, 0) end
   local first = steps[1]
   lines[1]:SetText(string.format("|cff40ff40Now|r %d× %s |cff9d9d9d(%d–%d)|r", first.crafts or 0, first.n or "?", first.from or 0, first.to or 0))
   lines[2]:SetText("|cffd9c9a8" .. shortText(first) .. "|r")
@@ -104,6 +128,7 @@ end
 ns.refreshCraftPlan = render
 
 function ns.craftCommand()
+  if isClosed() then setClosed(false); print(TAG .. "The next crafts window is back: it shows when you open a profession.") end
   local p = plans()
   if type(p) ~= "table" or not next(p) then print(TAG .. "No crafting plan yet: open the Profession guide on the Leveling Ledger page, then /reload.") return end
   local skills = (ns.char and ns.char() or {}).skills or {}
@@ -125,6 +150,6 @@ for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL
   if ns.listen then ns.listen(f, e) else pcall(f.RegisterEvent, f, e) end
 end
 f:SetScript("OnEvent", function(_, event)
-  if event == "TRADE_SKILL_CLOSE" or event == "CRAFT_CLOSE" then if win then win:Hide() end return end
+  if event == "TRADE_SKILL_CLOSE" or event == "CRAFT_CLOSE" then hideAll() return end
   if ns.safe then ns.safe(render) else pcall(render) end
 end)
