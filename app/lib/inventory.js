@@ -81,7 +81,11 @@ function mergeInventories(store, data, file) {
       if (!/^\d{1,9}$/.test(id) || !v || !(v.p > 0)) continue;
       const at = (v.at || 0) * 1000;
       if (items[id] && items[id].at >= at) continue;
-      items[id] = { p: Math.round(v.p), n: v.n || 0, at }; n++;
+      // the price tiers the scan saw ({ {copper each, how many}, ... }, cheapest first), for costs at real quantities
+      const tiers = (Array.isArray(v.l) ? v.l : v.l && typeof v.l === "object" ? Object.values(v.l) : [])
+        .map((t) => (Array.isArray(t) ? t : t && typeof t === "object" ? Object.values(t) : [])).map(([tp, tn]) => [Math.round(Number(tp)), Math.round(Number(tn))])
+        .filter(([tp, tn]) => tp > 0 && tn > 0).sort((a, b) => a[0] - b[0]).slice(0, 12);
+      items[id] = { p: Math.round(v.p), n: v.n || 0, at, ...(tiers.length ? { l: tiers } : {}) }; n++;
     }
     if (n) store.set("shared/ahprices", { items, updatedAt: Date.now() });
   }

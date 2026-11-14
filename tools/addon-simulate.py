@@ -218,7 +218,7 @@ TAXI = {}
 function NumTaxiNodes() return #(TAXI.nodes or {}) end
 function TaxiNodeName(i) return TAXI.nodes[i][1] end
 function TaxiNodeGetType(i) return TAXI.nodes[i][2] end''')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua', 'FlightData.lua', 'Flights.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua', 'FlightData.lua', 'Flights.lua', 'CraftPlan.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -348,6 +348,28 @@ print('tooltip for Peacebloom:', list(L.globals().GameTooltip.lines.values()))
 L.execute('GameTooltip:SetItem("Briarthorn", "|cffffffff|Hitem:2450::::::::13:::::|h[Briarthorn]|h|r")')
 print('tooltip for Briarthorn (only you have it):', list(L.globals().GameTooltip.lines.values()))
 L.execute('GetItemInfo = _GII')
+# the next crafts at the profession window: the page's plan (Shared.lua crafts), a step already passed (skill 70) skipped,
+# "Find it" selects the recipe, /ledger craft; and who knows a recipe on a pattern's tooltip
+L.execute('''LevelingLedgerShared.crafts = { ["talwyn"] = { Alchemy = {
+  { n = "Minor Healing Potion", crafts = 8, from = 60, to = 68, short = {} },
+  { n = "Elixir of Wisdom", crafts = 12, from = 70, to = 80, short = { { "Mageroyal", 12 }, { "Empty Vial", 7 } } },
+  { n = "Elixir of Minor Defense", crafts = 5, from = 80, to = 85, short = {} } } } }
+LevelingLedgerShared.known = { ["talwyn bank"] = { name = "Talwyn Bank", profs = { Tailoring = { skill = 90, recipes = { "red woolen bag" } } } },
+  ["bob"] = { name = "Bob", profs = { Tailoring = { skill = 40, recipes = {} } } } }
+_SEL = TradeSkillFrame_SetSelection; SELECTED = nil; TradeSkillFrame_SetSelection = function(i) SELECTED = i end''')
+fire('TRADE_SKILL_SHOW')
+_w = L.globals().LevelingLedgerCraftPlan
+print('craft window:', _w.shown, [f.text for f in _w.fonts.values()])
+_btn = L.eval('function() local b; for _, fr in ipairs(FRAMES) do if fr.scripts.OnClick and fr.text == "Find it" then b = fr end end return b end')()
+if _btn is None: _btn = L.eval('function() local b; for _, fr in ipairs(FRAMES) do if fr.scripts.OnClick then b = fr end end return b end')()
+_btn.scripts.OnClick(_btn); print('Find it selected row:', L.globals().SELECTED, '(Elixir of Wisdom is row 4)')
+slash_('craft')
+fire('TRADE_SKILL_CLOSE'); print('after closing the window:', _w.shown)
+L.execute('''TradeSkillFrame_SetSelection = _SEL
+_GII2 = GetItemInfo; GetItemInfo = function(l) local id = tonumber(tostring(l):match("item:(%d+)") or l); if id == 5772 then return "Pattern: Red Woolen Bag", nil, 2, 25, 0, "Recipe", "Tailoring", 1, "", nil, 50, 9, 2 end return nil end
+GameTooltip:SetItem("Pattern: Red Woolen Bag", "|cff1eff00|Hitem:5772::::::::13:::::|h[Pattern: Red Woolen Bag]|h|r")''')
+print('pattern tooltip:', list(L.globals().GameTooltip.lines.values()))
+L.execute('GetItemInfo = _GII2')
 L.execute('TradeSkillFrame_SetSelection(3)')
 helper = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.fonts and fr.fonts[1] and fr.fonts[1].text and fr.fonts[1].text:find("alts\' materials") then return fr.fonts[1].text end end end')()
 print('profession window:', helper)
@@ -374,7 +396,7 @@ c = L.globals().LevelingLedgerDB.chars['Talwyn-Normal']
 print('skills (newer engine):', {k: dict(v)['rank'] for k, v in c.skills.items()})
 # the in-game panel, before logging out
 fire('AUCTION_ITEM_LIST_UPDATE'); fire('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')
-print('auction prices:', {k: dict(v) for k, v in L.globals().LevelingLedgerDB.ah.items()})
+print('auction prices:', {k: {kk: ([list(t.values()) for t in vv.values()] if kk == 'l' else vv) for kk, vv in dict(v).items()} for k, v in L.globals().LevelingLedgerDB.ah.items()})
 # Bob logged out at an inn two days ago: 30% of a level rested by now, so he's the best alt
 L.execute('for k, c in pairs(LevelingLedgerDB.chars) do if c.name == "Bob" then c.level = 10; c.xpMax = { [10] = 8000 }; c.rested = 0; c.resting = true; c.stateAt = T - 48 * 3600 end end')
 show = L.eval('function() local p = LevelingLedgerPanel; p.scripts.OnUpdate(p, 1.5); local t = {} for _, f in ipairs(p.fonts) do t[#t + 1] = f.text or "" end return table.concat(t, "\\n") end')

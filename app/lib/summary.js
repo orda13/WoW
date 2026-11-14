@@ -59,7 +59,23 @@ function buildSummary(store) {
   const prices = Object.entries((store.get("shared/ahprices") || {}).items || {}).filter(([id, v]) => /^\d{1,9}$/.test(id) && v && v.p > 0)
     .sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).slice(0, MAX_PRICES);
   for (const [id, v] of prices) ah[id] = [Math.round(v.p), v.n || 0, Math.floor((v.at || 0) / 1000)];
-  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents, secrets, ah };
+  // which of your characters knows which recipe (shared/knownrecipes): { "talwyn bank": { name, profs: { Tailoring: { skill, recipes } } } }
+  const known = {};
+  for (const [who, k] of Object.entries((store.get("shared/knownrecipes") || {}).byChar || {}).slice(0, MAX_CHARS)) {
+    if (!k || !k.profs) continue;
+    const profs = {};
+    for (const [prof, p] of Object.entries(k.profs).slice(0, 14)) profs[prof] = { skill: p.skill || 0, recipes: (p.recipes || []).slice(0, 400).map((r) => String(r).toLowerCase()) };
+    known[String(who).toLowerCase()] = { name: k.name || who, profs };
+  }
+  // the next crafting steps the profession guide worked out, per character: { who: { Tailoring: [{ n, crafts, from, to, short: [[name, qty]] }] } }
+  const crafts = {};
+  for (const [who, byProf] of Object.entries((store.get("shared/craftplan") || {}).byChar || {}).slice(0, MAX_CHARS)) {
+    if (!byProf || typeof byProf !== "object") continue;
+    const o = {};
+    for (const [prof, steps] of Object.entries(byProf).slice(0, 14)) if (Array.isArray(steps)) o[prof] = steps.slice(0, 5);
+    if (Object.keys(o).length) crafts[String(who).toLowerCase()] = o;
+  }
+  return { generated: Math.floor(Date.now() / 1000), chars, items, plans, recipes, talents, secrets, ah, known, crafts };
 }
 
 // ---------- JSON -> Lua, strictly ----------
@@ -99,6 +115,28 @@ function toLua(sum) {
     const ids = Object.entries(q).filter(([id]) => /^\d{1,7}$/.test(id)).slice(0, 100).map(([id, t]) => `[${id}]=${luaStr(t, 80)}`);
     if (ids.length) plans.push(`  [${luaStr(who, 40)}] = {${ids.join(",")}},`);
   }
+  const known = [];
+  for (const [who, k] of Object.entries((sum && sum.known) || {}).slice(0, MAX_CHARS)) {
+    if (!k || typeof k !== "object" || !k.profs || typeof k.profs !== "object") continue;
+    const profs = [];
+    for (const [prof, p] of Object.entries(k.profs).slice(0, 14)) {
+      if (!p || typeof p !== "object") continue;
+      profs.push(`[${luaStr(prof, 30)}] = { skill = ${int(p.skill, 1000)}, recipes = {${(Array.isArray(p.recipes) ? p.recipes : []).slice(0, 400).map((r) => luaStr(r, 60)).join(",")}} }`);
+    }
+    known.push(`  [${luaStr(who, 40)}] = { name = ${luaStr(k.name, 40)}, profs = { ${profs.join(", ")} } },`);
+  }
+  const crafts = [];
+  for (const [who, byProf] of Object.entries((sum && sum.crafts) || {}).slice(0, MAX_CHARS)) {
+    if (!byProf || typeof byProf !== "object") continue;
+    const profs = [];
+    for (const [prof, steps] of Object.entries(byProf).slice(0, 14)) {
+      if (!Array.isArray(steps)) continue;
+      const st = steps.slice(0, 5).filter((x) => x && typeof x === "object").map((x) =>
+        `{ n = ${luaStr(x.n, 60)}, crafts = ${int(x.crafts, 9999)}, from = ${int(x.from, 1000)}, to = ${int(x.to, 1000)}, short = {${(Array.isArray(x.short) ? x.short : []).slice(0, 8).filter(Array.isArray).map((m) => `{${luaStr(m[0], 60)},${int(m[1], 99999)}}`).join(",")}} }`);
+      profs.push(`[${luaStr(prof, 30)}] = {${st.join(",")}}`);
+    }
+    crafts.push(`  [${luaStr(who, 40)}] = { ${profs.join(", ")} },`);
+  }
   const ah = [];
   for (const [id, v] of Object.entries((sum && sum.ah) || {}).slice(0, MAX_PRICES)) {
     if (!/^\d{1,9}$/.test(id) || !Array.isArray(v) || !(int(v[0], 1e10) > 0)) continue;
@@ -125,7 +163,7 @@ function toLua(sum) {
   }
   return "-- Leveling Ledger: your characters on every device and account (bags, bank, gold).\n" +
     "-- Written automatically by the Leveling Ledger app; changes here are replaced.\n" +
-    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n secrets = {\n${secrets.join("\n")}\n },\n ah = {${ah.join(",")}},\n}\n`;
+    `LevelingLedgerShared = {\n generated = ${int(sum && sum.generated, 4e9)},\n chars = {\n${chars.join("\n")}\n },\n items = {${items.join(",")}},\n plans = {\n${plans.join("\n")}\n },\n recipes = {\n${recipes.join("\n")}\n },\n talents = {\n${talents.join("\n")}\n },\n secrets = {\n${secrets.join("\n")}\n },\n ah = {${ah.join(",")}},\n known = {\n${known.join("\n")}\n },\n crafts = {\n${crafts.join("\n")}\n },\n}\n`;
 }
 
 // Write Shared.lua into an add-on folder, only when it changed (atomic: temp file, then rename)

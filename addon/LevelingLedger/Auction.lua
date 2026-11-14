@@ -6,12 +6,29 @@ local ADDON, ns = ...
 local MAX = 6000
 
 local function now() return time() end
-local seen = {}   -- this scan: itemID -> { p, n } (lowest price, total listed)
-local function note(id, each, n)
+local seen = {}   -- this scan: itemID -> { p, n, t } (lowest price, total listed, price tiers: copper each -> how many)
+-- summary: a browse row (lowest price and total listed only), which isn't a price tier of its own
+local function note(id, each, n, summary)
   id, each, n = tonumber(id), tonumber(each), tonumber(n) or 1
   if not id or not each or each <= 0 then return end
   local s = seen[id]
-  if not s then seen[id] = { p = each, n = n } else s.n = s.n + n; if each < s.p then s.p = each end end
+  if not s then s = { p = each, n = 0 }; seen[id] = s end
+  if each < s.p then s.p = each end
+  if summary then s.n = math.max(s.n, n) else
+    s.n = s.n + n
+    s.t = s.t or {}
+    local k = math.floor(each)
+    s.t[k] = (s.t[k] or 0) + n
+  end
+end
+-- the cheapest price tiers, as the auction house sells them: { { copper each, how many }, ... } (at most 12)
+local function ladder(t)
+  if not t then return nil end
+  local l = {}
+  for p, n in pairs(t) do l[#l + 1] = { p, n } end
+  table.sort(l, function(a, b) return a[1] < b[1] end)
+  for i = #l, 13, -1 do l[i] = nil end
+  return #l > 0 and l or nil
 end
 -- ---------- the price line on reagent tooltips ----------
 -- the newest price for an item: this account's own scans (LevelingLedgerDB.ah) or every device's, from the app
@@ -58,7 +75,7 @@ local function flush()
   local db = ns.db and ns.db(); if not db or not next(seen) then return end
   db.ah = db.ah or {}
   local t, count = now(), 0
-  for id, s in pairs(seen) do db.ah[id] = { p = math.floor(s.p), n = s.n, at = t } end
+  for id, s in pairs(seen) do db.ah[id] = { p = math.floor(s.p), n = s.n, at = t, l = ladder(s.t) } end
   seen = {}
   -- keep the newest MAX items
   for _ in pairs(db.ah) do count = count + 1 end
@@ -90,7 +107,7 @@ local AH = rawget(_G, "C_AuctionHouse")
 local function browse()
   if not AH then return end
   for _, r in ipairs(call(AH.GetBrowseResults) or {}) do
-    if r and r.itemKey and r.minPrice then note(r.itemKey.itemID, r.minPrice, r.totalQuantity) end
+    if r and r.itemKey and r.minPrice then note(r.itemKey.itemID, r.minPrice, r.totalQuantity, true) end
   end
   flush()
 end

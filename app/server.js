@@ -14,6 +14,7 @@ const { startBackups } = require("./lib/backups");
 const { startUpdater } = require("./lib/updater");
 const { characters, charStore } = require("./lib/characters");
 const { mergeInventories, tidyInventories } = require("./lib/inventory");
+const { updateKnown } = require("./lib/knownrecipes");
 const { readSaved } = require("./lib/addon-import");
 const { buildSummary, writeShared } = require("./lib/summary");
 const { tenantStore, viewPath, users, tenantFor, accessConfig, charConfig, userDir } = require("./lib/tenants");
@@ -113,6 +114,18 @@ const storeOf = (t, id) => charStore(t.store, id || "");
 const chars = () => charsOf(tenantOf(null));
 // clear what earlier versions left in the characters lists (old first-name rows, the same character twice)
 for (const t of allTenants()) { try { const n = tidyInventories(t.store); if (n) console.log(`Tidied ${t.label} characters list: ${n} stale row${n === 1 ? "" : "s"} removed`); } catch (e) { console.log("Couldn't tidy the characters list: " + e.message); } }
+// which of each person's characters knows which recipe (shared/knownrecipes): rebuilt shortly after any character's
+// skills or Blizzard professions change, and at startup
+const knownTimers = new Map();
+function refreshKnown(t) { try { updateKnown(t.store, charsOf(t), (id) => storeOf(t, id)); } catch (e) { log("Couldn't update the known recipes: " + e.message); } }
+store.on("change", (ev) => {
+  const m = /^(u[0-9a-f]{8}~)?(c[0-9a-f]{8}\.)?state\/(addonskills|collections)$/.exec(ev.path || "");
+  if (!m) return;
+  const uid = m[1] ? m[1].slice(0, -1) : "";
+  const t = allTenants().find((x) => x.uid === uid); if (!t) return;
+  clearTimeout(knownTimers.get(uid)); knownTimers.set(uid, setTimeout(() => refreshKnown(t), 1500));
+});
+for (const t of allTenants()) refreshKnown(t);
 // Blizzard sync for one character, or everyone's, one after another
 function syncOne(t, c, why) {
   log(`Blizzard sync for ${c.character || "the main character"}${t.uid ? " (" + t.label + ")" : ""} (${why})`);

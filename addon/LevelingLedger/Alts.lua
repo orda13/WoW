@@ -90,9 +90,44 @@ local function whereText(bg, bk)
 end
 -- the item on every character: you first (bags as of now, bank as of your last bank visit), then the others; a total
 -- line on top once more than one character holds it
+-- a recipe item ("Pattern: Red Woolen Bag"): which of your characters already know it, and who has the profession
+-- (Shared.lua known, from the app; your own list as of this session counts too)
+local PREFIX = { "Pattern", "Recipe", "Plans", "Schematic", "Formula", "Manual", "Design", "Blueprint" }
+local function addRecipeLines(tt, id)
+  local info = { (C_Item and C_Item.GetItemInfo or GetItemInfo)(id) }
+  local name, sub = info[1], info[7]
+  if type(name) ~= "string" then return false end
+  local recipe
+  for _, p in ipairs(PREFIX) do local r = name:match("^" .. p .. ":%s*(.+)$"); if r then recipe = r break end end
+  if not recipe then return false end
+  recipe = recipe:lower()
+  local sh = rawget(_G, "LevelingLedgerShared"); local known = type(sh) == "table" and type(sh.known) == "table" and sh.known or {}
+  local myKey = ns.charKey and ns.charKey():lower() or ""
+  local knows, could = {}, {}
+  for who, k in pairs(known) do
+    if type(k) == "table" and type(k.profs) == "table" then
+      for prof, p in pairs(k.profs) do
+        if type(p) == "table" and (not sub or prof == sub) then
+          local has = false
+          for _, r in ipairs(p.recipes or {}) do if r == recipe then has = true break end end
+          local label = (k.name or who) .. (who == myKey and " (you)" or "")
+          if has then knows[#knows + 1] = label elseif sub then could[#could + 1] = label .. " " .. (p.skill or 0) end
+        end
+      end
+    end
+  end
+  if #knows == 0 and #could == 0 then return false end
+  tt:AddLine(" ")
+  if #knows > 0 then tt:AddLine("|cff40ff40Known by|r " .. table.concat(knows, ", "), 1, 1, 1, true) end
+  if #could > 0 then tt:AddLine("|cffffd100Not learned yet|r " .. table.concat(could, ", "), 1, 1, 1, true) end
+  return true
+end
+
 local function addTooltipLines(tt, id)
   if not tt or not id then return end
+  local ok, rec = pcall(addRecipeLines, tt, id)
   local priced = ns.addPriceLine and ns.addPriceLine(tt, id)
+  priced = priced or (ok and rec)
   local rows, totBg, totBk = {}, 0, 0
   local me = ns.char and ns.char()
   if me then

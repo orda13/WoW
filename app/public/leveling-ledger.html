@@ -447,6 +447,7 @@ table.gbest tr.on td { font-weight: 700; }
 .pp-prof { margin-bottom: 14px; }
 .pp-stages { margin: 4px 0 6px 20px; padding: 0; }
 .pp-src { font-size: .72rem; opacity: .75; margin-left: 2px; }
+.kby { font-size: .8rem; margin: 2px 0 4px; }
 .pp-stages li { margin: 6px 0; }
 .pp-stages li.now > b { color: var(--brass); }
 .pp-stages li.now::marker { color: var(--brass); }
@@ -3640,6 +3641,17 @@ details.ab-lv[open] .ab-strip { display: none; }
     box.append(bar, lab);
     return box;
   }
+  // your other characters who know a recipe, and who has the profession at the skill to learn it (shared/knownrecipes)
+  function knownBy(e) {
+    const me = myFullName().toLowerCase(), knows = [], could = [], n = e.n.toLowerCase();
+    for (const [who, k] of Object.entries((S.known && S.known.byChar) || {})) {
+      if (who === me) continue;
+      const p = k.profs && k.profs[e.p]; if (!p) continue;
+      if ((p.recipes || []).some((r) => r.toLowerCase() === n)) knows.push(k.name);
+      else if (p.skill != null && p.skill >= learnAt(e) && (!e.su || p.skill < e.su[2])) could.push(`${k.name} (${p.skill})`);
+    }
+    return { knows, could };
+  }
   function recipeCard(e, known) {
     const card = el("div", "icard");
     const q = e.mi ? e.mi.q : 1;
@@ -3648,6 +3660,13 @@ details.ab-lv[open] .ab-strip { display: none; }
     h.append(el("span", "pill " + (isKnown ? "known" : "miss"), isKnown ? "Known" : e.c));
     card.append(h);
     card.append(el("div", "hint", [e.p, isKnown ? e.c : "", e.qty ? `Makes ${e.qty}` : ""].filter(Boolean).join(" · ")));
+    const kb = knownBy(e);
+    if (kb.knows.length || kb.could.length) {
+      const d = el("div", "kby");
+      if (kb.knows.length) d.append(el("span", "pill known", "Known by " + kb.knows.join(", ")));
+      if (kb.could.length) d.append(el("span", "muted", ` ${kb.knows.length ? "· " : ""}could learn it: ${kb.could.join(", ")}`));
+      card.append(d);
+    }
     const fxl = effectLine(e); if (fxl) card.append(fxl);
     const sstrip = skillupStrip(e, known); if (sstrip) card.append(sstrip);
     card.append(craftedBlock(e, { noFx: !!fxl }));
@@ -3732,10 +3751,60 @@ details.ab-lv[open] .ab-strip { display: none; }
   // A material's price: the cheapest way to get one. A vendor (the price you paid, or the listed price with your
   // reputation discount, only when a vendor sells it; gathered items carry a price too) against the auction house
   // (lowest buyout seen); a reagent you make yourself (Bolt of Silk Cloth, Rough Blasting Powder) from its own recipe.
+  // What qty more of a material costs on this plan, one unit at a time, each at the cheapest of: the next auction
+  // listing (walking the tiers the auction house actually had; the add-on's price ladder, or the lowest price for as
+  // many as were listed), the vendor (with your reputation discount), or making it from its own recipe, whose
+  // materials walk their own listings the same way. `bought` holds how many of each item the plan has already taken
+  // from the auction house (lower-case name -> count). Returns { total, take } (take: what this adds to `bought`), or
+  // null when a unit has no price at all. Past every listing an item with no other source costs its dearest tier + 20%.
+  const EMPTY_TAKE = new Map();
+  // the recipe that makes a material, for a profession this character has (cached per plan with the prices)
+  let makerMemo = new Map();
+  function makerOf(key) {
+    if (makerMemo.has(key)) return makerMemo.get(key);
+    const kn = memoKn || (memoKn = knownRecipes());
+    const r = RC.data ? RC.data.recipes.find((e) => e.n.toLowerCase() === key && e.rg && e.rg.length && kn.has(e.p)) || null : null;
+    makerMemo.set(key, r); return r;
+  }
+  function nextUnit(name, bought, take, depth) {
+    const key = String(name).toLowerCase(), pr = matPrice(name);
+    if (!pr) return null;
+    let best = null;
+    for (const o of [pr, ...(pr.alt || [])]) if (o.from === "vendor" && (!best || o.p < best.p)) best = { p: o.p, src: "vendor" };
+    const m = MAT.byName && MAT.byName.get(key), a = m && ahPrice(m.id);
+    if (a) {
+      const tiers = Array.isArray(a.l) && a.l.length ? a.l : [[a.p, a.n || 1e6]];
+      let pos = (bought.get(key) || 0) + (take.get(key) || 0), tp = null;
+      for (const [p, n] of tiers) { if (pos < n) { tp = p; break; } pos -= n; }
+      if (tp != null && (!best || tp < best.p)) best = { p: tp, src: "auction" };
+      if (tp == null && !best) best = { p: Math.ceil(tiers[tiers.length - 1][0] * 1.2), src: "auction" };
+    }
+    if (depth < 2 && RC.data) {
+      const r = makerOf(key);
+      if (r) {
+        let sum = 0, ok = true; const parts = [];
+        for (const [n, q] of r.rg) { const u = nextUnit(n, bought, take, depth + 1); if (!u) { ok = false; break; } sum += u.p * q; parts.push([n, q, u.src]); }
+        const each = ok ? Math.ceil(sum / (r.qty || 1)) : null;
+        if (each != null && (!best || each < best.p)) best = { p: each, src: "made", parts, per: r.qty || 1 };
+      }
+    }
+    return best;
+  }
+  function buyCost(name, qty, bought = new Map()) {
+    if (qty <= 0) return { total: 0, take: new Map() };
+    const take = new Map(); let total = 0;
+    for (let i = 0; i < qty; i++) {
+      const u = nextUnit(name, bought, take, 0); if (!u) return null;
+      total += u.p;
+      if (u.src === "auction") take.set(String(name).toLowerCase(), (take.get(String(name).toLowerCase()) || 0) + 1);
+      else if (u.src === "made") for (const [n, q, src] of u.parts) if (src === "auction") { const k = n.toLowerCase(); take.set(k, (take.get(k) || 0) + q / u.per); }
+    }
+    return { total, take };
+  }
   // prices are worked out once per plan (renderProfPlan clears this); the planner asks for them hundreds of thousands of times
   let priceMemo = new Map(), memoKn = null, memoAt = 0;
   function matPrice(name, depth = 0) {
-    if (Date.now() - memoAt > 2000) { priceMemo = new Map(); memoKn = null; memoAt = Date.now(); }
+    if (Date.now() - memoAt > 2000) { priceMemo = new Map(); makerMemo = new Map(); memoKn = null; memoAt = Date.now(); }
     const mk = String(name).toLowerCase() + "|" + depth;
     if (priceMemo.has(mk)) return priceMemo.get(mk);
     const r = matPriceCalc(name, depth); priceMemo.set(mk, r); return r;
@@ -3776,7 +3845,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     const mine = new Map(), alts = new Map();
     for (const n of new Set(recipes.flatMap((e) => e.rg.map(([x]) => x.toLowerCase())))) for (const h of heldBy(n)) { const m = isMe(h.c) ? mine : alts; m.set(n, (m.get(n) || 0) + h.bags + h.bank); }
     const have = (key) => (mine.get(key) || 0) + (alts.get(key) || 0);
-    const learned = new Set(), stages = [], later = new Map(), me = myFaction();
+    const learned = new Set(), stages = [], later = new Map(), me = myFaction(), bought = new Map();
     let skill = k.skill, cur = null, max = k.max || 75, stop = null;
     const lv = charLv();
     while (skill < 300) {
@@ -3810,17 +3879,24 @@ details.ab-lv[open] .ab-strip { display: none; }
         const c = upColor(e, skill, true); if (c !== "orange" && c !== "yellow" && c !== "green") continue;
         // the chance of a point: certain while orange, then falling to nothing at grey
         const chance = c === "orange" ? 1 : Math.max(0.1, (e.su[2] - skill) / (e.su[2] - e.su[0]));
+        // one point takes about 1/chance crafts: the materials for those, with what's on your characters first and the
+        // rest at the price the next units would cost (the auction tiers already bought on this plan count)
+        const crafts = Math.ceil(1 / chance);
         let cost = 0, unknown = false;
-        for (const [n, q] of e.rg) { const short = Math.max(0, q - have(n.toLowerCase())); if (short) { const pr = matPrice(n); if (!pr) unknown = true; else cost += short * pr.p; } }
+        for (const [n, q] of e.rg) {
+          const short = Math.max(0, q * crafts - have(n.toLowerCase()));
+          // choosing: the next unit's price for the whole shortfall (one look-up); the exact walk runs once a step is taken
+          if (short) { const u = nextUnit(n, bought, EMPTY_TAKE, 0); if (!u) unknown = true; else cost += u.p * short; }
+        }
         // learning a recipe pays for every point it gives, not just this one: spread its price over the points it has
         // left before it turns green (at most 20)
         const pointsLeft = Math.max(1, Math.min(20, e.su[1] - skill));
-        const per = cost / chance + (unknown ? 1e7 : 0) + learnCost / pointsLeft;
+        const per = cost + (unknown ? 1e7 : 0) + learnCost / pointsLeft;
         if (!best || per < best.per) best = { e, per, chance, how };
       }
       if (!best) { stop = skill; break; }
       const e = best.e, crafts = Math.ceil(1 / best.chance);
-      if (!cur || cur.e !== e) { cur = { e, from: skill, to: skill, crafts: 0, need: new Map(), mine: new Map(), buy: new Map(), alts: new Map(), how: learned.has(e.n) ? null : best.how }; stages.push(cur); }
+      if (!cur || cur.e !== e) { cur = { e, from: skill, to: skill, crafts: 0, need: new Map(), mine: new Map(), buy: new Map(), alts: new Map(), cost: new Map(), how: learned.has(e.n) ? null : best.how }; stages.push(cur); }
       if (best.how) learned.add(e.n);
       cur.crafts += crafts; cur.to = skill + 1;
       for (const [n, q] of e.rg) {
@@ -3830,7 +3906,11 @@ details.ab-lv[open] .ab-strip { display: none; }
         if (a > 0) cur.mine.set(n, (cur.mine.get(n) || 0) + a);
         const b = Math.min(left, alts.get(key) || 0); alts.set(key, (alts.get(key) || 0) - b); left -= b;
         if (b > 0) cur.alts.set(n, (cur.alts.get(n) || 0) + b);
-        if (left > 0) cur.buy.set(n, (cur.buy.get(n) || 0) + left);
+        if (left > 0) {
+          cur.buy.set(n, (cur.buy.get(n) || 0) + left);
+          const bc = buyCost(n, left, bought);
+          if (bc != null) { cur.cost.set(n, (cur.cost.get(n) || 0) + bc.total); for (const [k2, v] of bc.take) bought.set(k2, (bought.get(k2) || 0) + v); }
+        }
       }
       skill++;
     }
@@ -3875,6 +3955,15 @@ details.ab-lv[open] .ab-strip { display: none; }
     }
     return out.sort((a, b) => a.e.p.localeCompare(b.e.p) || learnAt(a.e) - learnAt(b.e)).slice(0, 80);
   }
+  // the next crafting steps per profession, for the add-on's window at the profession (shared/craftplan, by full name)
+  let craftT = null;
+  function saveCraftPlan(forGame) {
+    const who = planWho(); if (!who || !db || !S.canWrite) return;
+    const by = { ...((S.craftPlan && S.craftPlan.byChar) || {}) };
+    if (JSON.stringify(by[who] || {}) === JSON.stringify(forGame)) return;
+    by[who] = forGame; S.craftPlan = { byChar: by, updatedAt: Date.now() };
+    clearTimeout(craftT); craftT = setTimeout(() => write(() => db.doc("shared/craftplan").set(S.craftPlan)), 1500);
+  }
   let needsT = null;
   function saveRecipeNeeds(needs) {
     const who = planWho(); if (!who || !db || !S.canWrite) return;
@@ -3905,7 +3994,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     for (const [n, x] of rows) {
       const h = heldBy(n), mine = h.filter((y) => isMe(y.c)).reduce((a, y) => a + y.bags + y.bank, 0);
       const others = h.filter((y) => !isMe(y.c)).sort((a, b) => (b.bags + b.bank) - (a.bags + a.bank));
-      const pr = x.left ? matPrice(n) : null; if (pr) cost += x.left * pr.p; else if (x.left) unknown++;
+      const pcr = x.left ? buyCost(n, x.left) : null, pc = pcr ? pcr.total : null; if (pc != null) cost += pc; else if (x.left) unknown++;
       const tr = el("tr", x.left ? null : "got");
       const c1 = el("td"); c1.append(matLink(n)); tr.append(c1);
       tr.append(el("td", "num", fmt(x.need)));
@@ -3917,7 +4006,7 @@ details.ab-lv[open] .ab-strip { display: none; }
       c3.title = [mm ? `You: bags ${mm.bags}, bank ${mm.bank}` : "", ...others.map((y) => `${y.c.name}: bags ${y.bags}, bank ${y.bank}`)].filter(Boolean).join("\n");
       tr.append(c3);
       tr.append(el("td", "num" + (x.left ? " pp-get" : " pp-have"), x.left ? fmt(x.left) : "✓"));
-      const c6 = el("td", "num"); if (pr) c6.append(moneyEl(x.left * pr.p)); else c6.append(el("span", "muted", x.left ? "gather or loot" : "")); tr.append(c6);
+      const c6 = el("td", "num"); if (pc != null && x.left) { c6.append(moneyEl(pc)); c6.title = `${money(Math.round(pc / x.left))} each on average, buying ${x.left} at the prices seen`; } else c6.append(el("span", "muted", x.left ? "gather or loot" : "")); tr.append(c6);
       t.append(tr);
     }
     const covered = rows.filter(([, x]) => !x.left).length;
@@ -4002,13 +4091,21 @@ details.ab-lv[open] .ab-strip { display: none; }
   }
   function renderProfPlan() {
     const box = $("profPlan"); if (!box || !RC.data || !MAT.data) return;
-    priceMemo = new Map(); memoKn = null; memoAt = Date.now();
+    priceMemo = new Map(); makerMemo = new Map(); memoKn = null; memoAt = Date.now();
     const needs = recipeNeeds(); saveRecipeNeeds(needs);
     const r = priceRatio(); $("ppDiscount").textContent = r < 0.995 ? `Vendors sell to you at about ${Math.round(r * 100)}% of their listed price (your reputation discount, from ${ratioCache.n} prices you've seen), so listed prices here are adjusted.` : "";
     if (!GA.data) loadGather();
     const kn = knownRecipes(), out = [], skip = profSkip();
     // one profession at a time, picked from tabs (remembered); gathering ones and ones with recipes to follow
     const tabs = [...kn].filter(([prof]) => ["Herbalism", "Mining", "Skinning", "Fishing"].includes(prof) || RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length));
+    // every crafting profession's plan, once: shown for the picked tab, and the next steps saved for the add-on
+    const planCache = new Map(), forGame = {};
+    for (const [prof, k] of kn) {
+      if (k.skill == null || k.skill >= 300 || !RC.data.recipes.some((e) => e.p === prof && e.rg && e.rg.length) || ["Herbalism", "Mining", "Skinning", "Fishing"].includes(prof)) continue;
+      const plan = craftPath(prof, k, skip); planCache.set(prof, plan);
+      forGame[prof] = plan.stages.filter((g) => !g.milestone).slice(0, 5).map((g) => ({ n: g.e.n, crafts: g.crafts, from: g.from, to: g.to, short: [...g.buy].slice(0, 8) }));
+    }
+    saveCraftPlan(forGame);
     let pick = null; try { pick = localStorage.getItem("ll-pp-prof"); } catch {}
     if (!tabs.some(([p2]) => p2 === pick)) pick = (tabs.find(([, k]) => k.skill != null && k.skill < 300) || tabs[0] || [null])[0];
     const bar = el("div", "pp-tabs"); bar.setAttribute("role", "tablist");
@@ -4045,7 +4142,7 @@ details.ab-lv[open] .ab-strip { display: none; }
         out.push(sec); continue;
       }
       if (!hasRecipes) continue;
-      const { stages, stop, later } = craftPath(prof, k, skip);
+      const { stages, stop, later } = planCache.get(prof) || craftPath(prof, k, skip);
       sec.classList.add("craft"); sec.append(matSummary(stages));
       const ol = el("ol", "pp-stages"); let total = 0, shown = 0, crafted = 0;
       for (const g of stages) {
@@ -4057,7 +4154,8 @@ details.ab-lv[open] .ab-strip { display: none; }
         let cost = 0; const d = el("div", "pp-mats");
         for (const [n, q] of g.need) {
           const fromMe = g.mine.get(n) || 0, fromAlt = g.alts.get(n) || 0, left = g.buy.get(n) || 0, pr = left ? matPrice(n) : null;
-          if (pr) cost += left * pr.p;
+          const stageCost = left ? g.cost.get(n) : null;
+          if (stageCost != null) cost += stageCost;
           const c = el("span", "pp-mat " + (left ? "get" : fromAlt ? "alt" : "have"));
           c.append(matLink(n), el("span", "num pp-q", ` ×${q}`));
           const st = el("span", "pp-st");
@@ -4066,10 +4164,11 @@ details.ab-lv[open] .ab-strip { display: none; }
           if (left) {
             const g2 = el("span", "pp-get", `get ${left}`);
             if (pr) {
-              g2.append(document.createTextNode(" · ")); g2.append(moneyEl(left * pr.p));
+              g2.append(document.createTextNode(" · ")); g2.append(moneyEl(stageCost != null ? stageCost : left * pr.p));
               g2.append(el("span", "pp-src", pr.from === "auction" ? " auction house" : pr.from === "made" ? " make them" : " vendor"));
               const alt = (pr.alt || []).map((o) => `${o.from === "auction" ? "auction house" : o.from === "made" ? "making them" : "vendor"} ${money(o.p)} each`);
-              g2.title = `${money(pr.p)} each, the cheapest seen${alt.length ? "; " + alt.join(", ") : ""}${pr.from === "made" ? ` (from its own ${pr.by} recipe)` : ""}`;
+              const avg = stageCost != null ? Math.round(stageCost / left) : pr.p;
+              g2.title = `${money(avg)} each on average${avg > pr.p ? ` (the cheapest listings run out; ${money(pr.p)} at best)` : ""}${alt.length ? "; " + alt.join(", ") : ""}${pr.from === "made" ? ` (from its own ${pr.by} recipe)` : ""}`;
             } else g2.title = "No vendor or auction price seen: gather, loot or buy it";
             st.append(g2);
           }
@@ -5899,6 +5998,8 @@ details.ab-lv[open] .ab-strip { display: none; }
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
+    db.doc("shared/craftplan").onSnapshot((s) => { S.craftPlan = s.exists ? s.data() : null; }, () => {});
+    db.doc("shared/knownrecipes").onSnapshot((s) => { S.known = s.exists ? s.data() : null; renderRecipes(); }, () => {});
     db.doc("state/fishing").onSnapshot((s) => { S.fishing = s.exists ? s.data() : null; try { renderProfPlan(); renderGather(); } catch (e) { console.error(e); } }, () => {});
     db.doc("state/books").onSnapshot((s) => { S.books = s.exists ? s.data() : null; if (BOOKS.data) { renderBooks(); renderDash(); } }, () => {});
     db.doc("state/bookticks").onSnapshot((s) => { S.bookTicks = s.exists ? s.data() : null; if (BOOKS.data) renderBooks(); }, () => {});
