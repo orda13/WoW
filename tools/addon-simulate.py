@@ -218,7 +218,7 @@ TAXI = {}
 function NumTaxiNodes() return #(TAXI.nodes or {}) end
 function TaxiNodeName(i) return TAXI.nodes[i][1] end
 function TaxiNodeGetType(i) return TAXI.nodes[i][2] end''')
-for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua', 'FlightData.lua', 'Flights.lua', 'CraftPlan.lua'):   # the order the .toc loads them; all get the same private table
+for f in ('LevelingLedger.lua', 'Shared.lua', 'Alts.lua', 'Break.lua', 'QuestLog.lua', 'QuestiePlan.lua', 'Auction.lua', 'RecipeVendors.lua', 'MrRobot.lua', 'Talents.lua', 'CollectionsData.lua', 'Collections.lua', 'EntranceData.lua', 'Entrances.lua', 'FlightData.lua', 'Flights.lua', 'CraftPlan.lua', 'ClassSpellsData.lua', 'Training.lua'):   # the order the .toc loads them; all get the same private table
     src = os.environ.get('LL_SHARED') if f == 'Shared.lua' and os.environ.get('LL_SHARED') else os.path.join(ROOT, 'addon', 'LevelingLedger', f)
     L.execute(open(src).read().replace('local ADDON, ns = ...', 'local ADDON, ns = "LevelingLedger", LL_NS'))
 fire = L.eval('function(e, ...) for _, fr in ipairs(FRAMES) do if fr.ev[e] and fr.fn then fr.fn(fr, e, ...) end end end')
@@ -379,6 +379,21 @@ _GII2 = GetItemInfo; GetItemInfo = function(l) local id = tonumber(tostring(l):m
 GameTooltip:SetItem("Pattern: Red Woolen Bag", "|cff1eff00|Hitem:5772::::::::13:::::|h[Pattern: Red Woolen Bag]|h|r")''')
 print('pattern tooltip:', list(L.globals().GameTooltip.lines.values()))
 L.execute('GetItemInfo = _GII2')
+# what to train: the druid at level 14 knows a few spells; prices from the trainer visit above; the window, ignore,
+# reset, /ledger train list
+L.execute('''KNOWN_SPELLS = { [1126] = true, [8921] = true, [774] = true, [467] = true, [5177] = true, [339] = true, [5186] = true, [5487] = true, [6795] = true, [5232] = true, [99] = true }
+IsPlayerSpell = function(id) return KNOWN_SPELLS[id] or false end''')
+print('level now:', L.eval('UnitLevel("player")'))
+slash_('train list')
+slash_('train')
+_tw = L.globals().LevelingLedgerTraining
+_rows = L.eval('function() local t = {} for _, fr in ipairs(FRAMES) do if type(fr.left) == "table" and fr.shown then t[#t + 1] = (fr.left.text or "") .. " | " .. (fr.right.text or "") end end return t end')()
+print('training window:', _tw.shown, '|', _tw.total.text)
+for r in list(_rows.values())[:22]: print('   ', r.replace('|cff40ff40', '').replace('|cff6fb4ff', '').replace('|cff9d9d9d', '').replace('|cffd9c9a8', '').replace('|r', ''))
+_first = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.left) == "table" and fr.item and fr.item.id then return fr end end end')()
+_first.scripts.OnClick(_first, 'RightButton')
+print('ignored:', list(L.eval('LevelingLedgerDB.trainIgnore').keys()), '| total now:', _tw.total.text)
+slash_('train reset'); print('after reset:', len(list(L.eval('LevelingLedgerDB.trainIgnore').keys())), 'ignored')
 L.execute('TradeSkillFrame_SetSelection(3)')
 helper = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.fonts and fr.fonts[1] and fr.fonts[1].text and fr.fonts[1].text:find("alts\' materials") then return fr.fonts[1].text end end end')()
 print('profession window:', helper)
