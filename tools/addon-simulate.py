@@ -381,18 +381,34 @@ print('pattern tooltip:', list(L.globals().GameTooltip.lines.values()))
 L.execute('GetItemInfo = _GII2')
 # what to train: the druid at level 14 knows a few spells; prices from the trainer visit above; the window, ignore,
 # reset, /ledger train list
-L.execute('''KNOWN_SPELLS = { [1126] = true, [8921] = true, [774] = true, [467] = true, [5177] = true, [339] = true, [5186] = true, [5487] = true, [6795] = true, [5232] = true, [99] = true }
+L.execute('''KNOWN_SPELLS = { [1126] = true, [8921] = true, [774] = true, [467] = true, [5177] = true, [339] = true, [5487] = true, [6795] = true, [5232] = true, [99] = true }
 IsPlayerSpell = function(id) return KNOWN_SPELLS[id] or false end''')
 print('level now:', L.eval('UnitLevel("player")'))
 slash_('train list')
 slash_('train')
 _tw = L.globals().LevelingLedgerTraining
-_rows = L.eval('function() local t = {} for _, fr in ipairs(FRAMES) do if type(fr.left) == "table" and fr.shown then t[#t + 1] = (fr.left.text or "") .. " | " .. (fr.right.text or "") end end return t end')()
-print('training window:', _tw.shown, '|', _tw.total.text)
-for r in list(_rows.values())[:22]: print('   ', r.replace('|cff40ff40', '').replace('|cff6fb4ff', '').replace('|cff9d9d9d', '').replace('|cffd9c9a8', '').replace('|r', ''))
-_first = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.left) == "table" and fr.item and fr.item.id then return fr end end end')()
+_rowsf = 'function() local t = {} for _, fr in ipairs(FRAMES) do if type(fr.name) == "table" and fr.shown and fr.item then t[#t + 1] = (fr.name.text or "") .. " | " .. (fr.rank.text or "") .. " | " .. (fr.right.text or "") end end return t end'
+import re as _re
+_clean = lambda r: _re.sub(r'\|c[0-9a-f]{8}|\|r|\|T[^|]*\|t ', '', r)
+print('training window:', _tw.shown, '|', _clean(_tw.total.text), '| button-less count via list')
+for r in list(L.eval(_rowsf)().values()): print('   ', _clean(r))
+# fold "Available now", then unfold it; shift-click links; right-click ignores, right-click in Ignored takes it back
+_hdr = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.name) == "table" and fr.item and fr.item.head and fr.item.head.key == "now" then return fr end end end')()
+_hdr.scripts.OnClick(_hdr, 'LeftButton'); print('folded:', [_clean(r) for r in list(L.eval(_rowsf)().values())][:3])
+_hdr.scripts.OnClick(_hdr, 'LeftButton')
+_first = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.name) == "table" and fr.item and fr.item.id and fr.item.group == "now" then return fr end end end')()
+L.execute('LINKED = nil; ChatEdit_InsertLink = function(l) LINKED = l end; GetSpellLink = function(id) return "|cff71d5ff|Hspell:" .. id .. "|h[spell]|h|r" end; SHIFT = true; IsShiftKeyDown = function() return SHIFT end')
+_first.scripts.OnClick(_first, 'LeftButton'); print('shift-click linked:', L.eval('LINKED'))
+L.execute('SHIFT = false')
 _first.scripts.OnClick(_first, 'RightButton')
-print('ignored:', list(L.eval('LevelingLedgerDB.trainIgnore').keys()), '| total now:', _tw.total.text)
+print('ignored:', list(L.eval('LevelingLedgerDB.trainIgnore').keys()), '|', _clean(_tw.total.text))
+L.execute('LevelingLedgerDB.trainFolded.ignored = nil')
+_hdr = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.name) == "table" and fr.item and type(fr.item) == "table" and fr.item.head and fr.item.head.key == "now" then return fr end end end')()
+_hdr.scripts.OnClick(_hdr, 'LeftButton')
+_tw.scripts.OnMouseWheel(_tw, -30)
+_ig = L.eval('function() for _, fr in ipairs(FRAMES) do if type(fr.name) == "table" and fr.shown and type(fr.item) == "table" and fr.item.group == "ignored" then return fr end end end')()
+print('ignored row:', _clean(_ig.name.text) if _ig else None); _ig.scripts.OnClick(_ig, 'RightButton')
+print('after right-click in Ignored:', list(L.eval('LevelingLedgerDB.trainIgnore').keys()))
 slash_('train reset'); print('after reset:', len(list(L.eval('LevelingLedgerDB.trainIgnore').keys())), 'ignored')
 L.execute('TradeSkillFrame_SetSelection(3)')
 helper = L.eval('function() for _, fr in ipairs(FRAMES) do if fr.fonts and fr.fonts[1] and fr.fonts[1].text and fr.fonts[1].text:find("alts\' materials") then return fr.fonts[1].text end end end')()
