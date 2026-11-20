@@ -847,6 +847,10 @@ body { margin: 0; }
 .fav-btn { margin-left: auto; background: none; border: 0; color: var(--muted, #9d9d9d); font-size: 1.15rem; line-height: 1; padding: 2px 6px; cursor: pointer; border-radius: 6px; }
 .fav-btn:hover { color: var(--brass); background: color-mix(in srgb, var(--brass) 10%, transparent); }
 .fav-btn[aria-pressed="true"] { color: var(--brass); text-shadow: var(--glow); }
+/* a favourite shown on the Ledger drops the place its own page gives it (pinned while scrolling, fixed columns):
+   wide sections across the page, the rest two to a row, an odd one out across */
+#app > section.panel.fav-here { position: relative !important; top: auto !important; max-height: none !important; overflow: visible !important; grid-row: auto !important; grid-column: 1 / -1 !important; }
+@media (min-width: 1280px) { #app > section.panel.fav-here.fav-half { grid-column: auto / span 6 !important; } }
 .fav-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; margin: 6px 0 -4px; }
 .fav-head h2 { font-family: var(--display); color: var(--brass); font-size: 1.1rem; margin: 0; }
 .fav-head .muted { font-size: .8rem; }
@@ -5084,6 +5088,8 @@ details.ab-lv[open] .ab-strip { display: none; }
   // "at a glance" tiles (the same panel, so it keeps working there). Saved per person in shared/favorites. ----------
   const FAV = { ids: new Set(), loaded: false };
   const NO_FAV = new Set(["settings", "ledger"]);
+  // sections that need the whole width when shown on the Ledger
+  const FAV_WIDE = new Set(["talPanel", "abPanel", "dgPanel", "gatherPanel", "recipePanel", "matPanel", "profPlanPanel", "questPanel", "collectView", "bagsPanel"]);
   function homeOf(panel) { if (!panel.dataset.home) panel.dataset.home = panel.dataset.view; return panel.dataset.home; }
   function addFavStars() {
     for (const panel of document.querySelectorAll("#app > section.panel[id]")) {
@@ -5160,7 +5166,14 @@ details.ab-lv[open] .ab-strip { display: none; }
     for (const sec of document.querySelectorAll("[data-view]")) sec.hidden = !sec.dataset.view.split(" ").includes(v);
     // on the Ledger, the tiles first, then the favourites, then the rest
     $("dash").style.order = v === "ledger" ? "-3" : ""; $("favHead").style.order = v === "ledger" ? "-2" : "";
-    for (const p of document.querySelectorAll("#app > section.panel.is-fav")) p.style.order = v === "ledger" ? "-1" : "";
+    // on the Ledger, favourites leave their own page's layout behind: wide ones across, the rest two to a row
+    const favs = [...document.querySelectorAll("#app > section.panel.is-fav")];
+    const halves = favs.filter((p) => !FAV_WIDE.has(p.id));
+    for (const p of favs) {
+      p.style.order = v === "ledger" ? "-1" : "";
+      p.classList.toggle("fav-here", v === "ledger");
+      p.classList.toggle("fav-half", v === "ledger" && !FAV_WIDE.has(p.id) && !(halves.length % 2 === 1 && p === halves[halves.length - 1]));
+    }
     if (v === "ledger") for (const home of new Set([...document.querySelectorAll("#app > section.panel.is-fav")].map((p) => p.dataset.home))) try { loadFor(home); } catch (e) { console.error(e); }
     for (const a of $("views").querySelectorAll("a")) { if (a.getAttribute("href") === "#" + v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
     loadFor(v);
