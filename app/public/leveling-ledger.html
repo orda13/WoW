@@ -844,6 +844,12 @@ body { margin: 0; }
 .about p { margin: 0 0 6px; } .about p:last-child { margin: 0; }
 
 /* at a glance */
+.fav-btn { margin-left: auto; background: none; border: 0; color: var(--muted, #9d9d9d); font-size: 1.15rem; line-height: 1; padding: 2px 6px; cursor: pointer; border-radius: 6px; }
+.fav-btn:hover { color: var(--brass); background: color-mix(in srgb, var(--brass) 10%, transparent); }
+.fav-btn[aria-pressed="true"] { color: var(--brass); text-shadow: var(--glow); }
+.fav-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; margin: 6px 0 -4px; }
+.fav-head h2 { font-family: var(--display); color: var(--brass); font-size: 1.1rem; margin: 0; }
+.fav-head .muted { font-size: .8rem; }
 .dash { display: grid; grid-template-columns: repeat(auto-fit, minmax(186px, 1fr)); gap: 14px; }
 #sessionPanel .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 #sessionPanel .sess-lines p { margin: 0 0 4px; }
@@ -1148,6 +1154,7 @@ details.ab-lv[open] .ab-strip { display: none; }
   </section>
 
   <section class="dash" id="dash" data-view="ledger" aria-label="At a glance"></section>
+  <div class="fav-head" id="favHead" data-view="ledger" hidden><h2>Favorites</h2><span class="muted">Star (☆) any section's heading on another page to see it here.</span></div>
 
   <section class="panel" id="collPanel" data-view="collectables">
         <header><h2>Your collection</h2><span class="hint" id="collSync"></span></header>
@@ -5073,6 +5080,45 @@ details.ab-lv[open] .ab-strip { display: none; }
     box.replaceChildren(...tiles);
   }
   // ---------- long explanations: behind an "about" toggle in the panel's heading, so panels open on their content ----------
+  // ---------- favourites: any section starred on its own page also shows on the Ledger overview, live, after the
+  // "at a glance" tiles (the same panel, so it keeps working there). Saved per person in shared/favorites. ----------
+  const FAV = { ids: new Set(), loaded: false };
+  const NO_FAV = new Set(["settings", "ledger"]);
+  function homeOf(panel) { if (!panel.dataset.home) panel.dataset.home = panel.dataset.view; return panel.dataset.home; }
+  function addFavStars() {
+    for (const panel of document.querySelectorAll("#app > section.panel[id]")) {
+      const home = homeOf(panel); if (NO_FAV.has(home)) continue;
+      const head = panel.querySelector(":scope > header, :scope > .tal-head"); if (!head || head.querySelector(".fav-btn")) continue;
+      const b = el("button", "fav-btn", "☆"); b.type = "button";
+      b.onclick = () => toggleFav(panel.id);
+      const h2 = head.querySelector("h2");
+      if (head.classList.contains("tal-head")) { if (h2) h2.after(b); else head.prepend(b); } else { if (h2) h2.append(b); else head.prepend(b); }
+      panel._favBtn = b;
+    }
+    applyFavs();
+  }
+  function applyFavs() {
+    for (const panel of document.querySelectorAll("#app > section.panel[id]")) {
+      const home = homeOf(panel), on = FAV.ids.has(panel.id) && !NO_FAV.has(home);
+      panel.dataset.view = on ? home + " ledger" : home;
+      panel.classList.toggle("is-fav", on);
+      const b = panel._favBtn;
+      if (b) { b.textContent = on ? "★" : "☆"; b.setAttribute("aria-pressed", String(on)); b.title = on ? "On your Ledger page: click to take it off" : "Show this on the Ledger page too"; b.setAttribute("aria-label", b.title); }
+    }
+    // the Overview section group on the Ledger holds the favourites too
+    const ov = SECTIONS.ledger[0];
+    ov[2] = ["dash", "favHead", "board", "invPanel", ...[...FAV.ids].filter((id) => $(id))];
+    $("favHead").dataset.view = FAV.ids.size ? "ledger" : "none";
+    if (curView) setView();
+  }
+  function toggleFav(id) {
+    if (FAV.ids.has(id)) FAV.ids.delete(id); else FAV.ids.add(id);
+    applyFavs();
+    const doc = { ids: [...FAV.ids], updatedAt: Date.now() };
+    try { localStorage.setItem("ll-favs", JSON.stringify(doc.ids)); } catch {}
+    if (db && S.canWrite) write(() => db.doc("shared/favorites").set(doc));
+    if (FAV.ids.has(id)) toast && toast("Added to your Ledger page");
+  }
   function tidyIntros() {
     for (const panel of document.querySelectorAll("section.panel")) {
       const head = panel.querySelector(":scope > header, :scope > .tal-head");
@@ -5101,16 +5147,23 @@ details.ab-lv[open] .ab-strip { display: none; }
   renderThemeBtn();
   for (const a of $("views").querySelectorAll("a[data-icon]")) { const im = iconImg(a.dataset.icon); im.className = "nav-ic"; a.prepend(im); }
   let curView = null;
-  function setView() {
-    const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
-    for (const sec of document.querySelectorAll("[data-view]")) sec.hidden = !sec.dataset.view.split(" ").includes(v);
-    for (const a of $("views").querySelectorAll("a")) { if (a.getAttribute("href") === "#" + v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
+  // what each page loads when it opens (the Ledger loads it for the favourites from that page too)
+  function loadFor(v) {
     if (v === "collectables") { loadCollect(); loadBooks(); loadBags(); }
     if (v === "skills") { loadRecipes(); renderFavor(); }
     if (v === "dungeons") loadDungeons();
-    if (v === "talents") loadAbilities();
-    if (v === "talents") renderGearWorn();
+    if (v === "talents") { loadAbilities(); renderGearWorn(); }
     if (v === "settings") loadSettings();
+  }
+  function setView() {
+    const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ledger";
+    for (const sec of document.querySelectorAll("[data-view]")) sec.hidden = !sec.dataset.view.split(" ").includes(v);
+    // on the Ledger, the tiles first, then the favourites, then the rest
+    $("dash").style.order = v === "ledger" ? "-3" : ""; $("favHead").style.order = v === "ledger" ? "-2" : "";
+    for (const p of document.querySelectorAll("#app > section.panel.is-fav")) p.style.order = v === "ledger" ? "-1" : "";
+    if (v === "ledger") for (const home of new Set([...document.querySelectorAll("#app > section.panel.is-fav")].map((p) => p.dataset.home))) try { loadFor(home); } catch (e) { console.error(e); }
+    for (const a of $("views").querySelectorAll("a")) { if (a.getAttribute("href") === "#" + v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
+    loadFor(v);
     if (curView && curView !== v) window.scrollTo({ top: 0 });
     curView = v;
     applySections(v);
@@ -5493,6 +5546,8 @@ details.ab-lv[open] .ab-strip { display: none; }
   for (const id of ["cShow", "cSrc", "cFac"]) $(id).onchange = renderCollect;
   window.addEventListener("hashchange", setView);
   tidyIntros();
+  try { for (const id of JSON.parse(localStorage.getItem("ll-favs") || "[]")) FAV.ids.add(id); } catch {}
+  addFavStars();
   setView();
   // the dashboard's training and book tiles need these; fetched once the page has settled
   setTimeout(() => { loadAbilities(); loadBooks(); }, 1200);
@@ -5998,6 +6053,7 @@ details.ab-lv[open] .ab-strip { display: none; }
     db.doc("state/chainq").onSnapshot((s) => { S.chainq = s.exists ? s.data() : null; if (BOOKS.data) renderChains(); }, () => {});
     db.doc("state/secrets").onSnapshot((s) => { S.secrets = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
     db.doc("shared/secretticks").onSnapshot((s) => { S.secretTicks = s.exists ? s.data() : null; if (BOOKS.data) renderSecrets(); }, () => {});
+    db.doc("shared/favorites").onSnapshot((s) => { if (!s.exists) return; FAV.ids = new Set((s.data().ids || []).filter((x) => typeof x === "string")); try { localStorage.setItem("ll-favs", JSON.stringify([...FAV.ids])); } catch {} applyFavs(); }, () => {});
     db.doc("shared/craftplan").onSnapshot((s) => { S.craftPlan = s.exists ? s.data() : null; }, () => {});
     db.doc("shared/knownrecipes").onSnapshot((s) => { S.known = s.exists ? s.data() : null; renderRecipes(); }, () => {});
     db.doc("state/fishing").onSnapshot((s) => { S.fishing = s.exists ? s.data() : null; try { renderProfPlan(); renderGather(); } catch (e) { console.error(e); } }, () => {});
